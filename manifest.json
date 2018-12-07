@@ -1,14 +1,30 @@
 {
     "name": "chromeroller",
-    "version": 1.0,
+    "version": "1.0",
     "description": "Rolls dice using Aaron's API while using dndbeyond",
-    "permissions": "storage",
-    "background": {
-        "persistent": false,
-        "scripts}": "bg.js"
+    "permissions": ["activeTab", "declarativeContent"],
+
+    "content_scripts": [
+    {
+        "matches": [
+            "https://www.dndbeyond.com/profile/*/characters/*", "http://www.dndbeyond.com/*"
+        ],
+        "run at": "document_end",
+        "js": ["content.js"]
+    }
+    ],
+    "browser_action": {
+        "default_popup": "popup.html",
+        "default_title": "chromeroller!",
+        "default_icon": {
+            "512": "images/roller_icon512.png",
+            "128": "images/roller_icon128.png",
+            "64": "images/roller_icon64.png",
+            "32": "images/roller_icon32.png",
+            "24": "images/roller_icon24.png",
+            "16": "images/roller_icon16.png"
+        }
     },
-
-
     "icons": {
         "512": "images/roller_icon512.png",
         "128": "images/roller_icon128.png",
@@ -17,8 +33,5 @@
         "24": "images/roller_icon24.png",
         "16": "images/roller_icon16.png"
     },
-    
-
-
     "manifest_version": 2
 }
