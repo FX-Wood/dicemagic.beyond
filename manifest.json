@@ -2,7 +2,12 @@
     "name": "chromeroller",
     "version": "1.0",
     "description": "Rolls dice using Aaron's API while using dndbeyond",
-    "permissions": ["activeTab", "declarativeContent"],
+    "permissions": [
+        "activeTab", 
+        "declarativeContent", 
+        "https://www.dndbeyond.com/",
+        "https://api.dicemagic.io/"
+    ],
 
     "content_scripts": [
     {
