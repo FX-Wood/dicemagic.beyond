@@ -15,6 +15,7 @@
             "https://www.dndbeyond.com/profile/*/characters/*", "http://www.dndbeyond.com/*"
         ],
         "run at": "document_end",
+        "css": ["hoverStyle.css"],
         "js": ["content.js"]
     }
     ],

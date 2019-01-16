@@ -1,0 +1,8 @@
+.skills-pane-mouseover:hover {
+    outline: 1px solid #c53131;
+    outline-offset: -2px;
+}
+
+.primary-box-mouseover:hover {
+    outline: 1px solid #c53131;
+}
