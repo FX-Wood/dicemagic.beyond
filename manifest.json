@@ -1,5 +1,5 @@
 {
-    "name": "chromeroller",
+    "name": "dicemagic.beyond",
     "version": "1.0",
     "description": "Rolls dice using Aaron's API while using dndbeyond",
     "permissions": [
