@@ -124,7 +124,7 @@ function addOnclickToPrimaryBox() {
                     hitDie = '2d20';
                     advantagePhrase = "advantageously "
                 }
-            } 
+            }
             //debug
             console.log("To hit: " + toHit);
             console.log("Hit die: " + hitDie);
@@ -133,8 +133,10 @@ function addOnclickToPrimaryBox() {
             let saveLabel = '';
             let saveDC = '';
             if (!toHit) {
-                saveLabel = this.querySelector('.ct-spells-spell__save-label').textContent;
-                saveDC = this.querySelector('.ct-spells-spell__save-value').textContent;
+                if (this.querySelector('.ct-spells-spell__save-label')) {
+                    saveLabel = this.querySelector('.ct-spells-spell__save-label').textContent;
+                    saveDC = this.querySelector('.ct-spells-spell__save-value').textContent;
+                }
             }
             //debug
             console.log("Save: " + saveLabel);
@@ -147,6 +149,15 @@ function addOnclickToPrimaryBox() {
             }
             let damageType = this.querySelector('.ct-spell-damage-effect__damages .ct-tooltip').dataset.originalTitle
             
+
+            let magicMissileCount = 3;
+            //If magic missile is cast at a higher level, this block increments the number of missiles
+            if (this.querySelector('.ct-spell-name').textContent === "Magic Missile") {
+                if (this.querySelector('.ct-note-components__component--is-scaled')) {
+                    let rawString = this.querySelector('.ct-note-components__component--is-scaled').textContent;
+                    magicMissileCount += parseInt(rawString.split('+')[1]);
+                }
+            }
 
             console.log("damage: " + damage);
             console.log(damageType);
@@ -176,12 +187,22 @@ function addOnclickToPrimaryBox() {
                             If your spell hits: ${damageResult} ${damageType} damage!
                         `
                         alert(resultString);
-                    } else {            
+                    } else if (saveDC) {            
                         let damageResult = reply.match(/\*([0-9]+)\*/g)[0].slice(1, -1);
                         
                         let saveToHitPhrase = `
                             Pending target's DC${saveDC} ${saveLabel} save,
                             your spell deals ${damageResult} ${damageType} damage!
+                        `
+                        alert(saveToHitPhrase)
+                    //this block is for magic missile, which is special
+                    } else {
+                        let damageResult = reply.match(/\*([0-9]+)\*/g)[0].slice(1, -1);
+                        
+                        let saveToHitPhrase = `
+                            You fire ${magicMissileCount} missiles. 
+                            Each deals ${damageResult} ${damageType} damage, 
+                            for a total of ${magicMissileCount * parseInt(damageResult)} damage!
                         `
                         alert(saveToHitPhrase)
                     }
