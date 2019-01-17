@@ -191,8 +191,121 @@ function addOnclickToPrimaryBox() {
     }
 }
 
+//global variable to grab spell attack modifier in case a user opens up their sidebar before navigating to spells
+//unfortunately the sidebar doesn't display spell attack modifier
+var spellAttackMod;
+document.querySelector('body').onload = function() {
+    if (document.querySelector('.ct-combat-attack--spell .ct-combat-attack__tohit')) {
+        spellAttackMod = document.querySelector('.ct-combat-attack--spell .ct-combat-attack__tohit').textContent
+        console.log("got spell attack to hit on load")
+        console.log(spellAttackMod)
+    }
+};
 
-1854
+
+
+function addOnClickToSidebarSpells() {
+    let primaryBoxSpellAttackElement = document.querySelectorAll(".ct-spells-level-casting__info-item")[1]
+    //grabs spell attack mod from primary content box
+    if (primaryBoxSpellAttackElement && (spellAttackMod === undefined)) {
+        spellAttackMod = primaryBoxSpellAttackElement.textContent
+        console.log("got spell attack to hit in loop")
+        console.log(spellAttackMod)
+    }
+
+    //if it exists, targets the box within the sidebar that contains dice rolls
+    if (document.querySelector('.ct-sidebar__portal .ct-spell-caster__modifiers--damages')) {
+        let spellsPaneDamageBox = document.querySelector('.ct-sidebar__portal .ct-spell-caster__modifiers--damages');
+        //checks if the sidebar has already been polled
+        if (!spellsPaneDamageBox.iAmListening){
+            spellsPaneDamageBox.iAmListening = true
+            
+            //adds class for mouse hover style change
+            spellsPaneDamageBox.classList.add('.sidebar-damage-box');
+            document.querySelector('.ct-spell-caster__modifier--damage').classList.add('.sidebar-damage-box');
+            //adds click listener to box containing damages
+            spellsPaneDamageBox.addEventListener('click', rollSpellSideBar);
+            console.log('adding event listener to sidebar damage box')
+            
+            //event handler for sidebar box containing damages
+            function rollSpellSideBar(event) {
+                console.log('rolling from sidebar')
+                let damagesNodeList = Array.from(this.children);
+                let propertiesNodeList = Array.from(document.querySelector('.ct-property-list').children);
+                
+                let spellName = document.querySelector('.ct-sidebar__heading').textContent
+                let damageValues = [];
+                let damageTypes = [];
+                let save = ''
+
+                damagesNodeList.forEach(damageEffect => {
+                    console.log(damageEffect);
+                    damageValues.push(damageEffect.children[0].textContent);
+                    damageTypes.push(damageEffect.children[1].firstChild.firstChild.dataset.originalTitle);
+                })
+                console.log("Spell name: " + spellName)
+                console.log("Spell damage values: " + damageValues)
+                console.log("Spell damage types: " + damageTypes)
+
+                //checks if spell has a save, and if so adds it to the spell object
+                if (propertiesNodeList.length > 4) {
+                    let lastProperty = propertiesNodeList[propertiesNodeList.length -1]
+                    if (lastProperty.textContent.includes("Save"))
+                        save = lastProperty.textContent
+
+                }
+                console.log("Spell save: "+ save)
+
+
+
+                let cmdStringStart = '{"cmd":"'
+                let cmdStringMiddle = ''
+                if (!save && event.shiftKey) {
+                    cmdStringMiddle += "2d20" + spellAttackMod + ' ';
+                } else if (!save) {
+                    cmdStringMiddle += "1d20" + spellAttackMod + ' ';
+                }
+                damageValues.forEach(value => {                   
+                    cmdStringMiddle += value;
+                    cmdStringMiddle += ' '
+                })
+                let cmdStringEnd = '"}'
+                let cmdString = cmdStringStart + cmdStringMiddle + cmdStringEnd
+                console.log("Command: " + cmdString)
+
+
+                let roll = new XMLHttpRequest;
+                roll.open("POST", "https://api.dicemagic.io/roll");
+                roll.setRequestHeader("Content-Type", "application/json");
+                roll.send(cmdString)
+                roll.onreadystatechange = function() {
+                    if (roll.readyState === 4) {
+                        reply = JSON.parse(roll.responseText);
+                        console.log(reply)
+                        let rollResults = reply.result.match(/\*([0-9]+)\*/g);
+                        if (!save) {
+                            let toHit = rollResults[0].slice(1, -1)
+                            let damage = rollResults[1].slice(1, -1)
+                            let alertString = `
+                                You roll ${toHit} to hit.
+                                If you aim true, ${spellName} deals
+                                ${damage + ' '} ${damageTypes[0]} damage!
+                        `
+                        return alert(alertString)
+                        } else {
+                            let damage = rollResults[0]
+                            let alertString = `
+                                Pending a ${save},
+                                ${spellName} deals ${damage} ${damageTypes[0]} damage!
+                        `
+                        return alert(alertString)
+                        }
+                    }
+                }                
+            }
+        }
+    }
+}
 
 // function rollDice(command) {
 //     let roll = new XMLHttpRequest;

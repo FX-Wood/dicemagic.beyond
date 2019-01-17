@@ -6,3 +6,15 @@
 .primary-box-mouseover:hover {
     outline: 1px solid #c53131;
 }
+
+.sidebar-damage-box {
+    all: initial;
+    outline: 1px solid #c53131;
+    outline-offset: -1px;
+    background-color: #c53131;
+}
+
+.ct-sidebar-inner {
+    all: initial;
+    background-color: #c53131;
+}
