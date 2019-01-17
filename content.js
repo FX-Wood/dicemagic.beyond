@@ -1,44 +1,96 @@
 
-//This line prints a greeting to the Chromium console.
-console.log("hello I'm chromeroller. Click to roll!");
+//global variable for spacebar status
+var SPACEPRESSED = false;
+window.addEventListener('keydown', function(event) {
+    if (SPACEPRESSED == false && event.key == ' ') {
+        SPACEPRESSED = true;
+    }
+})
+window.addEventListener('keyup',function(event) {
+    if (event.key == ' ') {
+        SPACEPRESSED = false;
+    }
+})
 
-//This function is a callback that we call every few milliseconds.
+//global variable to grab spell attack modifier in case a user opens up their sidebar before navigating to spells
+//unfortunately the sidebar doesn't display spell attack modifier
+var SPELLATTACKMOD;
+document.querySelector('body').onload = function() {
+    if (document.querySelector('.ct-combat-attack--spell .ct-combat-attack__tohit')) {
+        SPELLATTACKMOD = document.querySelector('.ct-combat-attack--spell .ct-combat-attack__tohit').textContent
+        console.log("got spell attack to hit on load")
+        console.log(SPELLATTACKMOD)
+    }
+};
+
+//greeting and instructions
+console.log("dicemagic.beyond! \nspace-click to roll. \nspace-shift-click for advantage \nspace-alt/option-click for disadvantage");
+
+
+
 function addOnClickToSkills() {
-
-    //get all skill boxes and assign them to variable "skills"
-    let skills = document.querySelectorAll(".ct-skills__item");
-    
-    //This loops over each skill box and adds an event listener to be executed on "click"
-    //leaves a flag when they are added so that listeners aren't duplicated
-    skills.forEach(function(skill){
+    let skills = document.querySelectorAll(".ct-skills__item"); //Gets all skill boxes
+    skills.forEach(function(skill){                             //Loops over skills
         if (!skill.iAmListening) {
-            skill.addEventListener("click", rollSkillCheck);
-            skill.iAmListening = true;
-            console.log("Adding onClick listeners to skills");
-            skill.classList.add('skills-pane-mouseover');
+            skill.iAmListening = true;                          //flag preventing repeats
+            skill.addEventListener("mousedown", rollSkillCheck);    //listener
+            console.log("Adding onClick listeners to skills");  //debug
+            skill.classList.add('skills-pane-mouseover');       //adds class for mouseover style
         }
     })
 
-    function rollSkillCheck() {
-        let modifier = this.querySelector(".ct-signed-number__number").innerText
-        let sign = this.querySelector(".ct-signed-number__sign").innerText
-        let skill = this.querySelector(".ct-skills__col--skill").innerText
-        let stat = this.querySelector(".ct-skills__col--stat").innerText
+    function rollSkillCheck(event) {
+        if (event.shiftKey){
+            event.preventDefault()
+            event.stopPropagation()
+            console.log('Rolling skill check. Space: ' + SPACEPRESSED + ' Shift: ' + event.shiftKey + ' Alt: ' + event.altKey)
 
-        let roll = new XMLHttpRequest
-        roll.open("POST", "https://api.dicemagic.io/roll")
-        roll.setRequestHeader("Content-Type", "application/json")
-        roll.send(`{"cmd":"1d20${sign}${modifier}"}`)
-        roll.onreadystatechange = function() {
-            if (roll.readyState === 4) {
-            let reply = JSON.parse(roll.responseText)
-            let skillCheckResult = reply.result.match(/\*(.*)\*/)[0].slice(1, -1)
-            let rawRoll = reply.result.match(/\((\d*)\)/)[1]
-            let returnString =  `
-                ${skill}(${stat}) roll: ${skillCheckResult}.
-                Raw roll of ${rawRoll} and a ${stat} modifier of ${sign}${modifier}`
-            console.log(returnString)
-            alert(returnString)
+            let skillDice = '1d20'
+            let advantageModifier = ''
+            determineAdvantage(event)
+
+            function determineAdvantage() {
+                if (SPACEPRESSED) {
+                    console.log('Advantage!')
+                    advantageModifier = '-L';
+                    skillDice = '2d20'
+                } else if (event.altKey) {
+                    console.log('Disadvantage!')
+                    advantageModifier = '-H';
+                    skillDice = '2d20'
+                }
+            }
+
+            let skillName = this.querySelector(".ct-skills__col--skill").innerText
+            let modifier = this.querySelector(".ct-signed-number").textContent
+            let stat = this.querySelector(".ct-skills__col--stat").innerText
+
+            let cmdString = `{"cmd":"${skillDice}${advantageModifier}${modifier}"}`
+            console.log('Command: ' + cmdString)
+
+            let roll = new XMLHttpRequest
+            roll.open("POST", "https://api.dicemagic.io/roll")
+            roll.setRequestHeader("Content-Type", "application/json")
+            roll.send(cmdString)
+            roll.onreadystatechange = function() {
+                if (roll.readyState === 4) {
+                    let reply = JSON.parse(roll.responseText)
+                    console.log('Result: ' + reply.result)
+                    let skillCheckResult = reply.result.match(/\*(.*)\*/)[0].slice(1, -1)
+                    let rawRoll;
+                    if (skillDice == '1d20') {
+                        rawRoll = reply.result.match(/\((\d*)\)/)[1];
+                        console.log('raw roll: ' + rawRoll)
+                    } else {
+                        rawRoll = reply.result.match(/\((\d+, \d+)\)/)[0]
+                        console.log('raw roll: ' + rawRoll)
+                    }
+                    let returnString =  `
+                        ${skillName}(${stat}) roll: ${skillCheckResult}.
+                        Raw roll of ${rawRoll} and a ${stat} modifier of ${modifier}`
+                    console.log(returnString)
+                    alert(returnString)
+                }
             }
         }
     }
@@ -53,41 +105,62 @@ function addOnclickToPrimaryBox() {
         //adds an event listener and flags each item in the attack table
         attacks.forEach(attack => {
             if(!attack.iAmListening) {
-                attack.addEventListener('click', attackAndDamageRoll);
+                attack.addEventListener('mousedown', attackAndDamageRoll);
                 attack.iAmListening = true;
                 console.log('Adding listeners to attack table');
                 attack.classList.add('primary-box-mouseover')
             }
         })
 
-        function attackAndDamageRoll() {
-            let toHit = this.querySelector('.ct-combat-attack__tohit .ct-signed-number').textContent;
-            console.log(toHit);
-            let damage = this.querySelector('.ct-damage__value').textContent;
-            let damageType = this.querySelector('.ct-tooltip').dataset.originalTitle.toLowerCase();
-            if (damageType === "item is customized") {
-                damageType = "non-mundane";
-            }
-            console.log(damage + ' ' + damageType);
+        function attackAndDamageRoll(event) {
+            if (event.shiftKey) {
+                event.preventDefault()
+                event.stopPropagation()
+                console.log('Rolling attack');
 
-            const roll = new XMLHttpRequest;
-            roll.open("POST", "https://api.dicemagic.io/roll");
-            roll.setRequestHeader("Content-Type", "application/json");
-            roll.send(`{"cmd":"1d20${toHit} ${damage}"}`);
-            console.log(`{"cmd":"1d20${toHit} ${damage}"}`);
-            roll.onreadystatechange = function() {
-                if (roll.readyState === 4) {
-                    reply = JSON.parse(roll.responseText).result;
-                    console.log(reply);
-                    //these regexes return numbers between asterisks
-                    hitResult = reply.match(/\*([0-9]+)\*/g)[0].slice(1, -1);
-                    damageResult = reply.match(/\*([0-9]+)\*/g)[1].slice(1, -1);
+                let hitDice = '1d20';
+                let advantageModifier = '';
+                determineAdvantage(event);
+                function determineAdvantage() {
+                    if (SPACEPRESSED) {
+                        console.log('Advantage!')
+                        advantageModifier = '-L';
+                        hitDice = '2d20'
+                    } else if (event.altKey) {
+                        console.log('Disadvantage!')
+                        advantageModifier = '-H';
+                        hitDice = '2d20'
+                    }
+                }
 
-                    let resultString = `
-                    You rolled ${hitResult} to hit.
-                    If you strike true: ${damageResult} ${damageType} damage!
-                    `
-                    alert(resultString);
+                let toHitMod = this.querySelector('.ct-combat-attack__tohit .ct-signed-number').textContent;
+                let damage = this.querySelector('.ct-damage__value').textContent;
+                let damageType = this.querySelector('.ct-tooltip').dataset.originalTitle.toLowerCase();
+                if (damageType === "item is customized") {
+                    damageType = "non-mundane";
+                }
+                let cmdString = `{"cmd":"${hitDice}${advantageModifier}${toHitMod} ${damage}"}`
+                console.log('Command: ' + cmdString)
+
+                const roll = new XMLHttpRequest;
+                roll.open("POST", "https://api.dicemagic.io/roll");
+                roll.setRequestHeader("Content-Type", "application/json");
+                roll.send(cmdString);
+                console.log(cmdString);
+                roll.onreadystatechange = function() {
+                    if (roll.readyState === 4) {
+                        reply = JSON.parse(roll.responseText).result;
+                        console.log("Reply: " + reply);
+                        //these regexes return numbers between asterisks
+                        hitResult = reply.match(/\*([0-9]+)\*/g)[0].slice(1, -1);
+                        damageResult = reply.match(/\*([0-9]+)\*/g)[1].slice(1, -1);
+
+                        let resultString = `
+                        You rolled ${hitResult} to hit.
+                        If you strike true: ${damageResult} ${damageType} damage!
+                        `
+                        alert(resultString);
+                    }
                 }
             }
         }
@@ -101,7 +174,7 @@ function addOnclickToPrimaryBox() {
                 //checks if the spell has a listener yet
                 if (!spell.iAmListening) {
                     spell.iAmListening = true;
-                    spell.addEventListener('click', rollSpellPrimaryBox);
+                    spell.addEventListener('mousedown', rollSpellPrimaryBox);
                     console.log('adding listeners to spells');
                     spell.classList.add('primary-box-mouseover');
                 }
@@ -109,102 +182,118 @@ function addOnclickToPrimaryBox() {
         });
 
         function rollSpellPrimaryBox(event) {
+            if (event.shiftKey) {
+                event.preventDefault();
+                event.stopPropagation();
 
-            let toHit = '';
-            let hitDie = '';
-            let advantageModifier = '';
-            let advantagePhrase = '';
-            //if spell is a spell attack, sets toHit variable
-            if (this.querySelector('.ct-spells-spell__tohit')) {
-                toHit = this.querySelector('.ct-spells-spell__tohit').textContent;
-                hitDie = "1d20"
-                //checks if the shift key was pressed and sets advantage accordingly
-                if (event.shiftKey === true) {
-                    advantageModifier = '-L,';
-                    hitDie = '2d20';
-                    advantagePhrase = "advantageously "
+                let toHit = '';
+                let hitDie = '';
+                let advantageModifier = '';
+                let advantagePhrase = '';
+                let spellName = this.querySelector('.ct-spell-name').textContent
+                //if spell is a spell attack, sets toHit variable
+                if (this.querySelector('.ct-spells-spell__tohit')) {
+                    toHit = this.querySelector('.ct-spells-spell__tohit').textContent;
+                    hitDie = "1d20"
+                    //checks if the shift key was pressed and sets advantage accordingly
+                    if (SPACEPRESSED) {
+                        advantageModifier = '-L,';
+                        hitDie = '2d20';
+                        advantagePhrase = "Advantage!"
+                    } else if(event.altKey) {
+                        advantageModifier = '-H';
+                        hitDie = '2d20';
+                        advantagePhrase = "Disadvantage!"
+                    }
                 }
-            }
-            //debug
-            console.log("To hit: " + toHit);
-            console.log("Hit die: " + hitDie);
+                //debug
+                console.log("To hit: " + toHit);
+                console.log("Hit die: " + hitDie);
 
-            //if spell requires save, sets the save variables
-            let saveLabel = '';
-            let saveDC = '';
-            if (!toHit) {
-                if (this.querySelector('.ct-spells-spell__save-label')) {
-                    saveLabel = this.querySelector('.ct-spells-spell__save-label').textContent;
-                    saveDC = this.querySelector('.ct-spells-spell__save-value').textContent;
+                //if spell requires save, sets the save variables
+                let saveLabel = '';
+                let saveDC = '';
+                if (!toHit) {
+                    if (this.querySelector('.ct-spells-spell__save-label')) {
+                        saveLabel = this.querySelector('.ct-spells-spell__save-label').textContent;
+                        saveDC = this.querySelector('.ct-spells-spell__save-value').textContent;
+                    }
                 }
-            }
-            //debug
-            console.log("Save: " + saveLabel);
-            console.log("DC: " + saveDC);
+                //debug
+                console.log("Save: " + saveLabel);
+                console.log("DC: " + saveDC);
 
-            //sets damage value if the spell has one
-            damage = this.querySelector('.ct-damage__value');
-            if (damage) {
-                damage = damage.textContent;
-            }
-            let damageType = this.querySelector('.ct-spell-damage-effect__damages .ct-tooltip').dataset.originalTitle
-            
-
-            let magicMissileCount = 3;
-            //If magic missile is cast at a higher level, this block increments the number of missiles
-            if (this.querySelector('.ct-spell-name').textContent === "Magic Missile") {
-                if (this.querySelector('.ct-note-components__component--is-scaled')) {
-                    let rawString = this.querySelector('.ct-note-components__component--is-scaled').textContent;
-                    magicMissileCount += parseInt(rawString.split('+')[1]);
+                //sets damage value if the spell has one
+                damage = this.querySelector('.ct-damage__value');
+                if (damage) {
+                    damage = damage.textContent;
                 }
-            }
+                let damageType = this.querySelector('.ct-spell-damage-effect__damages .ct-tooltip').dataset.originalTitle
+                
 
-            console.log("damage: " + damage);
-            console.log(damageType);
-            console.log(advantageModifier);
+                let magicMissileCount = 3;
+                //If magic missile is cast at a higher level, this block increments the number of missiles
+                if (this.querySelector('.ct-spell-name').textContent === "Magic Missile") {
+                    if (this.querySelector('.ct-note-components__component--is-scaled')) {
+                        let rawString = this.querySelector('.ct-note-components__component--is-scaled').textContent;
+                        magicMissileCount += parseInt(rawString.split('+')[1]);
+                    }
+                }
+
+                console.log("damage: " + damage);
+                console.log(damageType);
+                console.log(advantageModifier);
 
 
-            let cmdString = `{"cmd":"${hitDie}${advantageModifier}${toHit} ${damage}"}`
-            //debug
-            console.log(cmdString)
+                let cmdString = `{"cmd":"${hitDie}${advantageModifier}${toHit} ${damage}"}`
+                //debug
+                console.log(cmdString)
 
-            let roll = new XMLHttpRequest;
-            roll.open("POST", "https://api.dicemagic.io/roll");
-            roll.setRequestHeader("Content-Type", "application/json");
-            roll.send(cmdString)
-            roll.onreadystatechange = function() {
-                if (roll.readyState === 4) {
-                    reply = JSON.parse(roll.responseText).result;
-                    //debug
-                    console.log(reply);
-                    if (toHit) {
-                        //these regexes return numbers between asterisks
-                        let hitResult = reply.match(/\*([0-9]+)\*/g)[0].slice(1, -1);
-                        let damageResult = reply.match(/\*([0-9]+)\*/g)[1].slice(1, -1);
+                let roll = new XMLHttpRequest;
+                roll.open("POST", "https://api.dicemagic.io/roll");
+                roll.setRequestHeader("Content-Type", "application/json");
+                roll.send(cmdString)
+                roll.onreadystatechange = function() {
+                    if (roll.readyState === 4) {
+                        reply = JSON.parse(roll.responseText).result;
+                        //debug
+                        console.log(reply);
+                        if (toHit) {
+                            //these regexes return numbers between asterisks
+                            let hitResult = reply.match(/\*([0-9]+)\*/g)[0].slice(1, -1);
+                            let damageResult = reply.match(/\*([0-9]+)\*/g)[1].slice(1, -1);
 
-                        let resultString = `
-                            You ${advantagePhrase}rolled ${hitResult} to hit.
-                            If your spell hits: ${damageResult} ${damageType} damage!
-                        `
-                        alert(resultString);
-                    } else if (saveDC) {            
-                        let damageResult = reply.match(/\*([0-9]+)\*/g)[0].slice(1, -1);
-                        
-                        let saveToHitPhrase = `
-                            Pending target's DC${saveDC} ${saveLabel} save,
-                            your spell deals ${damageResult} ${damageType} damage!
-                        `
-                        alert(saveToHitPhrase)
-                    //this block is for magic missile, which is special
-                    } else {
-                        let damageResult = reply.match(/\*([0-9]+)\*/g)[0].slice(1, -1);
-                        
-                        let saveToHitPhrase = `
-                            You fire ${magicMissileCount} missiles. 
-                            Each deals ${damageResult} ${damageType} damage, 
-                            for a total of ${magicMissileCount * parseInt(damageResult)} damage!
-                        `
-                        alert(saveToHitPhrase)
+                            let resultString = `
+                                ${advantagePhrase}
+                                You rolled ${hitResult} to hit.
+                                If your spell hits: ${damageResult} ${damageType} damage!
+                            `
+                            alert(resultString);
+                        } else if (saveDC) {            
+                            let damageResult = reply.match(/\*([0-9]+)\*/g)[0].slice(1, -1);
+                            let saveToHitPhrase = `
+                                Pending target's DC${saveDC} ${saveLabel} save,
+                                your spell deals ${damageResult} ${damageType} damage!
+                            `
+                            alert(saveToHitPhrase)
+                        //this block is for "booming blade" or "green flame blade"
+                        } else if (!toHit && !saveDC) {
+                            let damageResult = reply.match(/\*([0-9]+)\*/g)[0].slice(1, -1);
+                            let returnString = `
+                                ${spellName} does ${damageResult} ${damageType} damage!
+                            `
+                            alert(returnString)
+                        //this block is for magic missile
+                        } else if (spellName.toLowerCase().includes('missile')) {
+                            let damageResult = reply.match(/\*([0-9]+)\*/g)[0].slice(1, -1);
+                            
+                            let magicMissilePhrase = `
+                                You fire ${magicMissileCount} missiles. 
+                                Each deals ${damageResult} ${damageType} damage, 
+                                for a total of ${magicMissileCount * parseInt(damageResult)} damage!
+                            `
+                            alert(magicMissilePhrase)
+                        }
                     }
                 }
             }
@@ -212,26 +301,14 @@ function addOnclickToPrimaryBox() {
     }
 }
 
-//global variable to grab spell attack modifier in case a user opens up their sidebar before navigating to spells
-//unfortunately the sidebar doesn't display spell attack modifier
-var spellAttackMod;
-document.querySelector('body').onload = function() {
-    if (document.querySelector('.ct-combat-attack--spell .ct-combat-attack__tohit')) {
-        spellAttackMod = document.querySelector('.ct-combat-attack--spell .ct-combat-attack__tohit').textContent
-        console.log("got spell attack to hit on load")
-        console.log(spellAttackMod)
-    }
-};
-
-
 
 function addOnClickToSidebarSpells() {
     let primaryBoxSpellAttackElement = document.querySelectorAll(".ct-spells-level-casting__info-item")[1]
     //grabs spell attack mod from primary content box
-    if (primaryBoxSpellAttackElement && (spellAttackMod === undefined)) {
-        spellAttackMod = primaryBoxSpellAttackElement.textContent
+    if (primaryBoxSpellAttackElement && (SPELLATTACKMOD === undefined)) {
+        SPELLATTACKMOD = primaryBoxSpellAttackElement.textContent
         console.log("got spell attack to hit in loop")
-        console.log(spellAttackMod)
+        console.log(SPELLATTACKMOD)
     }
 
     //if it exists, targets the box within the sidebar that contains dice rolls
@@ -282,9 +359,9 @@ function addOnClickToSidebarSpells() {
                 let cmdStringStart = '{"cmd":"'
                 let cmdStringMiddle = ''
                 if (!save && event.shiftKey) {
-                    cmdStringMiddle += "2d20" + spellAttackMod + ' ';
+                    cmdStringMiddle += "2d20" + SPELLATTACKMOD + ' ';
                 } else if (!save) {
-                    cmdStringMiddle += "1d20" + spellAttackMod + ' ';
+                    cmdStringMiddle += "1d20" + SPELLATTACKMOD + ' ';
                 }
                 damageValues.forEach(value => {                   
                     cmdStringMiddle += value;
