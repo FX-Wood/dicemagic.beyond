@@ -83,7 +83,7 @@ function addOnClickToInitiative() {
                         }
                         let returnString = `${advantagePhrase}Your initiative: ${initiativeResult}\nYou rolled ${rawRoll} with a modifier of ${modifier}`
 
-                        return displayBoxChild.innerText = returnString;
+                        return displayBoxContent.innerText = returnString;
                     }
                 }
             }
@@ -153,7 +153,7 @@ function addOnClickToSaves() {
                         }
                         let returnString = `${advantagePhrase}Your ${name.toUpperCase()} saving throw: ${savingThrowResult}\nYou rolled ${rawRoll} with a modifier of ${modifier}`
 
-                        return displayBoxChild.innerText = returnString;
+                        return displayBoxContent.innerText = returnString;
                     }
                 }
             }
@@ -223,7 +223,7 @@ function addOnClickToSkills() {
                     }
                     let returnString =  `${skillName}(${stat}) roll: ${skillCheckResult}.\nRaw roll of ${rawRoll} and a ${stat} modifier of ${modifier}`
                     console.log(returnString)
-                    return displayBoxChild.innerText = returnString;
+                    return displayBoxContent.innerText = returnString;
                 }
             }
         }
@@ -291,7 +291,7 @@ function addOnclickToPrimaryBox() {
                         damageResult = reply.match(/\*([0-9]+)\*/g)[1].slice(1, -1);
 
                         let returnString = `You rolled ${hitResult} to hit.\n If you strike true: ${damageResult} ${damageType} damage!`
-                        return displayBoxChild.innerText = returnString;
+                        return displayBoxContent.innerText = returnString;
                     }
                 }
             }
@@ -397,22 +397,22 @@ function addOnclickToPrimaryBox() {
 
                             let returnString = `
                                 ${advantagePhrase}\nYou rolled ${hitResult} to hit.\nIf your spell hits: ${damageResult} ${damageType} damage!`
-                            return displayBoxChild.innerText = returnString;
+                            return displayBoxContent.innerText = returnString;
                         } else if (saveDC) {            
                             let damageResult = reply.match(/\*([0-9]+)\*/g)[0].slice(1, -1);
                             let saveToHitPhrase = `Pending target's DC${saveDC} ${saveLabel} save,\nyour spell deals ${damageResult} ${damageType} damage!`
-                            return displayBoxChild.innerText = saveToHitPhrase;
+                            return displayBoxContent.innerText = saveToHitPhrase;
                         //this block is for "booming blade" or "green flame blade"
                         } else if (!toHit && !saveDC) {
                             let damageResult = reply.match(/\*([0-9]+)\*/g)[0].slice(1, -1);
                             let returnString = `${spellName} does ${damageResult} ${damageType} damage!`
-                            return displayBoxChild.innerText = returnString;
+                            return displayBoxContent.innerText = returnString;
                         //this block is for magic missile
                         } else if (spellName.toLowerCase().includes('missile')) {
                             let damageResult = reply.match(/\*([0-9]+)\*/g)[0].slice(1, -1);
                             
                             let magicMissilePhrase = `You fire ${magicMissileCount} missiles.\nEach deals ${damageResult} ${damageType} damage,\nfor a total of ${magicMissileCount * parseInt(damageResult)} damage!`
-                            return displayBoxChild.innerText = magicMissilePhrase;
+                            return displayBoxContent.innerText = magicMissilePhrase;
                         }
                     }
                 }
@@ -504,11 +504,11 @@ function addOnClickToSidebarSpells() {
                             let toHit = rollResults[0].slice(1, -1)
                             let damage = rollResults[1].slice(1, -1)
                             let alertString = `You roll ${toHit} to hit.\nIf you aim true, ${spellName} deals\n${damage + ' '} ${damageTypes[0]} damage!`
-                        return displayBoxChild.innerText = alertString
+                        return displayBoxContent.innerText = alertString
                         } else {
                             let damage = rollResults[0]
                             let alertString = `Pending a ${save},\n${spellName} deals ${damage} ${damageTypes[0]} damage!`
-                        return displayBoxChildChild.innerText = alertString
+                        return displayBoxContentChild.innerText = alertString
                         }
                     }
                 }                
@@ -563,27 +563,69 @@ displayBox.style.backgroundImage = `url('${backgroundURL}')`;
 console.log(backgroundURL)
 document.body.appendChild(displayBox);
 
-var displayBoxChild = document.createElement('div')
-displayBoxChild.id = 'display-box-child';
-displayBoxChild.innerText = "Welcome to Dicemagic.Beyond! \nRoll: shift-click \nAdvantage: shift-space-click \nDisadvantage: alt-space-click"
-displayBox.appendChild(displayBoxChild);
+var displayBoxContent = document.createElement('div');
+displayBoxContent.id = 'display-box-content';
+displayBoxContent.innerText = "Welcome to Dicemagic.Beyond! \nRoll: shift-click \nAdvantage: shift-space-click \nDisadvantage: alt-space-click";
+displayBox.appendChild(displayBoxContent);
 
+var inputWrapper = document.createElement('div');
+inputWrapper.id = 'display-box-input-wrapper';
+inputWrapper.addEventListener('mousedown', event => event.stopPropagation(), true)
+displayBox.appendChild(inputWrapper);
+
+var customInput = document.createElement('input');
+customInput.id = 'display-box-input';
+customInput.placeholder = "Input custom roll";
+customInput.addEventListener('keydown', customRoll);
+inputWrapper.appendChild(customInput)
+
+var displayBoxButton = document.createElement('button');
+displayBoxButton.id = 'display-box-button';
+displayBoxButton.textContent = 'ROLL';
+displayBoxButton.addEventListener('click', customRoll)
+inputWrapper.appendChild(displayBoxButton)
+
+function customRoll(event) {
+    if ((event.key === "Enter") || event.type === "click") {
+        let cmdInput = document.getElementById('display-box-input').value
+        let roll = new XMLHttpRequest;
+            roll.open("POST", "https://api.dicemagic.io/roll");
+            roll.setRequestHeader("Content-Type", "application/json");
+            roll.send(`{"cmd":"${cmdInput}"}`)
+            console.log(`{"cmd":"${cmdInput}"}`)
+            roll.onreadystatechange = function() {
+            if (roll.readyState === 4) {
+                console.log("readyState = 4")
+                console.log(roll.responseText)
+                let reply = JSON.parse(roll.responseText)
+                if (reply.result) {
+                    return displayBoxContent.textContent = reply.result;
+                } else {
+                    return displayBoxContent.textContent = reply.err
+                }
+                
+            }
+        }
+    }
+}
 
 function makeDraggable(element) {
-    console.log('initializing results window')
+    console.log('initializing results window');
     var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
     element.style.top = '100px'
     element.style.left = '100px'
     element.addEventListener('mousedown', startDrag);
 
     function startDrag(event) {
-        console.log('start')
-        event.preventDefault();
-        pos3 = event.clientX;
-        pos4 = event.clientY;
-
-        document.addEventListener('mouseup', stopDragging, false)
-        document.addEventListener('mousemove', dragElement, false)
+        if (event.button === 0) {
+            console.log('start')
+            event.preventDefault();
+            pos3 = event.clientX;
+            pos4 = event.clientY;
+    
+            document.addEventListener('mouseup', stopDragging, false)
+            document.addEventListener('mousemove', dragElement, false)
+        }
     }
 
     function dragElement(event) {
