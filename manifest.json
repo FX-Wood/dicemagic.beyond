@@ -20,7 +20,7 @@
     }
     ],
     "browser_action": {
-        "default_popup": "popup.html",
+        "default_popup": "html/popup.html",
         "default_title": "diceMagic.Beyond",
         "default_icon": {
             "512": "images/roller_icon512.png",

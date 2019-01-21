@@ -29,12 +29,8 @@ console.log("dicemagic.beyond! \nspace-click to roll. \nspace-shift-click for ad
 // Initiative
 function addOnClickToInitiative() {
     let initiative = document.querySelector('.ct-initiative-box');
-    console.log(initiative)
-    console.log(initiative.iAmListening)
-    if (!initiative.iAmListening) {
-        console.log(initiative)
+    if (initiative && !initiative.iAmListening) {
         initiative.iAmListening = true;
-        console.log(initiative.iAmListening)
         initiative.classList.add('initiative-box-mouseover');
         console.log('adding listener to initiative');
 
@@ -44,7 +40,7 @@ function addOnClickToInitiative() {
             if (event.shiftKey) {
                 console.log('Rolling initiative!');
                 event.preventDefault();
-                event.stopPropogation();
+                event.stopPropagation();
 
                 let modifier = this.textContent;
                 let baseDice = '1d20';
@@ -98,22 +94,22 @@ function addOnClickToInitiative() {
 // Saves
 function addOnClickToSaves() {
     let saves = document.querySelector('.ct-saving-throws-summary');
-    if (!saves.iAmListening) {
+    if (saves && !saves.iAmListening) {
         saves.iAmListening = true;
-        saves.classList.add('saving-throw-mouseover')
+        
         console.log('Adding listeners to saves');
 
         saves = Array.from(document.querySelector('.ct-saving-throws-summary').children);
         saves.forEach(save => {
             save.addEventListener("click", rollSavingThrow, true);
-            ;
+            save.classList.add('saving-throw-mouseover');
         });
 
         function rollSavingThrow(event) {
             if (event.shiftKey) {
                 console.log('rolling a save!');
                 event.preventDefault();
-                event.stopPropogation();
+                event.stopPropagation();
 
                 let name = this.querySelector(".ct-saving-throws-summary__ability-name").textContent;
                 let modifier = this.querySelector(".ct-saving-throws-summary__ability-modifier").textContent;
@@ -168,7 +164,7 @@ function addOnClickToSaves() {
 // Skills
 function addOnClickToSkills() {
     let skills = document.querySelector('.ct-skills__list');
-        if (!skills.iAmListening) {
+        if (skills && !skills.iAmListening) {
             skills.iAmListening = true;
             console.log("Adding listeners to skills");                      //debug
 
@@ -430,9 +426,8 @@ function addOnClickToSidebarSpells() {
     let primaryBoxSpellAttackElement = document.querySelectorAll(".ct-spells-level-casting__info-item")[1]
     //grabs spell attack mod from primary content box
     if (primaryBoxSpellAttackElement && (SPELLATTACKMOD === undefined)) {
-        SPELLATTACKMOD = primaryBoxSpellAttackElement.textContent
-        console.log("got spell attack to hit in loop")
-        console.log(SPELLATTACKMOD)
+        SPELLATTACKMOD = primaryBoxSpellAttackElement.textContent;
+        console.log("got spell attack to hit in loop: " + SPELLATTACKMOD)
     }
 
     //if it exists, targets the box within the sidebar that contains dice rolls
@@ -575,7 +570,7 @@ displayBox.appendChild(displayBoxChild);
 
 
 function makeDraggable(element) {
-    console.log('making draggable')
+    console.log('initializing results window')
     var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
     element.style.top = '100px'
     element.style.left = '100px'
