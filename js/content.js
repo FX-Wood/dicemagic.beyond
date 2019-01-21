@@ -29,8 +29,12 @@ console.log("dicemagic.beyond! \nspace-click to roll. \nspace-shift-click for ad
 // Initiative
 function addOnClickToInitiative() {
     let initiative = document.querySelector('.ct-initiative-box');
+    console.log(initiative)
+    console.log(initiative.iAmListening)
     if (!initiative.iAmListening) {
+        console.log(initiative)
         initiative.iAmListening = true;
+        console.log(initiative.iAmListening)
         initiative.classList.add('initiative-box-mouseover');
         console.log('adding listener to initiative');
 
