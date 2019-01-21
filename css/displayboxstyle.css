@@ -3,7 +3,7 @@
     all:initial;
 
     position: absolute;
-    z-index: 100;
+    z-index: 10;
 
     height: 200px;
     width : 281px;
@@ -16,21 +16,85 @@
     
 }
 
-#display-box-child {
+#display-box-content {
 
     all:initial;
     position: relative;
-    display: inline-block;
-
+    display: block;
+    box-sizing: border-box;
 
     width: 95%;
-    height:90%;
+    height:80%;
 
-    padding: 10px 20px;
+    padding: 20px 20px 0 20px;
 
     text-align: left;
+    overflow-wrap: break-word;
     font-family: "Roboto Condensed", Roboto, Helvetica, sans-serif;
     font-size: 14px;
+}
+
+#display-box-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+
+    bottom: 12px;
+    width: auto;
+    height: 30px;
+    margin: 0 16px;
+
+    border: 1px solid #eaeaea;
+    border-radius: 3px;
+    
+    z-index: 20;
+    cursor: text;
+
+    font-family: "Roboto Condensed", Roboto, Helvetica, sans-serif;
+    line-height: 26px;
+}
+
+#display-box-input {
+    flex-grow: 2;
+    font-size: 16px;
+    padding-left: 3px;
+    border: none;
+    width: auto;
+
+}
+
+#display-box-button {
+    z-index: 30;
+    display: inline;
+    height: 18px;
+    padding: auto;
+    margin-right: 6px;
+
+    background-color: #C53131;
+
+
+    border-color: transparent;
+    border-radius: 3px;
+
+    font-size: 8px;
+    color: #fff;
+    cursor: pointer;
+
+    font-family: "Roboto Condensed",Roboto,Helvetica,sans-serif;
+
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+
+}
+
+#display-box-button:hover {
+    color: #fff;
+    background-color: #9c2727;
+    box-shadow: 0 0 10px 2px #731d1d inset;
 }
 
 /* Makes it so that shift doesn't highlight willy-nilly */
