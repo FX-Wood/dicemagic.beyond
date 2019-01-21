@@ -40,7 +40,7 @@ function addOnClickToInitiative() {
             if (event.shiftKey) {
                 console.log('Rolling initiative!');
                 event.preventDefault();
-                event.stopPropogation();
+                event.stopPropagation();
 
                 let modifier = this.textContent;
                 let baseDice = '1d20';
@@ -96,20 +96,20 @@ function addOnClickToSaves() {
     let saves = document.querySelector('.ct-saving-throws-summary');
     if (saves && !saves.iAmListening) {
         saves.iAmListening = true;
-        saves.classList.add('saving-throw-mouseover')
+        
         console.log('Adding listeners to saves');
 
         saves = Array.from(document.querySelector('.ct-saving-throws-summary').children);
         saves.forEach(save => {
             save.addEventListener("click", rollSavingThrow, true);
-            ;
+            save.classList.add('saving-throw-mouseover');
         });
 
         function rollSavingThrow(event) {
             if (event.shiftKey) {
                 console.log('rolling a save!');
                 event.preventDefault();
-                event.stopPropogation();
+                event.stopPropagation();
 
                 let name = this.querySelector(".ct-saving-throws-summary__ability-name").textContent;
                 let modifier = this.querySelector(".ct-saving-throws-summary__ability-modifier").textContent;
@@ -426,7 +426,7 @@ function addOnClickToSidebarSpells() {
     let primaryBoxSpellAttackElement = document.querySelectorAll(".ct-spells-level-casting__info-item")[1]
     //grabs spell attack mod from primary content box
     if (primaryBoxSpellAttackElement && (SPELLATTACKMOD === undefined)) {
-        SPELLATTACKMOD = primaryBoxSpellAttackElement.textContent
+        SPELLATTACKMOD = primaryBoxSpellAttackElement.textContent;
         console.log("got spell attack to hit in loop: " + SPELLATTACKMOD)
     }
 
