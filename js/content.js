@@ -29,12 +29,8 @@ console.log("dicemagic.beyond! \nspace-click to roll. \nspace-shift-click for ad
 // Initiative
 function addOnClickToInitiative() {
     let initiative = document.querySelector('.ct-initiative-box');
-    console.log(initiative)
-    console.log(initiative.iAmListening)
-    if (!initiative.iAmListening) {
-        console.log(initiative)
+    if (initiative && !initiative.iAmListening) {
         initiative.iAmListening = true;
-        console.log(initiative.iAmListening)
         initiative.classList.add('initiative-box-mouseover');
         console.log('adding listener to initiative');
 
@@ -98,7 +94,7 @@ function addOnClickToInitiative() {
 // Saves
 function addOnClickToSaves() {
     let saves = document.querySelector('.ct-saving-throws-summary');
-    if (!saves.iAmListening) {
+    if (saves && !saves.iAmListening) {
         saves.iAmListening = true;
         saves.classList.add('saving-throw-mouseover')
         console.log('Adding listeners to saves');
@@ -168,7 +164,7 @@ function addOnClickToSaves() {
 // Skills
 function addOnClickToSkills() {
     let skills = document.querySelector('.ct-skills__list');
-        if (!skills.iAmListening) {
+        if (skills && !skills.iAmListening) {
             skills.iAmListening = true;
             console.log("Adding listeners to skills");                      //debug
 
@@ -431,8 +427,7 @@ function addOnClickToSidebarSpells() {
     //grabs spell attack mod from primary content box
     if (primaryBoxSpellAttackElement && (SPELLATTACKMOD === undefined)) {
         SPELLATTACKMOD = primaryBoxSpellAttackElement.textContent
-        console.log("got spell attack to hit in loop")
-        console.log(SPELLATTACKMOD)
+        console.log("got spell attack to hit in loop: " + SPELLATTACKMOD)
     }
 
     //if it exists, targets the box within the sidebar that contains dice rolls
@@ -575,7 +570,7 @@ displayBox.appendChild(displayBoxChild);
 
 
 function makeDraggable(element) {
-    console.log('making draggable')
+    console.log('initializing results window')
     var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
     element.style.top = '100px'
     element.style.left = '100px'
