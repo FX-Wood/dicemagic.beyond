@@ -25,6 +25,77 @@ document.querySelector('body').onload = function() {
 //greeting and instructions
 console.log("dicemagic.beyond! \nspace-click to roll. \nspace-shift-click for advantage \nspace-alt/option-click for disadvantage");
 
+
+// Initiative
+function addOnClickToInitiative() {
+    let initiative = document.querySelector('.ct-initiative-box');
+    console.log(initiative)
+    console.log(initiative.iAmListening)
+    if (!initiative.iAmListening) {
+        console.log(initiative)
+        initiative.iAmListening = true;
+        console.log(initiative.iAmListening)
+        initiative.classList.add('initiative-box-mouseover');
+        console.log('adding listener to initiative');
+
+        initiative.addEventListener("click", rollInitiative, true);
+
+        function rollInitiative(event) {
+            if (event.shiftKey) {
+                console.log('Rolling initiative!');
+                event.preventDefault();
+                event.stopPropogation();
+
+                let modifier = this.textContent;
+                let baseDice = '1d20';
+                let advantageModifier = '';
+                let advantagePhrase = ''
+                determineAdvantage(event);
+
+                function determineAdvantage() {
+                    if (SPACEPRESSED) {
+                        console.log('Advantage!');
+                        advantageModifier = '-L';
+                        baseDice = '2d20';
+                        advantagePhrase = 'Advantage!\n';
+                    } else if (event.altKey) {
+                        console.log('Disadvantage!');
+                        advantageModifier = '-H';
+                        baseDice = '2d20';
+                        advantagePhrase = 'Disadvantage!\n';
+                    }
+                }
+                let cmdString = `{"cmd":"${baseDice}${advantageModifier}${modifier}"}`
+                console.log('Command: ' + cmdString)
+    
+                let roll = new XMLHttpRequest;
+                roll.open("POST", "https://api.dicemagic.io/roll");
+                roll.setRequestHeader("Content-Type", "application/json");
+                roll.send(cmdString);
+                roll.onreadystatechange = function() {
+                    if (roll.readyState === 4) {
+                        let reply = JSON.parse(roll.responseText);
+                        console.log('Result: ' + reply.result);
+                        let initiativeResult = reply.result.match(/\*(.*)\*/)[0].slice(1, -1)
+                        let rawRoll;
+                        if (baseDice == '1d20') {
+                            rawRoll = reply.result.match(/\((\d*)\)/)[1];
+                            console.log('raw roll: ' + rawRoll)
+                        } else {
+                            rawRoll = reply.result.match(/\((\d+, \d+)\)/)[0]
+                            console.log('raw roll: ' + rawRoll)
+                        }
+                        let returnString = `${advantagePhrase}Your initiative: ${initiativeResult}\nYou rolled ${rawRoll} with a modifier of ${modifier}`
+
+                        return displayBoxChild.innerText = returnString;
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Saves
 function addOnClickToSaves() {
     let saves = document.querySelector('.ct-saving-throws-summary');
     if (!saves.iAmListening) {
@@ -41,6 +112,9 @@ function addOnClickToSaves() {
         function rollSavingThrow(event) {
             if (event.shiftKey) {
                 console.log('rolling a save!');
+                event.preventDefault();
+                event.stopPropogation();
+
                 let name = this.querySelector(".ct-saving-throws-summary__ability-name").textContent;
                 let modifier = this.querySelector(".ct-saving-throws-summary__ability-modifier").textContent;
                 let baseDice = '1d20';
@@ -91,8 +165,7 @@ function addOnClickToSaves() {
     }
 }
 
-
-
+// Skills
 function addOnClickToSkills() {
     let skills = document.querySelector('.ct-skills__list');
         if (!skills.iAmListening) {
@@ -161,6 +234,7 @@ function addOnClickToSkills() {
     }
 }
 
+// Primary Box
 function addOnclickToPrimaryBox() {
     //checks if the actions tab of the primary box is active
     if (document.querySelector('.ct-attack-table__content')) {
@@ -351,7 +425,7 @@ function addOnclickToPrimaryBox() {
     }
 }
 
-
+// Sidebar
 function addOnClickToSidebarSpells() {
     let primaryBoxSpellAttackElement = document.querySelectorAll(".ct-spells-level-casting__info-item")[1]
     //grabs spell attack mod from primary content box
@@ -475,13 +549,16 @@ function addOnClickToSidebarSpells() {
 //     console.log("parsing raw " + rawRoll)
 //     return rawRoll
 // }
-function initializeClicks(interval, delay) {
-    setTimeout(window.setInterval(addOnClickToSaves, interval), delay)
-    setTimeout(window.setInterval(addOnClickToSkills, interval), delay)
-    setTimeout(window.setInterval(addOnclickToPrimaryBox, interval), delay)
-    setTimeout(window.setInterval(addOnClickToSidebarSpells, interval), delay)
+function initializeClicks(interval) {
+    window.setInterval(addOnClickToInitiative, interval)
+    window.setInterval(addOnClickToSaves, interval)
+    window.setInterval(addOnClickToSkills, interval)
+    window.setInterval(addOnclickToPrimaryBox, interval)
+    window.setInterval(addOnClickToSidebarSpells, interval)
+    
 }
-initializeClicks(1000, 5000)
+
+setTimeout(initializeClicks(1000), 3000)
 
 //makes a display box
 var displayBox = document.createElement('div')
