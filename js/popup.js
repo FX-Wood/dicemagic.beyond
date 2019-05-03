@@ -1,10 +1,12 @@
-var rollBtn, rollInput;
+var rollBtn, rollInput, resultsBox;
 document.addEventListener('DOMContentLoaded', function() {
     backgroundURL = chrome.extension.getURL("images/bg.svg")
     document.body.style.backgroundImage = `url('${backgroundURL}')`;
     
-    let rollBtn = document.querySelector('.roll-input')
-    let rollInput = document.querySelector('.roll-btn')
+    rollBtn = document.querySelector('.roll-btn')
+    rollInput = document.querySelector('.roll-input')
+    console.log('roll input', rollInput)
+    resultsBox = document.querySelector('.results-box')
     let toastBtn = document.getElementById('toast')
     let msgBtn = document.getElementById('msg')
     rollBtn.addEventListener('click', customRoll)
@@ -36,8 +38,9 @@ chrome.runtime.onMessage.addListener(
 )
 
 function customRoll(e) {
-    console.log('customRoll', rollInput.value)
+    console.log('customRoll value', rollInput.value)
     if ((e.key === "Enter") || e.type === "click") {
+        console.log('rolling')
         let command = rollInput.value
         let roll = new XMLHttpRequest;
             roll.open("POST", "https://api.dicemagic.io/roll");
@@ -51,9 +54,9 @@ function customRoll(e) {
                 console.log(roll.responseText)
                 let reply = JSON.parse(roll.responseText)
                 if (reply.result) {
-                    return displayBoxContent.textContent = reply.result;
+                    return resultsBox.textContent = reply.result;
                 } else {
-                    return displayBoxContent.textContent = reply.err
+                    return resultsBox.textContent = reply.err
                 }
             }
         }
@@ -71,4 +74,8 @@ console.log('sending message from popup', msg)
             }
         )
     })
+}
+
+function sendMessageToPopup(msg) {
+
 }
