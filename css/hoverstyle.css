@@ -4,7 +4,16 @@
 }
 
 .primary-box-mouseover:hover {
-    outline: 1px solid #c53131;
+    outline: solid 1px #c53131;
+}
+.primary-box-mouseover {
+    /* these margins allow the border to be seen on the ends */
+    margin-inline-end: 3px;
+    margin-inline-start: 3px;
+    /* this margin prevents an issue with the first item in the list being a different size */
+    margin-top: 8px;
+    border-top: solid 1px rgb(234, 234, 234);
+    padding-top: 8px;
 }
 
 .sidebar-damage-box {

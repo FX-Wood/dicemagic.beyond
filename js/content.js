@@ -1,3 +1,27 @@
+let materializeJS = document.createElement('script')
+materializeJS.type = 'text/javascript'
+materializeJS.src = "https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"
+document.getElementsByTagName('head')[0].appendChild(materializeJS)
+console.log(materializeJS)
+let materializeCSS = document.createElement('link')
+materializeCSS.rel = "stylesheet"
+materializeCSS.href = chrome.extension.getURL("css/toast.css")
+document.getElementsByTagName('head')[0].appendChild(materializeCSS)
+console.log(materializeCSS)
+
+chrome.runtime.onMessage.addListener(
+    function(request, sender, sendResponse) {
+        console.log(sender.tab ? 
+            "from a content script:" + sender.tab.url :
+            "from the extension");
+        console.log('request', request)
+
+        if (request.command) {
+            sendResponse({status: 'got the message'})
+        }
+})
+// todo: sendToLog
+//      this function will send completed rolls to the log contained in the popup
 //global variable for spacebar status
 var SPACEPRESSED = false;
 window.addEventListener('keydown', function(event) {
@@ -585,7 +609,24 @@ displayBoxButton.textContent = 'ROLL';
 displayBoxButton.addEventListener('click', customRoll)
 inputWrapper.appendChild(displayBoxButton)
 
+let btn1 = document.createElement('button')
+    btn1.addEventListener('click', sendContentMsg);
+    btn1.innerText = '[1]: send content msg'
+displayBox.appendChild(btn1)
+
+let btn2 = document.createElement('button');
+    btn2.addEventListener('click', function(e) {window.M.toast({html: '<p>try this on for size<p>'})})
+    btn2.innerText = '[2]: make toast'
+displayBox.appendChild(btn2);
+
+function sendContentMsg() {
+    chrome.runtime.sendMessage({msg: 'kasjdhfkljahsdkfjhaskdjhfklasdjhfklasjdhfkajsdhfklasdhf'}, function(res) {
+        console.log('response', res)
+    })
+}
+
 function customRoll(event) {
+    console.log('customRoll', document.getElementById('display-box-input').value)
     if ((event.key === "Enter") || event.type === "click") {
         let cmdInput = document.getElementById('display-box-input').value
         let roll = new XMLHttpRequest;
@@ -596,6 +637,7 @@ function customRoll(event) {
             roll.onreadystatechange = function() {
             if (roll.readyState === 4) {
                 console.log("readyState = 4")
+                console.log(roll.responseText)
                 console.log(roll.responseText)
                 let reply = JSON.parse(roll.responseText)
                 if (reply.result) {
@@ -651,6 +693,27 @@ function makeDraggable(element) {
 
 makeDraggable(displayBox)
 
+document.addEventListener('DOMContentLoaded', () => {
+
+})
+
+class Toast {
+    constructor(content, target) {
+        this.content = content
+        this.target = target
+    }
+    createToast() {
+        let box = document.createElement('div');
+        box.classList.add('toast');
+        let msg = document.createElement('span');
+        msg.innerText = this.content;
+        box.appendChild(msg);
+        let xIcon = document.createElement('i');
+        xIcon.innerText = 'X';
+        box.appendChild(xIcon);
+        this.target.appendChild(box)
+    }
+}
 
 //button class for nice red button
 //<button class="ct-theme-button ct-theme-button--filled ct-theme-button--interactive ct-button character-button character-button-small"><span class="ct-button__content">Save</span></button>
