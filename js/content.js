@@ -1,3 +1,4 @@
+// receive messages from extension
 chrome.runtime.onMessage.addListener(
     function(request, sender, sendResponse) {
         console.log(sender.tab ? 
@@ -9,6 +10,14 @@ chrome.runtime.onMessage.addListener(
             sendResponse({status: 'got the message'})
         }
 })
+
+// send messages from content script
+function getRoll(cmd, callback) {
+    console.log('getting roll')
+    console.log('cmd:', cmd )
+    chrome.runtime.sendMessage({ msg: cmd }, callback)
+}
+
 // todo: sendToLog
 //      this function will send completed rolls to the log contained in the popup
 //global variable for spacebar status
@@ -76,29 +85,47 @@ function addOnClickToInitiative() {
                 }
                 let cmdString = `{"cmd":"${baseDice}${advantageModifier}${modifier}"}`
                 console.log('Command: ' + cmdString)
-    
-                let roll = new XMLHttpRequest;
-                roll.open("POST", "https://api.dicemagic.io/roll");
-                roll.setRequestHeader("Content-Type", "application/json");
-                roll.send(cmdString);
-                roll.onreadystatechange = function() {
-                    if (roll.readyState === 4) {
-                        let reply = JSON.parse(roll.responseText);
-                        console.log('Result: ' + reply.result);
-                        let initiativeResult = reply.result.match(/\*(.*)\*/)[0].slice(1, -1)
-                        let rawRoll;
-                        if (baseDice == '1d20') {
-                            rawRoll = reply.result.match(/\((\d*)\)/)[1];
-                            console.log('raw roll: ' + rawRoll)
-                        } else {
-                            rawRoll = reply.result.match(/\((\d+, \d+)\)/)[0]
-                            console.log('raw roll: ' + rawRoll)
-                        }
-                        let returnString = `${advantagePhrase}Your initiative: ${initiativeResult}\nYou rolled ${rawRoll} with a modifier of ${modifier}`
-
-                        return displayBoxContent.innerText = returnString;
+                
+                getRoll(cmdString, function(res) {
+                    console.log('got roll, res:', res)
+                    let reply = JSON.parse(res);
+                    console.log('Result: ' + reply.result);
+                    let initiativeResult = reply.result.match(/\*(.*)\*/)[0].slice(1, -1)
+                    let rawRoll;
+                    if (baseDice == '1d20') {
+                        rawRoll = reply.result.match(/\((\d*)\)/)[1];
+                        console.log('raw roll: ' + rawRoll)
+                    } else {
+                        rawRoll = reply.result.match(/\((\d+, \d+)\)/)[0]
+                        console.log('raw roll: ' + rawRoll)
                     }
-                }
+                    let returnString = `${advantagePhrase}Your initiative: ${initiativeResult}\nYou rolled ${rawRoll} with a modifier of ${modifier}`
+
+                    return displayBoxContent.innerText = returnString;
+                })
+
+                // let roll = new XMLHttpRequest;
+                // roll.open("POST", "https://api.dicemagic.io/roll");
+                // roll.setRequestHeader("Content-Type", "application/json");
+                // roll.send(cmdString);
+                // roll.onreadystatechange = function() {
+                //     if (roll.readyState === 4) {
+                //         let reply = JSON.parse(roll.responseText);
+                //         console.log('Result: ' + reply.result);
+                //         let initiativeResult = reply.result.match(/\*(.*)\*/)[0].slice(1, -1)
+                //         let rawRoll;
+                //         if (baseDice == '1d20') {
+                //             rawRoll = reply.result.match(/\((\d*)\)/)[1];
+                //             console.log('raw roll: ' + rawRoll)
+                //         } else {
+                //             rawRoll = reply.result.match(/\((\d+, \d+)\)/)[0]
+                //             console.log('raw roll: ' + rawRoll)
+                //         }
+                //         let returnString = `${advantagePhrase}Your initiative: ${initiativeResult}\nYou rolled ${rawRoll} with a modifier of ${modifier}`
+
+                //         return displayBoxContent.innerText = returnString;
+                //     }
+                // }
             }
         }
     }
@@ -608,6 +635,8 @@ function sendContentMsg() {
         console.log('response', res)
     })
 }
+
+
 
 function customRoll(event) {
     console.log('customRoll', document.getElementById('display-box-input').value)

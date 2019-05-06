@@ -3,11 +3,11 @@ async function getRoll(cmd, sendResponse) {
     let roll = new XMLHttpRequest;
     roll.open("POST", "https://api.dicemagic.io/roll");
     roll.setRequestHeader("Content-Type", "application/json");
-    roll.send('{"cmd":"1d20"}');
+    roll.send(cmd);
     roll.onreadystatechange = function() {
         if (roll.readyState === 4) {
             console.log('done', roll)
-            return sendResponse(roll.ResponseText)
+            return sendResponse(roll.response)
         }
     }
 }
