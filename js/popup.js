@@ -7,21 +7,11 @@ document.addEventListener('DOMContentLoaded', function() {
     rollInput = document.querySelector('.roll-input')
     console.log('roll input', rollInput)
     resultsBox = document.querySelector('.results-box')
-    let toastBtn = document.getElementById('toast')
     let msgBtn = document.getElementById('msg')
     rollBtn.addEventListener('click', customRoll)
     rollInput.addEventListener('keydown', customRoll)
-    toastBtn.addEventListener('click', toastTest)
     msgBtn.addEventListener('click', sendTabMsgFromPopup)
 })
-
-function toastTest(e) {
-    let msg = 'asdfjkl;kasdjfl;kajsdlfjasdlkjfal;sdkjfa;sldkjfal;skdjf;laskdjaf'
-    console.log('toast testing msg', msg)
-    chrome.runtime.sendMessage({message: msg}, function(response) {
-        console.log(response.status)
-    })
-}
 
 chrome.runtime.onMessage.addListener(
     function(request, sender, sendResponse) {
