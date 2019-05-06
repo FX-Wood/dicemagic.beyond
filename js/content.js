@@ -99,36 +99,142 @@ function addOnClickToInitiative() {
                         rawRoll = reply.result.match(/\((\d+, \d+)\)/)[0]
                         console.log('raw roll: ' + rawRoll)
                     }
-                    let returnString = `${advantagePhrase}Your initiative: ${initiativeResult}\nYou rolled ${rawRoll} with a modifier of ${modifier}`
-
-                    return displayBoxContent.innerText = returnString;
+                    const output = {}
+                    output.baseEl = displayBoxContent
+                    output.returnString = `${advantagePhrase}Your initiative: ${initiativeResult}\nYou rolled ${rawRoll} with a modifier of ${modifier}`
+                    output.result = initiativeResult
+                    output.rawRoll = rawRoll
+                    output.modifier = modifier
+                    output.baseDice = baseDice
+                    output.advantageModifier = advantageModifier
+                    output.advantagePhrase = advantagePhrase
+                    renderRoll(output)
                 })
-
-                // let roll = new XMLHttpRequest;
-                // roll.open("POST", "https://api.dicemagic.io/roll");
-                // roll.setRequestHeader("Content-Type", "application/json");
-                // roll.send(cmdString);
-                // roll.onreadystatechange = function() {
-                //     if (roll.readyState === 4) {
-                //         let reply = JSON.parse(roll.responseText);
-                //         console.log('Result: ' + reply.result);
-                //         let initiativeResult = reply.result.match(/\*(.*)\*/)[0].slice(1, -1)
-                //         let rawRoll;
-                //         if (baseDice == '1d20') {
-                //             rawRoll = reply.result.match(/\((\d*)\)/)[1];
-                //             console.log('raw roll: ' + rawRoll)
-                //         } else {
-                //             rawRoll = reply.result.match(/\((\d+, \d+)\)/)[0]
-                //             console.log('raw roll: ' + rawRoll)
-                //         }
-                //         let returnString = `${advantagePhrase}Your initiative: ${initiativeResult}\nYou rolled ${rawRoll} with a modifier of ${modifier}`
-
-                //         return displayBoxContent.innerText = returnString;
-                //     }
-                // }
             }
         }
     }
+}
+
+function Row(className) {
+    const r = document.createElement('div')
+    r.className = 'row'
+    if (className) { 
+        r.classList.add(className) 
+    }
+    return r
+}
+
+function Col(className) {
+    const c = document.createElement('div')
+    c.className = 'col'
+    if (className) { 
+        c.classList.add(className) 
+    }
+    return c
+}
+
+function TabBtn(text) {
+    const outer = document.createElement('div')
+    outer.className = 'ct-tab-options--layout-pill ct-tab-options__header '
+    const inner = document.createElement('div')
+    inner.className = 'ct-tab-options--layout-pill ct-tab-options__header-heading '
+    inner.innerText = text
+    outer.appendChild(inner)
+    outer.activate = () => {
+        outer.classList.add('ct-tab-options__header--active')
+        inner.classList.add('ct-tab-options__header-heading--active')
+    }
+    outer.deActivate = () => {
+        outer.classList.remove('ct-tab-options__header--active')
+        inner.classList.remove('ct-tab-options__header-heading--active')
+        console.log('done', outer.className)
+    }
+    return outer
+}
+
+
+
+function renderRoll(output) {
+    const {baseEl, result, rawRoll, modifier, baseDice, advantageModifier, advantagePhrase, returnString } = output
+    baseEl.innerHTML = ''
+    // advantage buttons
+    const buttonClasses = [
+        'advantage-button',
+        'ct-theme-button', 
+        'ct-health-summary__adjuster-button', 
+        'ct-theme-button--outline', 
+        'ct-theme-button--interactive', 
+        'ct-button', 
+        'character-button', 
+        'character-button-block-small'
+    ]
+    
+    // container for advantage buttons
+    let buttonBox = Row()
+
+    // normal
+    let norm = TabBtn('normal')
+    buttonBox.appendChild(norm)
+    // advantage
+    let adv = TabBtn('advantage')
+    buttonBox.appendChild(adv)
+
+    // disadvantage
+    let dAdv = TabBtn('disadvantage')
+    buttonBox.appendChild(dAdv)
+
+    const btns = [norm, adv, dAdv]
+    // function to toggle advantage buttons
+    function advantageToggle(e) {
+        console.log(e.button)
+        if (e.button === 0) {
+            btns.forEach(btn => btn.deActivate())
+            e.currentTarget.activate()
+        }
+    }
+    btns.forEach(btn => btn.addEventListener('mousedown', advantageToggle))
+
+    baseEl.appendChild(buttonBox)
+
+    // string with rolling results
+    let title = document.createElement('span')
+        title.className = 'return-string'
+        title.innerText = returnString
+    baseEl.appendChild(title)
+    
+    // line break
+    baseEl.appendChild(document.createElement('br'))
+
+    // flex row for roll info and labels
+    let rollBox = Row('roll-box')
+    
+    let col1 = Col()
+    // raw roll
+    let label = document.createElement('span')
+        label.innerText = 'raw'
+        label.className = 'roll-label'
+    col1.appendChild(label)
+    let raw = document.createElement('span')
+        raw.innerText = rawRoll
+    col1.appendChild(raw)
+    rollBox.appendChild(col1)
+
+    let col2 = Col()
+    // modifier input
+        label = document.createElement('span')
+        label.innerText = 'modifier'
+        label.className = 'roll-label'
+    col2.appendChild(label)
+    let mod = document.createElement('input')
+        mod.type = 'number'
+        mod.name = 'modifier'
+        mod.className = 'ct-health-summary__adjuster-field-input modifier-input'
+        mod.value = parseInt(modifier)
+    col2.appendChild(mod)
+    rollBox.appendChild(col2)
+
+    baseEl.appendChild(rollBox)
+
 }
 
 // Saves
@@ -596,6 +702,9 @@ function initializeClicks(interval) {
 setTimeout(initializeClicks(1000), 3000)
 
 //makes a display box
+
+
+
 var displayBox = document.createElement('div')
 displayBox.id = 'display-box';
 backgroundURL = chrome.extension.getURL("images/bg.svg")
@@ -624,19 +733,6 @@ displayBoxButton.id = 'display-box-button';
 displayBoxButton.textContent = 'ROLL';
 displayBoxButton.addEventListener('click', customRoll)
 inputWrapper.appendChild(displayBoxButton)
-
-let btn1 = document.createElement('button')
-    btn1.addEventListener('click', sendContentMsg);
-    btn1.innerText = '[1]: send content msg'
-displayBox.appendChild(btn1)
-
-function sendContentMsg() {
-    chrome.runtime.sendMessage({msg: 'kasjdhfkljahsdkfjhaskdjhfklasdjhfklasjdhfkajsdhfklasdhf'}, function(res) {
-        console.log('response', res)
-    })
-}
-
-
 
 function customRoll(event) {
     console.log('customRoll', document.getElementById('display-box-input').value)
@@ -672,7 +768,7 @@ function makeDraggable(element) {
     element.addEventListener('mousedown', startDrag);
 
     function startDrag(event) {
-        if (event.button === 0) {
+        if (event.button === 0 && event.target.id === 'display-box') {
             console.log('start')
             event.preventDefault();
             pos3 = event.clientX;
@@ -705,11 +801,6 @@ function makeDraggable(element) {
 }
 
 makeDraggable(displayBox)
-
-document.addEventListener('DOMContentLoaded', () => {
-
-})
-
 
 //button class for nice red button
 //<button class="ct-theme-button ct-theme-button--filled ct-theme-button--interactive ct-button character-button character-button-small"><span class="ct-button__content">Save</span></button>

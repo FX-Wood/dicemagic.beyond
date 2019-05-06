@@ -105,3 +105,27 @@
     -ms-user-select: none;
     user-select: none;
 }
+
+
+/* roll display stuff */
+.roll-box > div > * {
+    line-height: 1;
+    padding: 4px
+}
+
+.modifier-input {
+    max-width: 58px;
+}
+
+.advantage-button {
+    width: 100px;
+}
+
+.row {
+    display: flex
+}
+.col {
+    display: flex;
+    flex-direction: column;
+}
+
