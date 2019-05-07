@@ -65,50 +65,51 @@ function addOnClickToInitiative() {
                 event.stopPropagation();
 
                 let modifier = this.textContent;
-                let baseDice = '1d20';
-                let advantageModifier = '';
+                let advantageState = 0;
                 let advantagePhrase = ''
                 determineAdvantage(event);
 
                 function determineAdvantage() {
                     if (SPACEPRESSED) {
                         console.log('Advantage!');
-                        advantageModifier = '-L';
-                        baseDice = '2d20';
-                        advantagePhrase = 'Advantage!\n';
+                        advantageState = 1;
                     } else if (event.altKey) {
                         console.log('Disadvantage!');
-                        advantageModifier = '-H';
-                        baseDice = '2d20';
-                        advantagePhrase = 'Disadvantage!\n';
+                        advantageState = 2;
                     }
                 }
-                let cmdString = `{"cmd":"${baseDice}${advantageModifier}${modifier}"}`
+                let cmdString = `{"cmd":"1d20,1d20"}`
                 console.log('Command: ' + cmdString)
                 
                 getRoll(cmdString, function(res) {
+                    const output = {}
                     console.log('got roll, res:', res)
                     let reply = JSON.parse(res);
                     console.log('Result: ' + reply.result);
-                    let initiativeResult = reply.result.match(/\*(.*)\*/)[0].slice(1, -1)
-                    let rawRoll;
-                    if (baseDice == '1d20') {
-                        rawRoll = reply.result.match(/\((\d*)\)/)[1];
-                        console.log('raw roll: ' + rawRoll)
-                    } else {
-                        rawRoll = reply.result.match(/\((\d+, \d+)\)/)[0]
-                        console.log('raw roll: ' + rawRoll)
+                    let rawRoll = reply.result.match(/\*\d+\*/g).map(str => str.replace(/\*/g, ''))
+                    output.normal = rawRoll[0]
+                    let result = rawRoll[0]
+                    console.log('presort raw', rawRoll)
+                    rawRoll = rawRoll.sort()
+                    console.log('sorted raw', rawRoll)
+                    // handle advantage
+                    let high = rawRoll[0]
+                    let low = rawRoll[1]
+                    if (advantageState === 1) {
+                        result = high
                     }
-                    const output = {}
-                    output.baseEl = displayBoxContent
-                    output.returnString = `${advantagePhrase}Your initiative: ${initiativeResult}\nYou rolled ${rawRoll} with a modifier of ${modifier}`
-                    output.result = initiativeResult
+                    // handle disadvantage
+                    if (advantageState == 2) {
+                        result = low
+                    }
+                    console.log(result)
+                    output.result = result
+                    output.high = high
+                    output.low = low
                     output.rawRoll = rawRoll
                     output.modifier = modifier
-                    output.baseDice = baseDice
-                    output.advantageModifier = advantageModifier
-                    output.advantagePhrase = advantagePhrase
-                    renderRoll(output)
+                    output.advantageState = advantageState
+                    renderInitiative(output)
                 })
             }
         }
@@ -133,9 +134,10 @@ function Col(className) {
     return c
 }
 
-function TabBtn(text) {
+function TabBtn(text, value) {
     const outer = document.createElement('div')
     outer.className = 'ct-tab-options--layout-pill ct-tab-options__header '
+    outer.dataset.value = value
     const inner = document.createElement('div')
     inner.className = 'ct-tab-options--layout-pill ct-tab-options__header-heading '
     inner.innerText = text
@@ -154,9 +156,57 @@ function TabBtn(text) {
 
 
 
-function renderRoll(output) {
-    const {baseEl, result, rawRoll, modifier, baseDice, advantageModifier, advantagePhrase, returnString } = output
-    baseEl.innerHTML = ''
+function renderInitiative(output) {
+    const { result, normal, high, low, rawRoll, modifier,  advantageState} = output
+
+    const root = displayBoxContent
+    root.innerHTML = ''
+    headline = `Your initiative: ${parseInt(result) + parseInt(modifier)}\n`
+    subHead = `You rolled ${result} with a modifier of ${modifier}`
+
+    // string with rolling results
+    let title = document.createElement('span')
+        title.className = 'headline'
+        title.innerText = headline
+    root.appendChild(title)
+    let subTitle = document.createElement('span')
+    subTitle.className = 'subhead'
+    subTitle.innerText = subHead
+    root.appendChild(subTitle)
+    
+    // line break
+    root.appendChild(document.createElement('br'))
+
+    // flex row for roll info and labels
+    let rollBox = Row('roll-box')
+    
+    let col1 = Col()
+    // raw roll
+    let label1 = document.createElement('span')
+        label1.innerText = 'raw'
+        label1.className = 'roll-label ct-senses__callout-label'
+    col1.appendChild(label1)
+    let raw = document.createElement('span')
+        raw.innerText = result
+    col1.appendChild(raw)
+    rollBox.appendChild(col1)
+
+    let col2 = Col()
+    // modifier input
+    let label2 = document.createElement('span')
+        label2.innerText = 'modifier'
+        label2.className = 'roll-label ct-senses__callout-label'
+    col2.appendChild(label2)
+    let mod = document.createElement('input')
+        mod.type = 'number'
+        mod.name = 'modifier'
+        mod.className = 'ct-health-summary__adjuster-field-input modifier-input'
+        mod.value = parseInt(modifier)
+    col2.appendChild(mod)
+    rollBox.appendChild(col2)
+
+    root.appendChild(rollBox)
+
     // advantage buttons
     const buttonClasses = [
         'advantage-button',
@@ -170,70 +220,47 @@ function renderRoll(output) {
     ]
     
     // container for advantage buttons
-    let buttonBox = Row()
+    let buttonBox = Row('buttonBox')
 
     // normal
-    let norm = TabBtn('normal')
+    let norm = TabBtn('normal', normal)
     buttonBox.appendChild(norm)
     // advantage
-    let adv = TabBtn('advantage')
+    let adv = TabBtn('advantage', high)
     buttonBox.appendChild(adv)
 
     // disadvantage
-    let dAdv = TabBtn('disadvantage')
+    let dAdv = TabBtn('disadvantage', low)
     buttonBox.appendChild(dAdv)
 
     const btns = [norm, adv, dAdv]
+    console.log(advantageState)
+    btns[advantageState].activate()
+    // function to update roll
+    function reRender(newRoll, newModifier) {
+        title.innerText = `Your initiative: ${parseInt(newRoll) + parseInt(newModifier)}\n`
+        subTitle.innerText = `You rolled ${newRoll} with a modifier of ${newModifier}`
+        raw.innerText = newRoll
+    }
     // function to toggle advantage buttons
     function advantageToggle(e) {
         console.log(e.button)
         if (e.button === 0) {
             btns.forEach(btn => btn.deActivate())
             e.currentTarget.activate()
+            reRender(e.currentTarget.dataset.value, mod.value)
         }
     }
+    // handle new modifier input
+    mod.addEventListener('change', (e) => {
+        reRender(parseInt(raw.innerText), e.target.value)
+    })
+    // handle changes in advantage
     btns.forEach(btn => btn.addEventListener('mousedown', advantageToggle))
 
-    baseEl.appendChild(buttonBox)
-
-    // string with rolling results
-    let title = document.createElement('span')
-        title.className = 'return-string'
-        title.innerText = returnString
-    baseEl.appendChild(title)
+    root.appendChild(buttonBox)
     
-    // line break
-    baseEl.appendChild(document.createElement('br'))
 
-    // flex row for roll info and labels
-    let rollBox = Row('roll-box')
-    
-    let col1 = Col()
-    // raw roll
-    let label = document.createElement('span')
-        label.innerText = 'raw'
-        label.className = 'roll-label'
-    col1.appendChild(label)
-    let raw = document.createElement('span')
-        raw.innerText = rawRoll
-    col1.appendChild(raw)
-    rollBox.appendChild(col1)
-
-    let col2 = Col()
-    // modifier input
-        label = document.createElement('span')
-        label.innerText = 'modifier'
-        label.className = 'roll-label'
-    col2.appendChild(label)
-    let mod = document.createElement('input')
-        mod.type = 'number'
-        mod.name = 'modifier'
-        mod.className = 'ct-health-summary__adjuster-field-input modifier-input'
-        mod.value = parseInt(modifier)
-    col2.appendChild(mod)
-    rollBox.appendChild(col2)
-
-    baseEl.appendChild(rollBox)
 
 }
 
@@ -716,23 +743,6 @@ var displayBoxContent = document.createElement('div');
 displayBoxContent.id = 'display-box-content';
 displayBoxContent.innerText = "Welcome to Dicemagic.Beyond! \nRoll: shift-click \nAdvantage: shift-space-click \nDisadvantage: alt-space-click";
 displayBox.appendChild(displayBoxContent);
-
-var inputWrapper = document.createElement('div');
-inputWrapper.id = 'display-box-input-wrapper';
-inputWrapper.addEventListener('mousedown', event => event.stopPropagation(), true)
-displayBox.appendChild(inputWrapper);
-
-var customInput = document.createElement('input');
-customInput.id = 'display-box-input';
-customInput.placeholder = "Input custom roll";
-customInput.addEventListener('keydown', customRoll);
-inputWrapper.appendChild(customInput)
-
-var displayBoxButton = document.createElement('button');
-displayBoxButton.id = 'display-box-button';
-displayBoxButton.textContent = 'ROLL';
-displayBoxButton.addEventListener('click', customRoll)
-inputWrapper.appendChild(displayBoxButton)
 
 function customRoll(event) {
     console.log('customRoll', document.getElementById('display-box-input').value)
