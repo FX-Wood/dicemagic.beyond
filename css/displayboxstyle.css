@@ -108,9 +108,21 @@
 
 
 /* roll display stuff */
+
+.button-box {
+    margin-top: 5px;
+}
+
 .roll-box > div > * {
     line-height: 1;
     padding: 4px
+}
+
+.roll-label {
+    font-weight: bold;
+    font-size: 10px;
+    font-family: "Roboto Condensed",Roboto,Helvetica,sans-serif;
+    text-transform: uppercase;
 }
 
 .modifier-input {

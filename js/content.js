@@ -1,4 +1,44 @@
-// receive messages from extension
+// components for renderers
+function Row(className) {
+    const r = document.createElement('div')
+    r.className = 'row'
+    if (className) { 
+        r.classList.add(className) 
+    }
+    return r
+}
+
+function Col(className) {
+    const c = document.createElement('div')
+    c.className = 'col'
+    if (className) { 
+        c.classList.add(className) 
+    }
+    return c
+}
+
+function TabBtn(text, value) {
+    const outer = document.createElement('div')
+    outer.className = 'ct-tab-options--layout-pill ct-tab-options__header '
+    outer.dataset.value = value
+    const inner = document.createElement('div')
+    inner.className = 'ct-tab-options--layout-pill ct-tab-options__header-heading '
+    inner.innerText = text
+    outer.appendChild(inner)
+    outer.activate = () => {
+        outer.classList.add('ct-tab-options__header--active')
+        inner.classList.add('ct-tab-options__header-heading--active')
+    }
+    outer.deActivate = () => {
+        outer.classList.remove('ct-tab-options__header--active')
+        inner.classList.remove('ct-tab-options__header-heading--active')
+    }
+    return outer
+}
+
+
+
+// listener for receiving messages from extension
 chrome.runtime.onMessage.addListener(
     function(request, sender, sendResponse) {
         console.log(sender.tab ? 
@@ -11,7 +51,7 @@ chrome.runtime.onMessage.addListener(
         }
 })
 
-// send messages from content script
+// get rolls from background script
 function getRoll(cmd, callback) {
     console.log('getting roll')
     console.log('cmd:', cmd )
@@ -83,15 +123,11 @@ function addOnClickToInitiative() {
                 
                 getRoll(cmdString, function(res) {
                     const output = {}
-                    console.log('got roll, res:', res)
                     let reply = JSON.parse(res);
-                    console.log('Result: ' + reply.result);
                     let rawRoll = reply.result.match(/\*\d+\*/g).map(str => str.replace(/\*/g, ''))
                     output.normal = rawRoll[0]
                     let result = rawRoll[0]
-                    console.log('presort raw', rawRoll)
                     rawRoll = rawRoll.sort()
-                    console.log('sorted raw', rawRoll)
                     // handle advantage
                     let high = rawRoll[0]
                     let low = rawRoll[1]
@@ -102,13 +138,12 @@ function addOnClickToInitiative() {
                     if (advantageState == 2) {
                         result = low
                     }
-                    console.log(result)
                     output.result = result
                     output.high = high
                     output.low = low
-                    output.rawRoll = rawRoll
                     output.modifier = modifier
                     output.advantageState = advantageState
+                    console.log('output', output)
                     renderInitiative(output)
                 })
             }
@@ -116,48 +151,11 @@ function addOnClickToInitiative() {
     }
 }
 
-function Row(className) {
-    const r = document.createElement('div')
-    r.className = 'row'
-    if (className) { 
-        r.classList.add(className) 
-    }
-    return r
-}
-
-function Col(className) {
-    const c = document.createElement('div')
-    c.className = 'col'
-    if (className) { 
-        c.classList.add(className) 
-    }
-    return c
-}
-
-function TabBtn(text, value) {
-    const outer = document.createElement('div')
-    outer.className = 'ct-tab-options--layout-pill ct-tab-options__header '
-    outer.dataset.value = value
-    const inner = document.createElement('div')
-    inner.className = 'ct-tab-options--layout-pill ct-tab-options__header-heading '
-    inner.innerText = text
-    outer.appendChild(inner)
-    outer.activate = () => {
-        outer.classList.add('ct-tab-options__header--active')
-        inner.classList.add('ct-tab-options__header-heading--active')
-    }
-    outer.deActivate = () => {
-        outer.classList.remove('ct-tab-options__header--active')
-        inner.classList.remove('ct-tab-options__header-heading--active')
-        console.log('done', outer.className)
-    }
-    return outer
-}
 
 
 
 function renderInitiative(output) {
-    const { result, normal, high, low, rawRoll, modifier,  advantageState} = output
+    const { result, normal, high, low, modifier,  advantageState} = output
 
     const root = displayBoxContent
     root.innerHTML = ''
@@ -168,14 +166,9 @@ function renderInitiative(output) {
     let title = document.createElement('span')
         title.className = 'headline'
         title.innerText = headline
-    root.appendChild(title)
     let subTitle = document.createElement('span')
-    subTitle.className = 'subhead'
-    subTitle.innerText = subHead
-    root.appendChild(subTitle)
-    
-    // line break
-    root.appendChild(document.createElement('br'))
+        subTitle.className = 'subhead'
+        subTitle.innerText = subHead
 
     // flex row for roll info and labels
     let rollBox = Row('roll-box')
@@ -184,7 +177,7 @@ function renderInitiative(output) {
     // raw roll
     let label1 = document.createElement('span')
         label1.innerText = 'raw'
-        label1.className = 'roll-label ct-senses__callout-label'
+        label1.className = 'roll-label'
     col1.appendChild(label1)
     let raw = document.createElement('span')
         raw.innerText = result
@@ -195,7 +188,7 @@ function renderInitiative(output) {
     // modifier input
     let label2 = document.createElement('span')
         label2.innerText = 'modifier'
-        label2.className = 'roll-label ct-senses__callout-label'
+        label2.className = 'roll-label'
     col2.appendChild(label2)
     let mod = document.createElement('input')
         mod.type = 'number'
@@ -205,22 +198,11 @@ function renderInitiative(output) {
     col2.appendChild(mod)
     rollBox.appendChild(col2)
 
-    root.appendChild(rollBox)
-
-    // advantage buttons
-    const buttonClasses = [
-        'advantage-button',
-        'ct-theme-button', 
-        'ct-health-summary__adjuster-button', 
-        'ct-theme-button--outline', 
-        'ct-theme-button--interactive', 
-        'ct-button', 
-        'character-button', 
-        'character-button-block-small'
-    ]
     
+
+    // advantage buttons    
     // container for advantage buttons
-    let buttonBox = Row('buttonBox')
+    let buttonBox = Row('button-box')
 
     // normal
     let norm = TabBtn('normal', normal)
@@ -238,13 +220,13 @@ function renderInitiative(output) {
     btns[advantageState].activate()
     // function to update roll
     function reRender(newRoll, newModifier) {
+        if (newRoll == 1)
         title.innerText = `Your initiative: ${parseInt(newRoll) + parseInt(newModifier)}\n`
         subTitle.innerText = `You rolled ${newRoll} with a modifier of ${newModifier}`
         raw.innerText = newRoll
     }
     // function to toggle advantage buttons
     function advantageToggle(e) {
-        console.log(e.button)
         if (e.button === 0) {
             btns.forEach(btn => btn.deActivate())
             e.currentTarget.activate()
@@ -258,10 +240,12 @@ function renderInitiative(output) {
     // handle changes in advantage
     btns.forEach(btn => btn.addEventListener('mousedown', advantageToggle))
 
+    // order of elements in box
+    root.appendChild(title)
+    root.appendChild(subTitle)
+    root.appendChild(document.createElement('br'))
     root.appendChild(buttonBox)
-    
-
-
+    root.appendChild(rollBox)
 }
 
 // Saves

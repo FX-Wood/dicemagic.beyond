@@ -1,5 +1,5 @@
 
-async function getRoll(cmd, sendResponse) {
+function getRoll(cmd, sendResponse) {
     let roll = new XMLHttpRequest;
     roll.open("POST", "https://api.dicemagic.io/roll");
     roll.setRequestHeader("Content-Type", "application/json");
