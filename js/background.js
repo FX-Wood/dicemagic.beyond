@@ -11,10 +11,12 @@ function getRoll(cmd, sendResponse) {
             let reply = JSON.parse(roll.responseText);
             let rawRoll = reply.result.match(/\*\d+\*/g).map(str => str.replace(/\*/g, ''))
             let first = rawRoll[0]
-            rawRoll = rawRoll.sort()
+            console.log(rawRoll)
+            rawRoll = rawRoll.sort((a, b) =>  parseInt(a) - parseInt(b))
+            console.log(rawRoll)
             // handle advantage
-            let high = rawRoll[0]
-            let low = rawRoll[1]
+            let low = rawRoll[0]
+            let high = rawRoll[1]
             return sendResponse({ first, high, low })
         }
     }
