@@ -55,20 +55,21 @@ chrome.runtime.onMessage.addListener(
 function getRoll(cmd, callback) {
     console.log('getting roll')
     console.log('cmd:', cmd )
-    chrome.runtime.sendMessage({ msg: cmd }, callback)
+    chrome.runtime.sendMessage({ msg: `{"cmd":"${cmd}"}` }, callback)
 }
 
 // todo: sendToLog
 //      this function will send completed rolls to the log contained in the popup
 //global variable for spacebar status
 var SPACEPRESSED = false;
-window.addEventListener('keydown', function(event) {
-    if (SPACEPRESSED == false && event.key == ' ') {
+window.addEventListener('keydown', function(e) {
+    if (SPACEPRESSED == false && e.key == ' ' && e.shiftKey) {
+        e.preventDefault()
         SPACEPRESSED = true;
     }
 })
-window.addEventListener('keyup',function(event) {
-    if (event.key == ' ') {
+window.addEventListener('keyup',function(e) {
+    if (e.key == ' ') {
         SPACEPRESSED = false;
     }
 })
@@ -118,19 +119,10 @@ function addOnClickToInitiative() {
                         advantageState = 2;
                     }
                 }
-                let cmdString = `{"cmd":"1d20,1d20"}`
-                console.log('Command: ' + cmdString)
-                
-                getRoll(cmdString, function(res) {
-                    const output = {}
-                    let reply = JSON.parse(res);
-                    let rawRoll = reply.result.match(/\*\d+\*/g).map(str => str.replace(/\*/g, ''))
-                    output.normal = rawRoll[0]
-                    let result = rawRoll[0]
-                    rawRoll = rawRoll.sort()
+                getRoll('1d20,1d20', function(roll) {
+                    const { first, high, low } = roll
+                    let result = first
                     // handle advantage
-                    let high = rawRoll[0]
-                    let low = rawRoll[1]
                     if (advantageState === 1) {
                         result = high
                     }
@@ -138,7 +130,9 @@ function addOnClickToInitiative() {
                     if (advantageState == 2) {
                         result = low
                     }
+                    const output = {}
                     output.result = result
+                    output.normal = first
                     output.high = high
                     output.low = low
                     output.modifier = modifier
@@ -220,7 +214,6 @@ function renderInitiative(output) {
     btns[advantageState].activate()
     // function to update roll
     function reRender(newRoll, newModifier) {
-        if (newRoll == 1)
         title.innerText = `Your initiative: ${parseInt(newRoll) + parseInt(newModifier)}\n`
         subTitle.innerText = `You rolled ${newRoll} with a modifier of ${newModifier}`
         raw.innerText = newRoll
@@ -288,31 +281,26 @@ function addOnClickToSaves() {
                         advantagePhrase = 'Disadvantage!\n';
                     }
                 }
-                let cmdString = `{"cmd":"${baseDice}${advantageModifier}${modifier}"}`
+                let cmdString = `{"cmd":"1d20,1d20"}`
                 console.log('Command: ' + cmdString)
     
-                let roll = new XMLHttpRequest;
-                roll.open("POST", "https://api.dicemagic.io/roll");
-                roll.setRequestHeader("Content-Type", "application/json");
-                roll.send(cmdString);
-                roll.onreadystatechange = function() {
-                    if (roll.readyState === 4) {
-                        let reply = JSON.parse(roll.responseText);
-                        console.log('Result: ' + reply.result);
-                        let savingThrowResult = reply.result.match(/\*(.*)\*/)[0].slice(1, -1)
-                        let rawRoll;
-                        if (baseDice == '1d20') {
-                            rawRoll = reply.result.match(/\((\d*)\)/)[1];
-                            console.log('raw roll: ' + rawRoll)
-                        } else {
-                            rawRoll = reply.result.match(/\((\d+, \d+)\)/)[0]
-                            console.log('raw roll: ' + rawRoll)
-                        }
-                        let returnString = `${advantagePhrase}Your ${name.toUpperCase()} saving throw: ${savingThrowResult}\nYou rolled ${rawRoll} with a modifier of ${modifier}`
-
-                        return displayBoxContent.innerText = returnString;
+                getRoll(cmdString, function(res) {
+                    const output = {}
+                    let reply = JSON.parse(res);
+                    console.log('Result: ' + reply.result);
+                    let savingThrowResult = reply.result.match(/\*(.*)\*/)[0].slice(1, -1)
+                    let rawRoll;
+                    if (baseDice == '1d20') {
+                        rawRoll = reply.result.match(/\((\d*)\)/)[1];
+                        console.log('raw roll: ' + rawRoll)
+                    } else {
+                        rawRoll = reply.result.match(/\((\d+, \d+)\)/)[0]
+                        console.log('raw roll: ' + rawRoll)
                     }
-                }
+                    let returnString = `${advantagePhrase}Your ${name.toUpperCase()} saving throw: ${savingThrowResult}\nYou rolled ${rawRoll} with a modifier of ${modifier}`
+
+                    return displayBoxContent.innerText = returnString;
+                })
             }
         }
     }

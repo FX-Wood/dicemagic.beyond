@@ -3,11 +3,19 @@ function getRoll(cmd, sendResponse) {
     let roll = new XMLHttpRequest;
     roll.open("POST", "https://api.dicemagic.io/roll");
     roll.setRequestHeader("Content-Type", "application/json");
+    console.log(cmd)
     roll.send(cmd);
     roll.onreadystatechange = function() {
         if (roll.readyState === 4) {
             console.log('done', roll)
-            return sendResponse(roll.response)
+            let reply = JSON.parse(roll.responseText);
+            let rawRoll = reply.result.match(/\*\d+\*/g).map(str => str.replace(/\*/g, ''))
+            let first = rawRoll[0]
+            rawRoll = rawRoll.sort()
+            // handle advantage
+            let high = rawRoll[0]
+            let low = rawRoll[1]
+            return sendResponse({ first, high, low })
         }
     }
 }
