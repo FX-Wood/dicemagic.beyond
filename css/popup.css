@@ -1,0 +1,46 @@
+* {
+    box-sizing: border-box;
+}
+
+h1,h2,h3,h4,h5,h6 {
+    margin: 0;
+}
+body {
+    font-family: Roboto,Helvetica,sans-serif;
+    padding: 1em;
+    width: 300px;
+    height: 208px;
+    background-size: cover;
+}
+
+.roll-input-box {
+    width: 100%;
+    padding: 5px 5px;
+    border: 1px solid #eaeaea;
+    border-radius: 3px;
+    display: flex;
+}
+input,
+input:focus {
+    font-size: 12px;
+    border: none;
+    outline: none;
+    flex-grow: 2;
+    font-family: inherit;
+}
+.roll-btn {
+    z-index: 10;
+    height: 22px;
+    margin-right: 3px;
+    float:right;
+
+    background-color: #C53131;
+    border-radius: 3px;
+
+    font-size: 10px;
+    color: #fff;
+    font-family: "Roboto Condensed",Roboto,Helvetica,sans-serif;
+
+    cursor: pointer;
+
+}
