@@ -35,8 +35,33 @@ function TabBtn(text, value) {
     }
     return outer
 }
+// advantage/disadvantage logic
+var SPACEPRESSED = false;
+window.addEventListener('keydown', function(e) {
+    if (SPACEPRESSED == false && e.key == ' ' && e.shiftKey) {
+        e.preventDefault()
+        SPACEPRESSED = true;
+    }
+})
+window.addEventListener('keyup',function(e) {
+    if (e.key == ' ') {
+        SPACEPRESSED = false;
+    }
+})
 
-
+function determineAdvantage(e) {
+    // advantage
+    if (SPACEPRESSED) {
+        console.log('Advantage!');
+        return 1;
+    // disadvantage
+    } else if (e.altKey) {
+        console.log('Disadvantage!');
+        return 2;
+    }
+    // normal
+    return 0
+}
 
 // listener for receiving messages from extension
 chrome.runtime.onMessage.addListener(
@@ -60,19 +85,7 @@ function getRoll(cmd, callback) {
 
 // todo: sendToLog
 //      this function will send completed rolls to the log contained in the popup
-//global variable for spacebar status
-var SPACEPRESSED = false;
-window.addEventListener('keydown', function(e) {
-    if (SPACEPRESSED == false && e.key == ' ' && e.shiftKey) {
-        e.preventDefault()
-        SPACEPRESSED = true;
-    }
-})
-window.addEventListener('keyup',function(e) {
-    if (e.key == ' ') {
-        SPACEPRESSED = false;
-    }
-})
+
 
 //global variable to grab spell attack modifier in case a user opens up their sidebar before navigating to spells
 //unfortunately the sidebar doesn't display spell attack modifier
@@ -99,26 +112,15 @@ function addOnClickToInitiative() {
 
         initiative.addEventListener("click", rollInitiative, true);
 
-        function rollInitiative(event) {
-            if (event.shiftKey) {
+        function rollInitiative(e) {
+            if (e.shiftKey) {
                 console.log('Rolling initiative!');
-                event.preventDefault();
-                event.stopPropagation();
+                e.preventDefault();
+                e.stopPropagation();
 
-                let modifier = this.textContent;
-                let advantageState = 0;
-                let advantagePhrase = ''
-                determineAdvantage(event);
+                let modifier = e.currentTarget.textContent;
+                let advantageState = determineAdvantage(e);
 
-                function determineAdvantage() {
-                    if (SPACEPRESSED) {
-                        console.log('Advantage!');
-                        advantageState = 1;
-                    } else if (event.altKey) {
-                        console.log('Disadvantage!');
-                        advantageState = 2;
-                    }
-                }
                 getRoll('1d20,1d20', function(roll) {
                     const { first, high, low } = roll
                     let result = first
@@ -262,50 +264,128 @@ function addOnClickToSaves() {
                 event.stopPropagation();
 
                 let name = this.querySelector(".ct-saving-throws-summary__ability-name").textContent;
+                name = name.charAt(0).toUpperCase() + name.slice(1)
                 let modifier = this.querySelector(".ct-saving-throws-summary__ability-modifier").textContent;
-                let baseDice = '1d20';
-                let advantageModifier = '';
-                let advantagePhrase = ''
-                determineAdvantage(event);
-
-                function determineAdvantage() {
-                    if (SPACEPRESSED) {
-                        console.log('Advantage!');
-                        advantageModifier = '-L';
-                        baseDice = '2d20';
-                        advantagePhrase = 'Advantage!\n';
-                    } else if (event.altKey) {
-                        console.log('Disadvantage!');
-                        advantageModifier = '-H';
-                        baseDice = '2d20';
-                        advantagePhrase = 'Disadvantage!\n';
+                let advantageState = determineAdvantage(event)
+                getRoll('1d20,1d20', function(roll) {
+                    const { first, high, low } = roll
+                    let result = first
+                    // handle advantage
+                    if (advantageState === 1) {
+                        result = high
                     }
-                }
-                let cmdString = `{"cmd":"1d20,1d20"}`
-                console.log('Command: ' + cmdString)
-    
-                getRoll(cmdString, function(res) {
+                    // handle disadvantage
+                    if (advantageState == 2) {
+                        result = low
+                    }
                     const output = {}
-                    let reply = JSON.parse(res);
-                    console.log('Result: ' + reply.result);
-                    let savingThrowResult = reply.result.match(/\*(.*)\*/)[0].slice(1, -1)
-                    let rawRoll;
-                    if (baseDice == '1d20') {
-                        rawRoll = reply.result.match(/\((\d*)\)/)[1];
-                        console.log('raw roll: ' + rawRoll)
-                    } else {
-                        rawRoll = reply.result.match(/\((\d+, \d+)\)/)[0]
-                        console.log('raw roll: ' + rawRoll)
-                    }
-                    let returnString = `${advantagePhrase}Your ${name.toUpperCase()} saving throw: ${savingThrowResult}\nYou rolled ${rawRoll} with a modifier of ${modifier}`
-
-                    return displayBoxContent.innerText = returnString;
+                    output.name = name
+                    output.result = result
+                    output.normal = first
+                    output.high = high
+                    output.low = low
+                    output.modifier = modifier
+                    output.advantageState = advantageState
+                    console.log('output', output)
+                    renderSavingThrow(output)
                 })
             }
         }
     }
 }
 
+function renderSavingThrow(output) {
+    console.log('rendering saving throw')
+    const { name, result, normal, high, low, modifier,  advantageState} = output
+    const root = displayBoxContent
+    root.innerHTML = ''
+    headline = `${name} saving throw: ${parseInt(result) + parseInt(modifier)}\n`
+    subHead = `You rolled ${result} with a modifier of ${modifier}`
+
+    // string with rolling results
+    let title = document.createElement('span')
+        title.className = 'headline'
+        title.innerText = headline
+    let subTitle = document.createElement('span')
+        subTitle.className = 'subhead'
+        subTitle.innerText = subHead
+
+    // flex row for roll info and labels
+    let rollBox = Row('roll-box')
+    
+    let col1 = Col()
+    // raw roll
+    let label1 = document.createElement('span')
+        label1.innerText = 'raw'
+        label1.className = 'roll-label'
+    col1.appendChild(label1)
+    let raw = document.createElement('span')
+        raw.innerText = result
+    col1.appendChild(raw)
+    rollBox.appendChild(col1)
+
+    let col2 = Col()
+    // modifier input
+    let label2 = document.createElement('span')
+        label2.innerText = 'modifier'
+        label2.className = 'roll-label'
+    col2.appendChild(label2)
+    let mod = document.createElement('input')
+        mod.type = 'number'
+        mod.name = 'modifier'
+        mod.className = 'ct-health-summary__adjuster-field-input modifier-input'
+        mod.value = parseInt(modifier)
+    col2.appendChild(mod)
+    rollBox.appendChild(col2)
+
+    
+
+    // advantage buttons    
+    // container for advantage buttons
+    let buttonBox = Row('button-box')
+
+    // normal
+    let norm = TabBtn('normal', normal)
+    buttonBox.appendChild(norm)
+    // advantage
+    let adv = TabBtn('advantage', high)
+    buttonBox.appendChild(adv)
+
+    // disadvantage
+    let dAdv = TabBtn('disadvantage', low)
+    buttonBox.appendChild(dAdv)
+
+    const btns = [norm, adv, dAdv]
+    console.log(advantageState)
+    btns[advantageState].activate()
+    // function to update roll
+    function reRender(newRoll, newModifier) {
+        title.innerText = `${name} saving throw: ${parseInt(newRoll) + parseInt(newModifier)}\n`
+        subTitle.innerText = `You rolled ${newRoll} with a modifier of ${newModifier}`
+        raw.innerText = newRoll
+    }
+    // function to toggle advantage buttons
+    function advantageToggle(e) {
+        if (e.button === 0) {
+            btns.forEach(btn => btn.deActivate())
+            e.currentTarget.activate()
+            reRender(e.currentTarget.dataset.value, mod.value)
+        }
+    }
+    // handle new modifier input
+    mod.addEventListener('change', (e) => {
+        reRender(parseInt(raw.innerText), e.target.value)
+    })
+    // handle changes in advantage
+    btns.forEach(btn => btn.addEventListener('mousedown', advantageToggle))
+
+    // order of elements in box
+    root.appendChild(title)
+    root.appendChild(subTitle)
+    root.appendChild(document.createElement('br'))
+    root.appendChild(buttonBox)
+    root.appendChild(rollBox)
+}
 // Skills
 function addOnClickToSkills() {
     let skills = document.querySelector('.ct-skills__list');
