@@ -32,7 +32,7 @@
     background-image: url('chrome-extension://__MSG_@@extension_id__/images/saves_box_red.svg');
 }
 
-.saving-throw-mouseover > div *:hover {
+.saving-throw-mouseover:hover > div {
     background-image: none;
 }
 
