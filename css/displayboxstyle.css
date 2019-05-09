@@ -154,3 +154,11 @@
 .headline {
     font-size: 1.6em
 }
+
+.dice-box-col {
+    width: 50%;
+}
+
+.grow {
+    flex-grow: 1
+}

@@ -559,6 +559,7 @@ async function attackAndDamageRoll(e) {
         const damage = e.currentTarget.querySelector('.ct-damage__value').textContent.split(/(?=[+-])/);
         const damageDice = damage[0]
         const damageModifier = damage[1]
+        const numDamageDice = damage[0].split('d')[0]
         const damageDiceAdvantage = parseInt(damage[0].split('d')[0]) * 2 + 'd' + damage[0].split('d')[1]
         let damageType = e.currentTarget.querySelector('.ct-tooltip').dataset.originalTitle.toLowerCase();
         if (damageType === "item is customized") {
@@ -567,6 +568,8 @@ async function attackAndDamageRoll(e) {
         let cmdString = `1d20,1d20,${damageDice},${damageDiceAdvantage}`
         console.log('Command: ' + cmdString)
         let rolls = await getRoll(cmdString)
+        let damageRolls = rolls.result.match(/(?<=\()[\d, ]+/g)
+        damageRolls = damageRolls[damageRolls.length - 1]
         console.log(rolls)
         rolls = rolls.result.match(/\d+(?=\*)/g)
         console.log(rolls)
@@ -594,10 +597,12 @@ async function attackAndDamageRoll(e) {
         const output = {
             hitResult,
             hitNormalVantage,
-            hitDisadvantage,
             hitAdvantage,
+            hitDisadvantage,
             hitModifier,
             damageDice,
+            numDamageDice,
+            damageRolls,
             damageDiceAdvantage,
             damageModifier,
             damageType,
@@ -616,10 +621,12 @@ function renderAttack(output) {
     const {
         hitResult,
         hitNormalVantage,
-        hitDisadvantage,
         hitAdvantage,
+        hitDisadvantage,
         hitModifier,
         damageDice,
+        numDamageDice,
+        damageRolls,
         damageModifier,
         damageType,
         normalDamage,
@@ -654,7 +661,10 @@ function renderAttack(output) {
         rawHit.innerText = hitResult
     col1.appendChild(rawHit)
     rollBox.appendChild(col1)
+    
 
+    rollBox.appendChild(col1)
+    
     let col2 = Col()
     // modifier input
     let label2 = document.createElement('span')
@@ -683,7 +693,6 @@ function renderAttack(output) {
     rollBox.appendChild(col3)
 
     let col4 = Col()
-
     let label4 = document.createElement('span')
         label4.innerText = 'modifier'
         label4.className = 'roll-label'
@@ -695,20 +704,43 @@ function renderAttack(output) {
         dmgMod.value = parseInt(damageModifier)
     col4.appendChild(dmgMod)
     rollBox.appendChild(col4)
+    
+    // row for dice roll results
+    let diceBox = Row('dice-box')
+    let hitCol = Col('dice-box-col')
+    diceBox.appendChild(hitCol)
+    let dmgCol = Col('dice-box-col')
+    diceBox.appendChild(dmgCol)
 
+    let hitDisplay = document.createElement('span')
+    let hitOptions = [` `, `(${hitAdvantage}, ${hitDisadvantage})`,`(${hitDisadvantage}, ${hitAdvantage})` ]
+        hitDisplay.innerText = hitOptions[advantageState]
+        hitDisplay.className = 'dice-display hit-display'
+    hitCol.appendChild(hitDisplay)
+
+    let dmgDisplay = document.createElement('span')
+        dmgOptions = [
+            numDamageDice > 1 ? `(${damageRolls})` : ' ',
+            `(${damageRolls})`,
+            numDamageDice > 1 ? `(${damageRolls})` : ' ',
+        ]
+        dmgDisplay.innerText = dmgOptions[advantageState]
+    dmgDisplay.className = 'dice-display damage-display'
+    dmgCol.appendChild(dmgDisplay)
+    
+    
     // advantage buttons    
     // container for advantage buttons
     let buttonBox = Row('button-box')
-
     // normal
-    let norm = TabBtn('normal', hitNormalVantage)
+    let norm = TabBtn('normal', 0)
     buttonBox.appendChild(norm)
     // advantage
-    let adv = TabBtn('advantage', hitAdvantage)
+    let adv = TabBtn('advantage', 1)
     buttonBox.appendChild(adv)
 
     // disadvantage
-    let dAdv = TabBtn('disadvantage', hitDisadvantage)
+    let dAdv = TabBtn('disadvantage', 2)
     buttonBox.appendChild(dAdv)
 
     const btns = [norm, adv, dAdv]
@@ -717,8 +749,8 @@ function renderAttack(output) {
     // function to update roll
     function reRender(newHit, newHitModifier, newDmgMod) {
         // update title
-        title.innerText = newHit === 20 ? 'Critical hit!' : `You rolled ${parseInt(newHit) + parseInt(newHitModifier)} to hit.\n`
-        subTitle.innerText = `If you strike true: ${ parseInt(newHit === 20 ? criticalDamage : normalDamage) + parseInt(newDmgMod)} ${damageType} damage!`
+        title.innerText = newHit === "20" ? 'Critical hit!\n' : `You rolled ${parseInt(newHit) + parseInt(newHitModifier)} to hit.\n`
+        subTitle.innerText = `If you strike true: ${ parseInt(newHit === "20" ? criticalDamage : normalDamage) + parseInt(newDmgMod)} ${damageType} damage!`
         // update to hit
         rawHit.innerText = newHit
         rawHit.newHitModifier
@@ -728,7 +760,12 @@ function renderAttack(output) {
         if (e.button === 0) {
             btns.forEach(btn => btn.deActivate())
             e.currentTarget.activate()
-            reRender(e.currentTarget.dataset.value, hitMod.value, dmgMod.value)
+            let i = e.currentTarget.dataset.value
+            let rawOptions = [hitNormalVantage, hitAdvantage, hitDisadvantage]
+            // handle dice result display
+            hitDisplay.innerText = hitOptions[i]
+            dmgDisplay.innerText = rawOptions[i] === "20" ? `(${damageRolls})` : dmgOptions[i]
+            reRender(rawOptions[i], hitMod.value, dmgMod.value)
         }
     }
     // handle new modifier input
@@ -747,6 +784,7 @@ function renderAttack(output) {
     root.appendChild(document.createElement('br'))
     root.appendChild(buttonBox)
     root.appendChild(rollBox)
+    root.appendChild(diceBox)
 }
 // Primary Box
 function addOnclickToPrimaryBox() {
