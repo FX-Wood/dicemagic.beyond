@@ -161,7 +161,7 @@
 }
 
 .dice-box-col {
-    width: 50%;
+    justify-content: space-between;
 }
 
 .grow {
