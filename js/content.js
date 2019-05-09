@@ -547,44 +547,206 @@ function renderSkillCheck(output) {
     root.appendChild(buttonBox)
     root.appendChild(rollBox)
 }
-function attackAndDamageRoll(event) {
-    if (event.shiftKey) {
-        event.preventDefault()
-        event.stopPropagation()
+
+async function attackAndDamageRoll(e) {
+    if (e.shiftKey) {
+        e.preventDefault()
+        e.stopPropagation()
         console.log('Rolling attack');
 
-        let hitDice = '1d20';
-        let advantageModifier = '';
-        determineAdvantage(event);
-        function determineAdvantage() {
-            if (SPACEPRESSED) {
-                console.log('Advantage!')
-                advantageModifier = '-L';
-                hitDice = '2d20'
-            } else if (event.altKey) {
-                console.log('Disadvantage!')
-                advantageModifier = '-H';
-                hitDice = '2d20'
-            }
-        }
-
-        let toHitMod = this.querySelector('.ct-combat-attack__tohit .ct-signed-number').textContent;
-        let damage = this.querySelector('.ct-damage__value').textContent;
-        let damageType = this.querySelector('.ct-tooltip').dataset.originalTitle.toLowerCase();
+        const advantageState = determineAdvantage(e);
+        const hitModifier = e.currentTarget.querySelector('.ct-combat-attack__tohit .ct-signed-number').textContent;
+        const damage = e.currentTarget.querySelector('.ct-damage__value').textContent.split(/(?=[+-])/);
+        const damageDice = damage[0]
+        const damageModifier = damage[1]
+        const damageDiceAdvantage = parseInt(damage[0].split('d')[0]) * 2 + 'd' + damage[0].split('d')[1]
+        let damageType = e.currentTarget.querySelector('.ct-tooltip').dataset.originalTitle.toLowerCase();
         if (damageType === "item is customized") {
             damageType = "non-mundane";
         }
-        let cmdString = `${hitDice}${advantageModifier}${toHitMod} ${damage}`
+        let cmdString = `1d20,1d20,${damageDice},${damageDiceAdvantage}`
         console.log('Command: ' + cmdString)
-        getRoll(cmdString, function(roll) {
-            const { first, low, high } = roll
-            console.log("Reply: " + reply);
-            //these regexes return numbers between asterisks
+        let rolls = await getRoll(cmdString)
+        console.log(rolls)
+        rolls = rolls.result.match(/\d+(?=\*)/g)
+        console.log(rolls)
+        // handle to hit
+        const hitNormalVantage = rolls[0]
+        let hitResult = rolls[0]
+        const [ hitDisadvantage, hitAdvantage ] = rolls.slice(0,2).sort((a, b) => parseInt(a) - parseInt(b))
+        
+        // handle advantage
+        if (advantageState === 1) {
+            hitResult = hitAdvantage
+        }
+        // handle disadvantage
+        if (advantageState == 2) {
+            hitResult = hitDisadvantage
+        }
+        // handle critical
+        let criticalState = 0
+        if (hitResult === "20") {
+            criticalState = 1
+        }
+        // damage
+        const [ normalDamage, criticalDamage ] = rolls.slice(2)
 
-            let returnString = `You rolled ${hitResult} to hit.\n If you strike true: ${damageResult} ${damageType} damage!`
-            return displayBoxContent.innerText = returnString;
-        })
+        const output = {
+            hitResult,
+            hitNormalVantage,
+            hitDisadvantage,
+            hitAdvantage,
+            hitModifier,
+            damageDice,
+            damageDiceAdvantage,
+            damageModifier,
+            damageType,
+            normalDamage,
+            criticalDamage,
+            advantageState,
+            criticalState
+        }
+        console.log('output', output)
+        renderAttack(output)
     }
+}
+
+function renderAttack(output) {
+    console.log('rendering attack')
+    const {
+        hitResult,
+        hitNormalVantage,
+        hitDisadvantage,
+        hitAdvantage,
+        hitModifier,
+        damageDice,
+        damageModifier,
+        damageType,
+        normalDamage,
+        criticalDamage,
+        advantageState,
+        criticalState,
+    } = output
+    const root = displayBoxContent
+    root.innerHTML = ''
+    let headline = criticalState ? 'Critical hit!' : `You rolled ${parseInt(hitResult) + parseInt(hitModifier)} to hit.\n`
+    let subHead = `If you strike true: ${ parseInt(criticalState ? criticalDamage : normalDamage) + parseInt(damageModifier)} ${damageType} damage!`
+
+    // string with rolling results
+    let title = document.createElement('span')
+        title.className = 'headline'
+        title.innerText = headline
+    let subTitle = document.createElement('span')
+        subTitle.className = 'subhead'
+        subTitle.innerText = subHead
+
+    // flex row for roll info and labels
+    let rollBox = Row('roll-box')
+    
+    let col1 = Col()
+    // raw hit roll
+    let label1 = document.createElement('span')
+        label1.innerText = 'hit'
+        label1.className = 'roll-label'
+    col1.appendChild(label1)
+    let rawHit = document.createElement('span')
+        rawHit.className = 'raw-roll raw-roll-hit'
+        rawHit.innerText = hitResult
+    col1.appendChild(rawHit)
+    rollBox.appendChild(col1)
+
+    let col2 = Col()
+    // modifier input
+    let label2 = document.createElement('span')
+        label2.innerText = 'modifier'
+        label2.className = 'roll-label'
+    col2.appendChild(label2)
+    let hitMod = document.createElement('input')
+        hitMod.type = 'number'
+        hitMod.name = 'hitModifier'
+        hitMod.className = 'ct-health-summary__adjuster-field-input modifier-input'
+        hitMod.value = parseInt(hitModifier)
+    col2.appendChild(hitMod)
+    rollBox.appendChild(col2)
+
+    let col3 = Col()
+    // damage dice
+    let label3 = document.createElement('span')
+        label3.innerText = 'damage'
+        label3.className = 'roll-label'
+    col3.appendChild(label3)
+    let dmg = document.createElement('span')
+        dmg.className = 'raw-roll raw-roll-damage'
+        dmg.innerText = damageDice + damageModifier
+        dmg.innerText = criticalState ? criticalDamage : normalDamage
+    col3.appendChild(dmg)
+    rollBox.appendChild(col3)
+
+    let col4 = Col()
+
+    let label4 = document.createElement('span')
+        label4.innerText = 'modifier'
+        label4.className = 'roll-label'
+    col4.appendChild(label4)
+    let dmgMod = document.createElement('input')
+        dmgMod.type = 'number'
+        dmgMod.name = 'damageModifier'
+        dmgMod.className = 'ct-health-summary__adjuster-field-input modifier-input'
+        dmgMod.value = parseInt(damageModifier)
+    col4.appendChild(dmgMod)
+    rollBox.appendChild(col4)
+
+    // advantage buttons    
+    // container for advantage buttons
+    let buttonBox = Row('button-box')
+
+    // normal
+    let norm = TabBtn('normal', hitNormalVantage)
+    buttonBox.appendChild(norm)
+    // advantage
+    let adv = TabBtn('advantage', hitAdvantage)
+    buttonBox.appendChild(adv)
+
+    // disadvantage
+    let dAdv = TabBtn('disadvantage', hitDisadvantage)
+    buttonBox.appendChild(dAdv)
+
+    const btns = [norm, adv, dAdv]
+    console.log(advantageState)
+    btns[advantageState].activate()
+    // function to update roll
+    function reRender(newHit, newHitModifier, newDmgMod) {
+        // update title
+        title.innerText = newHit === 20 ? 'Critical hit!' : `You rolled ${parseInt(newHit) + parseInt(newHitModifier)} to hit.\n`
+        subTitle.innerText = `If you strike true: ${ parseInt(newHit === 20 ? criticalDamage : normalDamage) + parseInt(newDmgMod)} ${damageType} damage!`
+        // update to hit
+        rawHit.innerText = newHit
+        rawHit.newHitModifier
+    }
+    // function to toggle advantage buttons
+    function advantageToggle(e) {
+        if (e.button === 0) {
+            btns.forEach(btn => btn.deActivate())
+            e.currentTarget.activate()
+            reRender(e.currentTarget.dataset.value, hitMod.value, dmgMod.value)
+        }
+    }
+    // handle new modifier input
+    hitMod.addEventListener('change', (e) => {
+        reRender(parseInt(rawHit.innerText), e.target.value, dmgMod.value)
+    })
+    dmgMod.addEventListener('change', (e) => {
+        reRender(parseInt(rawHit.innerText), hitMod.value, e.target.value)
+    })
+    // handle changes in advantage
+    btns.forEach(btn => btn.addEventListener('mousedown', advantageToggle))
+
+    // order of elements in box
+    root.appendChild(title)
+    root.appendChild(subTitle)
+    root.appendChild(document.createElement('br'))
+    root.appendChild(buttonBox)
+    root.appendChild(rollBox)
 }
 // Primary Box
 function addOnclickToPrimaryBox() {
