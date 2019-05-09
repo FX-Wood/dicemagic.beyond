@@ -35,6 +35,7 @@ function TabBtn(text, value) {
     }
     return outer
 }
+
 // advantage/disadvantage logic
 var SPACEPRESSED = false;
 window.addEventListener('keydown', function(e) {
@@ -147,16 +148,13 @@ function addOnClickToInitiative() {
     }
 }
 
-
-
-
 function renderInitiative(output) {
     const { result, normal, high, low, modifier,  advantageState} = output
 
     const root = displayBoxContent
     root.innerHTML = ''
-    headline = `Your initiative: ${parseInt(result) + parseInt(modifier)}\n`
-    subHead = `You rolled ${result} with a modifier of ${modifier}`
+    let headline = `Your initiative: ${parseInt(result) + parseInt(modifier)}\n`
+    let subHead = `You rolled ${result} with a modifier of ${modifier}`
 
     // string with rolling results
     let title = document.createElement('span')
@@ -299,8 +297,8 @@ function renderSavingThrow(output) {
     const { name, result, normal, high, low, modifier,  advantageState} = output
     const root = displayBoxContent
     root.innerHTML = ''
-    headline = `${name} saving throw: ${parseInt(result) + parseInt(modifier)}\n`
-    subHead = `You rolled ${result} with a modifier of ${modifier}`
+    let headline = `${name} saving throw: ${parseInt(result) + parseInt(modifier)}\n`
+    let subHead = `You rolled ${result} with a modifier of ${modifier}`
 
     // string with rolling results
     let title = document.createElement('span')
@@ -389,70 +387,145 @@ function renderSavingThrow(output) {
 // Skills
 function addOnClickToSkills() {
     let skills = document.querySelector('.ct-skills__list');
-        if (skills && !skills.iAmListening) {
-            skills.iAmListening = true;
-            console.log("Adding listeners to skills");                      //debug
+    if (skills && !skills.iAmListening) {
+        skills.iAmListening = true;
+        console.log("Adding listeners to skills");                      //debug
 
-            skills = document.querySelectorAll(".ct-skills__item");         //Gets all skill boxes
-            skills.forEach(skill => {                                       //Loops over skills
-                skill.addEventListener("click", rollSkillCheck, true);      //listener
-                skill.classList.add('skills-pane-mouseover');               //adds class for mouseover style
+        skills = document.querySelectorAll(".ct-skills__item");         //Gets all skill boxes
+        skills.forEach(skill => {                                       //Loops over skills
+            skill.addEventListener("click", rollSkillCheck, true);      //listener
+            skill.classList.add('skills-pane-mouseover');               //adds class for mouseover style
         })
     }
+}
 
-    function rollSkillCheck(event) {
-        if (event.shiftKey){
-            event.preventDefault()
-            event.stopPropagation()
-            console.log('Rolling skill check. Space: ' + SPACEPRESSED + ' Shift: ' + event.shiftKey + ' Alt: ' + event.altKey)
+function rollSkillCheck(e) {
+    if (e.shiftKey){
+        e.preventDefault()
+        e.stopPropagation()
+        console.log('Rolling skill check. Space: ' + SPACEPRESSED + ' Shift: ' + e.shiftKey + ' Alt: ' + e.altKey)
 
-            let baseDice = '1d20'
-            let advantageModifier = ''
-            determineAdvantage(event)
+        let name = e.currentTarget.querySelector(".ct-skills__col--skill").innerText
+        let stat = e.currentTarget.querySelector(".ct-skills__col--stat").innerText
+        let modifier = e.currentTarget.querySelector(".ct-signed-number").textContent
 
-            function determineAdvantage() {
-                if (SPACEPRESSED) {
-                    console.log('Advantage!')
-                    advantageModifier = '-L';
-                    baseDice = '2d20'
-                } else if (event.altKey) {
-                    console.log('Disadvantage!')
-                    advantageModifier = '-H';
-                    baseDice = '2d20'
-                }
+        let advantageState = determineAdvantage(e)
+
+        getRoll('1d20,1d20', function(roll) {
+            const { first, high, low } = roll
+            let result = first
+            // handle advantage
+            if (advantageState === 1) {
+                result = high
             }
-
-            let skillName = this.querySelector(".ct-skills__col--skill").innerText
-            let modifier = this.querySelector(".ct-signed-number").textContent
-            let stat = this.querySelector(".ct-skills__col--stat").innerText
-
-            let cmdString = `{"cmd":"${baseDice}${advantageModifier}${modifier}"}`
-            console.log('Command: ' + cmdString)
-
-            let roll = new XMLHttpRequest
-            roll.open("POST", "https://api.dicemagic.io/roll")
-            roll.setRequestHeader("Content-Type", "application/json")
-            roll.send(cmdString)
-            roll.onreadystatechange = function() {
-                if (roll.readyState === 4) {
-                    let reply = JSON.parse(roll.responseText)
-                    console.log('Result: ' + reply.result)
-                    let skillCheckResult = reply.result.match(/\*(.*)\*/)[0].slice(1, -1)
-                    let rawRoll;
-                    if (baseDice == '1d20') {
-                        rawRoll = reply.result.match(/\((\d*)\)/)[1];
-                        console.log('raw roll: ' + rawRoll)
-                    } else {
-                        rawRoll = reply.result.match(/\((\d+, \d+)\)/)[0]
-                        console.log('raw roll: ' + rawRoll)
-                    }
-                    let returnString =  `${skillName}(${stat}) roll: ${skillCheckResult}.\nRaw roll of ${rawRoll} and a ${stat} modifier of ${modifier}`
-                    console.log(returnString)
-                    return displayBoxContent.innerText = returnString;
-                }
+            // handle disadvantage
+            if (advantageState == 2) {
+                result = low
             }
+            const output = {}
+            output.name = name
+            output.stat = stat
+            output.result = result
+            output.normal = first
+            output.high = high
+            output.low = low
+            output.modifier = modifier
+            output.advantageState = advantageState
+            console.log('output', output)
+            renderSkillCheck(output)
+        })
+    }
+}
+
+function renderSkillCheck(output) {
+    console.log('rendering saving throw')
+    const { name, stat, result, normal, high, low, modifier,  advantageState} = output
+    const root = displayBoxContent
+    root.innerHTML = ''
+    let headline = `${name}(${stat}): ${parseInt(result) + parseInt(modifier)}\n`
+    let subHead = `You rolled ${result} with a modifier of ${modifier}`
+
+    // string with rolling results
+    let title = document.createElement('span')
+        title.className = 'headline'
+        title.innerText = headline
+    let subTitle = document.createElement('span')
+        subTitle.className = 'subhead'
+        subTitle.innerText = subHead
+
+    // flex row for roll info and labels
+    let rollBox = Row('roll-box')
+    
+    let col1 = Col()
+    // raw roll
+    let label1 = document.createElement('span')
+        label1.innerText = 'raw'
+        label1.className = 'roll-label'
+    col1.appendChild(label1)
+    let raw = document.createElement('span')
+        raw.innerText = result
+    col1.appendChild(raw)
+    rollBox.appendChild(col1)
+
+    let col2 = Col()
+    // modifier input
+    let label2 = document.createElement('span')
+        label2.innerText = 'modifier'
+        label2.className = 'roll-label'
+    col2.appendChild(label2)
+    let mod = document.createElement('input')
+        mod.type = 'number'
+        mod.name = 'modifier'
+        mod.className = 'ct-health-summary__adjuster-field-input modifier-input'
+        mod.value = parseInt(modifier)
+    col2.appendChild(mod)
+    rollBox.appendChild(col2)
+
+    // advantage buttons    
+    // container for advantage buttons
+    let buttonBox = Row('button-box')
+
+    // normal
+    let norm = TabBtn('normal', normal)
+    buttonBox.appendChild(norm)
+    // advantage
+    let adv = TabBtn('advantage', high)
+    buttonBox.appendChild(adv)
+
+    // disadvantage
+    let dAdv = TabBtn('disadvantage', low)
+    buttonBox.appendChild(dAdv)
+
+    const btns = [norm, adv, dAdv]
+    console.log(advantageState)
+    btns[advantageState].activate()
+    // function to update roll
+    function reRender(newRoll, newModifier) {
+        title.innerText = `${name}(${stat}):  ${parseInt(newRoll) + parseInt(newModifier)}\n`
+        subTitle.innerText = `You rolled ${newRoll} with a modifier of ${newModifier}`
+        raw.innerText = newRoll
+    }
+    // function to toggle advantage buttons
+    function advantageToggle(e) {
+        if (e.button === 0) {
+            btns.forEach(btn => btn.deActivate())
+            e.currentTarget.activate()
+            reRender(e.currentTarget.dataset.value, mod.value)
         }
     }
+    // handle new modifier input
+    mod.addEventListener('change', (e) => {
+        reRender(parseInt(raw.innerText), e.target.value)
+    })
+    // handle changes in advantage
+    btns.forEach(btn => btn.addEventListener('mousedown', advantageToggle))
+
+    // order of elements in box
+    root.appendChild(title)
+    root.appendChild(subTitle)
+    root.appendChild(document.createElement('br'))
+    root.appendChild(buttonBox)
+    root.appendChild(rollBox)
 }
 
 // Primary Box
@@ -600,7 +673,6 @@ function addOnclickToPrimaryBox() {
                 console.log("damage: " + damage);
                 console.log(damageType);
                 console.log(advantageModifier);
-
 
                 let cmdString = `{"cmd":"${hitDie}${advantageModifier}${toHit} ${damage}"}`
                 //debug
