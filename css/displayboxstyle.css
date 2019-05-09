@@ -30,7 +30,7 @@
     width: 95%;
     height:80%;
 
-    padding: 20px 20px 0 20px;
+    padding: 10px 20px 0 20px;
 
     text-align: left;
     overflow-wrap: break-word;
@@ -118,6 +118,7 @@
 }
 .roll-box {
     justify-content: space-between;
+    width: min-content;
 }
 .roll-box > div > * {
     line-height: 1;
@@ -153,6 +154,10 @@
 
 .headline {
     font-size: 1.6em
+}
+
+.dice-box {
+    margin-top: 4px;
 }
 
 .dice-box-col {

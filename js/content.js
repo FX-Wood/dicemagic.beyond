@@ -558,7 +558,7 @@ async function attackAndDamageRoll(e) {
         const hitModifier = e.currentTarget.querySelector('.ct-combat-attack__tohit .ct-signed-number').textContent;
         const damage = e.currentTarget.querySelector('.ct-damage__value').textContent.split(/(?=[+-])/);
         const damageDice = damage[0]
-        const damageModifier = damage[1]
+        const damageModifier = (damage[1] || 0) // handle attacks without modifier
         const numDamageDice = damage[0].split('d')[0]
         const damageDiceAdvantage = parseInt(damage[0].split('d')[0]) * 2 + 'd' + damage[0].split('d')[1]
         let damageType = e.currentTarget.querySelector('.ct-tooltip').dataset.originalTitle.toLowerCase();
@@ -636,7 +636,7 @@ function renderAttack(output) {
     } = output
     const root = displayBoxContent
     root.innerHTML = ''
-    let headline = criticalState ? 'Critical hit!' : `You rolled ${parseInt(hitResult) + parseInt(hitModifier)} to hit.\n`
+    let headline = criticalState ? 'Critical hit!\n' : `You rolled ${parseInt(hitResult) + parseInt(hitModifier)} to hit.\n`
     let subHead = `If you strike true: ${ parseInt(criticalState ? criticalDamage : normalDamage) + parseInt(damageModifier)} ${damageType} damage!`
 
     // string with rolling results
