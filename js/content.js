@@ -78,10 +78,30 @@ chrome.runtime.onMessage.addListener(
 })
 
 // get rolls from background script
-function getRoll(cmd, callback) {
+function getRoll(cmd) {
     console.log('getting roll')
     console.log('cmd:', cmd )
-    chrome.runtime.sendMessage({ msg: `{"cmd":"${cmd}"}` }, callback)
+    console.log('here is the promise')
+    if (cmd) {
+        return new Promise(resolve => {
+            chrome.runtime.sendMessage({ msg: `{"cmd":"${cmd}"}` }, (roll) => {
+                resolve(roll)
+            })
+        })
+    }
+    return new Promise((resolve) => {
+        chrome.runtime.sendMessage({ msg: '{"cmd":"1d20,1d20"}' }, (roll) => {
+            let rawRoll = roll.result.match(/\*\d+\*/g).map(str => str.replace(/\*/g, ''))
+            let first = rawRoll[0]
+            console.log(rawRoll)
+            rawRoll = rawRoll.sort((a, b) =>  parseInt(a) - parseInt(b))
+            console.log(rawRoll)
+            // handle advantage
+            let low = rawRoll[0]
+            let high = rawRoll[1]
+            return resolve({ first, high, low })
+        })
+    }) 
 }
 
 // todo: sendToLog
@@ -122,7 +142,7 @@ function addOnClickToInitiative() {
                 let modifier = e.currentTarget.textContent;
                 let advantageState = determineAdvantage(e);
 
-                getRoll('1d20,1d20', function(roll) {
+                getRoll().then((roll) => {
                     const { first, high, low } = roll
                     let result = first
                     // handle advantage
@@ -265,7 +285,7 @@ function addOnClickToSaves() {
                 name = name.charAt(0).toUpperCase() + name.slice(1)
                 let modifier = this.querySelector(".ct-saving-throws-summary__ability-modifier").textContent;
                 let advantageState = determineAdvantage(event)
-                getRoll('1d20,1d20', function(roll) {
+                getRoll().then((roll) => {
                     const { first, high, low } = roll
                     let result = first
                     // handle advantage
@@ -411,7 +431,7 @@ function rollSkillCheck(e) {
 
         let advantageState = determineAdvantage(e)
 
-        getRoll('1d20,1d20', function(roll) {
+        getRoll().then((roll) => {
             const { first, high, low } = roll
             let result = first
             // handle advantage
@@ -527,7 +547,45 @@ function renderSkillCheck(output) {
     root.appendChild(buttonBox)
     root.appendChild(rollBox)
 }
+function attackAndDamageRoll(event) {
+    if (event.shiftKey) {
+        event.preventDefault()
+        event.stopPropagation()
+        console.log('Rolling attack');
 
+        let hitDice = '1d20';
+        let advantageModifier = '';
+        determineAdvantage(event);
+        function determineAdvantage() {
+            if (SPACEPRESSED) {
+                console.log('Advantage!')
+                advantageModifier = '-L';
+                hitDice = '2d20'
+            } else if (event.altKey) {
+                console.log('Disadvantage!')
+                advantageModifier = '-H';
+                hitDice = '2d20'
+            }
+        }
+
+        let toHitMod = this.querySelector('.ct-combat-attack__tohit .ct-signed-number').textContent;
+        let damage = this.querySelector('.ct-damage__value').textContent;
+        let damageType = this.querySelector('.ct-tooltip').dataset.originalTitle.toLowerCase();
+        if (damageType === "item is customized") {
+            damageType = "non-mundane";
+        }
+        let cmdString = `${hitDice}${advantageModifier}${toHitMod} ${damage}`
+        console.log('Command: ' + cmdString)
+        getRoll(cmdString, function(roll) {
+            const { first, low, high } = roll
+            console.log("Reply: " + reply);
+            //these regexes return numbers between asterisks
+
+            let returnString = `You rolled ${hitResult} to hit.\n If you strike true: ${damageResult} ${damageType} damage!`
+            return displayBoxContent.innerText = returnString;
+        })
+    }
+}
 // Primary Box
 function addOnclickToPrimaryBox() {
     //checks if the actions tab of the primary box is active
@@ -544,56 +602,6 @@ function addOnclickToPrimaryBox() {
                 attack.classList.add('primary-box-mouseover')
             }
         })
-
-        function attackAndDamageRoll(event) {
-            if (event.shiftKey) {
-                event.preventDefault()
-                event.stopPropagation()
-                console.log('Rolling attack');
-
-                let hitDice = '1d20';
-                let advantageModifier = '';
-                determineAdvantage(event);
-                function determineAdvantage() {
-                    if (SPACEPRESSED) {
-                        console.log('Advantage!')
-                        advantageModifier = '-L';
-                        hitDice = '2d20'
-                    } else if (event.altKey) {
-                        console.log('Disadvantage!')
-                        advantageModifier = '-H';
-                        hitDice = '2d20'
-                    }
-                }
-
-                let toHitMod = this.querySelector('.ct-combat-attack__tohit .ct-signed-number').textContent;
-                let damage = this.querySelector('.ct-damage__value').textContent;
-                let damageType = this.querySelector('.ct-tooltip').dataset.originalTitle.toLowerCase();
-                if (damageType === "item is customized") {
-                    damageType = "non-mundane";
-                }
-                let cmdString = `{"cmd":"${hitDice}${advantageModifier}${toHitMod} ${damage}"}`
-                console.log('Command: ' + cmdString)
-
-                const roll = new XMLHttpRequest;
-                roll.open("POST", "https://api.dicemagic.io/roll");
-                roll.setRequestHeader("Content-Type", "application/json");
-                roll.send(cmdString);
-                console.log(cmdString);
-                roll.onreadystatechange = function() {
-                    if (roll.readyState === 4) {
-                        reply = JSON.parse(roll.responseText).result;
-                        console.log("Reply: " + reply);
-                        //these regexes return numbers between asterisks
-                        hitResult = reply.match(/\*([0-9]+)\*/g)[0].slice(1, -1);
-                        damageResult = reply.match(/\*([0-9]+)\*/g)[1].slice(1, -1);
-
-                        let returnString = `You rolled ${hitResult} to hit.\n If you strike true: ${damageResult} ${damageType} damage!`
-                        return displayBoxContent.innerText = returnString;
-                    }
-                }
-            }
-        }
     // This block executes if the spells tab is active in the primary box
     } else if (document.querySelector('.ct-spells')) {
         let spells = Array.from(document.querySelectorAll('.ct-spells-spell'));

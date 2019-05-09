@@ -8,16 +8,7 @@ function getRoll(cmd, sendResponse) {
     roll.onreadystatechange = function() {
         if (roll.readyState === 4) {
             console.log('done', roll)
-            let reply = JSON.parse(roll.responseText);
-            let rawRoll = reply.result.match(/\*\d+\*/g).map(str => str.replace(/\*/g, ''))
-            let first = rawRoll[0]
-            console.log(rawRoll)
-            rawRoll = rawRoll.sort((a, b) =>  parseInt(a) - parseInt(b))
-            console.log(rawRoll)
-            // handle advantage
-            let low = rawRoll[0]
-            let high = rawRoll[1]
-            return sendResponse({ first, high, low })
+            return sendResponse(JSON.parse(roll.responseText))
         }
     }
 }
