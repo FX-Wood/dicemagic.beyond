@@ -118,7 +118,6 @@
 }
 .roll-box {
     justify-content: space-between;
-    width: min-content;
 }
 .roll-box > div > * {
     line-height: 1;
@@ -166,4 +165,10 @@
 
 .grow {
     flex-grow: 1
+}
+.nowrap {
+    white-space: nowrap;
+}
+.text-left {
+    text-align: left;
 }
