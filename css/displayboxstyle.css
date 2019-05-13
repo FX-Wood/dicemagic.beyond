@@ -1,3 +1,7 @@
+/* #display-box * {
+    border: 1px solid black;
+} */
+
 #display-box {
     
     all:initial;
@@ -26,7 +30,7 @@
     width: 95%;
     height:80%;
 
-    padding: 20px 20px 0 20px;
+    padding: 10px 20px 0 20px;
 
     text-align: left;
     overflow-wrap: break-word;
@@ -112,7 +116,9 @@
 .button-box {
     margin-top: 5px;
 }
-
+.roll-box {
+    justify-content: space-between;
+}
 .roll-box > div > * {
     line-height: 1;
     padding: 4px
@@ -123,6 +129,10 @@
     font-size: 10px;
     font-family: "Roboto Condensed",Roboto,Helvetica,sans-serif;
     text-transform: uppercase;
+}
+
+.raw-roll-damage {
+    text-align: center;
 }
 
 .modifier-input {
@@ -143,4 +153,33 @@
 
 .headline {
     font-size: 1.6em
+}
+
+.dice-box {
+    margin-top: 4px;
+}
+
+.dice-box-col {
+    justify-content: space-between;
+}
+
+.grow {
+    flex-grow: 1
+}
+.nowrap {
+    white-space: nowrap;
+}
+.text-left {
+    text-align: left;
+}
+
+.roll-in-place {
+    font-family: "Roboto Condensed",Roboto,Helvetica,sans-serif;
+    color: #C53131;
+    font-size: 1.4em;
+    font-weight: bold;
+    text-transform: uppercase;
+
+    position: absolute;
+    
 }
