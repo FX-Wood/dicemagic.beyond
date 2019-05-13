@@ -577,14 +577,14 @@ async function attackAndDamageRoll(e) {
         const damageModifier = (damage[1] || 0) // handle attacks without modifier
         const numDamageDice = damage[0].split('d')[0]
         const damageDiceAdvantage = parseInt(damage[0].split('d')[0]) * 2 + 'd' + damage[0].split('d')[1]
-        let damageType = e.currentTarget.querySelector('.ct-damage__icon .ct-tooltip');
+        let damageType = e.currentTarget.querySelector('.ct-tooltip.ct-damage');
         // handle primary box attack tab
-        if (damageType.dataset) {
+        if (damageType) {
             damageType = damageType.dataset.originalTitle.toLowerCase()
         }
         // handle primary box spells tab
-        if (damageType.title) {
-            damageType = damageType.title.toLowerCase()
+        if (!damageType) {
+            damageType = e.currentTarget.querySelector('.ct-damage__icon .ct-tooltip').title.toLowerCase()
         }
         // handle custom weapons
         if (damageType === "item is customized") {
