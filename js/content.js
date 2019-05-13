@@ -45,6 +45,27 @@ function FlexSpacer(className) {
     return div
 }
 
+function RenderInPlace(input, className) {
+    let { target, result, raw } = input
+    // remove old rolls
+    let old = target.querySelector('.roll-in-place')
+    old ? target.removeChild(old) : null
+    
+    // make element
+    let span = document.createElement('span')
+    span.innerText = result
+    span.className = 'roll-in-place '
+    span.classList.add(className)
+    target.appendChild(ToolTip(raw))
+    target.appendChild(span)
+}
+
+function ToolTip(text) {
+    let fragment = document.createDocumentFragment()
+    fragment.innerHTML = `<div class="tippy-popper" role="tooltip" id="tippy-1220" x-placement="top" style="z-index: 9999; transition-duration: 350ms; visibility: visible; position: absolute; top: 0px; left: 0px; will-change: transform; transform: translate3d(1083px, 526px, 0px);"><div class="tippy-tooltip dark-theme" data-size="regular" data-animation="scale" data-state="visible" style="transition-duration: 100ms; top: 0px;"><div class="tippy-arrow" style="left: 23px;"></div><div class="tippy-content">${text}</div></div></div>`
+    return fragment
+}
+
 // advantage/disadvantage logic
 var SPACEPRESSED = false;
 window.addEventListener('keydown', function(e) {
@@ -566,13 +587,24 @@ async function attackAndDamageRoll(e) {
         console.log('Rolling attack');
 
         const advantageState = determineAdvantage(e);
-        let hitModifier = e.currentTarget.querySelector('.ct-combat-attack__tohit .ct-signed-number');
-        // handle spell attacks from spell tab
-        if (!hitModifier) {
-            hitModifier = e.currentTarget.querySelector('.ct-spells-spell__tohit');
+        // handle primary box attacks
+        let hitModifier = e.currentTarget.querySelector('.ct-combat-attack__tohit .ct-signed-number')
+        if (hitModifier) {
+            hitModifier = hitModifier.textContent
         }
-        hitModifier = hitModifier.textContent
-        const damage = e.currentTarget.querySelector('.ct-damage__value').textContent.split(/(?=[+-])/);
+        let damage = e.currentTarget.querySelector('.ct-damage__value')
+        // handle spell attacks from primary box spell tab
+        if (!hitModifier) {
+            hitModifier = e.currentTarget.querySelector('.ct-spells-spell__tohit').textContent
+            damage = e.currentTarget.querySelector('.ct-damage__value')
+        }
+        // handle spell attacks from sidebar
+        if (!hitModifier) {
+            hitModifier = SPELLATTACKMOD
+            damage = e.currentTarget.querySelector('.ct-spell-caster__modifier-amount')
+        }
+        // parse damage roll into dice and modifier
+        damage = damage.textContent.split(/(?=[+-])/)
         const damageDice = damage[0]
         const damageModifier = (damage[1] || 0) // handle attacks without modifier
         const numDamageDice = damage[0].split('d')[0]
@@ -591,13 +623,10 @@ async function attackAndDamageRoll(e) {
             damageType = "non-mundane";
         }
         let cmdString = `1d20,1d20,${damageDice},${damageDiceAdvantage}`
-        console.log('Command: ' + cmdString)
         let rolls = await getRoll(cmdString)
         let damageRolls = rolls.result.match(/(?<=\()[\d, ]+/g)
         damageRolls = damageRolls[damageRolls.length - 1]
-        console.log(rolls)
         rolls = rolls.result.match(/\d+(?=\*)/g)
-        console.log(rolls)
         // handle to hit
         const hitNormalVantage = rolls[0]
         let hitResult = rolls[0]
@@ -927,6 +956,26 @@ async function rollSpellPrimaryBox(e) {
         // }
     }
 }
+/**
+ * makes a span with title styling
+ * @param {String} text 
+ * @param {String} className 
+ * @returns {HTMLSpanElement}
+ */
+function Title(text, className) {
+    let el = document.createElement('span')
+    el.className = 'headline'
+    el.innerText = text
+    return el
+}
+
+function Subtitle(text, className) {
+    let el = document.createElement('span')
+    el.className = 'subhead'
+    el.innerText = text
+    return el
+}
+
 function renderPrimaryBoxSpells(spellInfo) {
     console.log('rendering primary box spells')
     const {
@@ -946,16 +995,10 @@ function renderPrimaryBoxSpells(spellInfo) {
     root.innerHTML = ''
     const headlineTemplate = () => `${spellName} ${ isHeal ? 'heals for' : 'does' } ${effectResult} ${isHeal ? '' : effectType + ' damage'}\n`
     const subHeadTemplate = () => `Targets must make a DC${saveDC} ${saveLabel} save`
-    let headline = headlineTemplate()
-    let subHead = saveDC ? subHeadTemplate() : '';
 
     // string with rolling results
-    let title = document.createElement('span')
-        title.className = 'headline headline-small'
-        title.innerText = headline
-    let subTitle = document.createElement('span')
-        subTitle.className = 'subhead'
-        subTitle.innerText = subHead
+    let title = Title(headlineTemplate(), 'headline-small')
+    let subTitle = saveDC ? Subtitle(subHeadTemplate()) : null;
 
     // flex row for roll info and labels
     let rollBox = Row('roll-box')
@@ -1049,121 +1092,66 @@ function addOnClickToSidebarSpells() {
         SPELLATTACKMOD = primaryBoxSpellAttackElement.textContent;
         console.log("got spell attack to hit in loop: " + SPELLATTACKMOD)
     }
-
-    //if it exists, targets the box within the sidebar that contains dice rolls
-    if (document.querySelector('.ct-sidebar__portal .ct-spell-caster__modifiers--damages')) {
-        let spellsPaneDamageBox = document.querySelector('.ct-sidebar__portal .ct-spell-caster__modifiers--damages');
-        //checks if the sidebar has already been polled
-        if (!spellsPaneDamageBox.iAmListening){
-            spellsPaneDamageBox.iAmListening = true
-            
-            //adds class for mouse hover style change
-            spellsPaneDamageBox.classList.add('.sidebar-damage-box');
-            document.querySelector('.ct-spell-caster__modifier--damage').classList.add('.sidebar-damage-box');
-            //adds click listener to box containing damages
-            spellsPaneDamageBox.addEventListener('click', rollSpellSideBar);
+    // check if sidebar exists
+    const sidebarSpell = document.querySelector('.ct-sidebar__portal .ct-spell-caster__modifiers--damages')
+    // if sidebar exists
+    if (sidebarSpell) {
+        // if the sidebar is new
+        if (!sidebarSpell.iAmListening){
+            // flag it as listening
+            sidebarSpell.iAmListening = true
+            // get all spell damage effects
+            let spellDamageEffects = sidebarSpell.querySelectorAll('.ct-spell-caster__modifier--damage')
+            // adds click listener to box containing damages
+            spellDamageEffects.forEach(item => {
+                item.classList.add('.sidebar-damage-box');
+                item.addEventListener('click', rollSpellSideBar);
+            })
             console.log('adding event listener to sidebar damage box')
-            
-            //event handler for sidebar box containing damages
-            function rollSpellSideBar(event) {
-                console.log('rolling from sidebar')
-                let damagesNodeList = Array.from(this.children);
-                let propertiesNodeList = Array.from(document.querySelector('.ct-property-list').children);
-                
-                let spellName = document.querySelector('.ct-sidebar__heading').textContent
-                let damageValues = [];
-                let damageTypes = [];
-                let save = ''
-
-                damagesNodeList.forEach(damageEffect => {
-                    console.log(damageEffect);
-                    damageValues.push(damageEffect.children[0].textContent);
-                    damageTypes.push(damageEffect.children[1].firstChild.firstChild.dataset.originalTitle);
-                })
-                console.log("Spell name: " + spellName)
-                console.log("Spell damage values: " + damageValues)
-                console.log("Spell damage types: " + damageTypes)
-
-                //checks if spell has a save, and if so adds it to the spell object
-                if (propertiesNodeList.length > 4) {
-                    let lastProperty = propertiesNodeList[propertiesNodeList.length -1]
-                    if (lastProperty.textContent.includes("Save"))
-                        save = lastProperty.textContent
-
-                }
-                console.log("Spell save: "+ save)
-
-
-
-                let cmdStringStart = '{"cmd":"'
-                let cmdStringMiddle = ''
-                if (!save && event.shiftKey) {
-                    cmdStringMiddle += "2d20" + SPELLATTACKMOD + ' ';
-                } else if (!save) {
-                    cmdStringMiddle += "1d20" + SPELLATTACKMOD + ' ';
-                }
-                damageValues.forEach(value => {                   
-                    cmdStringMiddle += value;
-                    cmdStringMiddle += ' '
-                })
-                let cmdStringEnd = '"}'
-                let cmdString = cmdStringStart + cmdStringMiddle + cmdStringEnd
-                console.log("Command: " + cmdString)
-
-
-                let roll = new XMLHttpRequest;
-                roll.open("POST", "https://api.dicemagic.io/roll");
-                roll.setRequestHeader("Content-Type", "application/json");
-                roll.send(cmdString)
-                roll.onreadystatechange = function() {
-                    if (roll.readyState === 4) {
-                        reply = JSON.parse(roll.responseText);
-                        console.log(reply)
-                        let rollResults = reply.result.match(/\*([0-9]+)\*/g);
-                        if (!save) {
-                            let toHit = rollResults[0].slice(1, -1)
-                            let damage = rollResults[1].slice(1, -1)
-                            let alertString = `You roll ${toHit} to hit.\nIf you aim true, ${spellName} deals\n${damage + ' '} ${damageTypes[0]} damage!`
-                        return displayBoxContent.innerText = alertString
-                        } else {
-                            let damage = rollResults[0]
-                            let alertString = `Pending a ${save},\n${spellName} deals ${damage} ${damageTypes[0]} damage!`
-                        return displayBoxContentChild.innerText = alertString
-                        }
-                    }
-                }                
-            }
         }
     }
 }
 
-// function rollDice(command) {
-//     let roll = new XMLHttpRequest;
-//     roll.open("POST", "https://api.dicemagic.io/roll");
-//     roll.setRequestHeader("Content-Type", "application/json");
-//     roll.send(`{"cmd":"${command}"}`)
-//     console.log(`{"cmd":"${command}"}`)
-//     roll.onreadystatechange = function() {
-//         if (roll.readyState === 4) {
-//             console.log("readyState = 4")
-//             console.log(roll.responseText)
-//             return roll.responseText
-//         }
-//     }
+//event handler for sidebar box containing damages
+async function rollSpellSideBar(e) {
+    console.log('rolling from sidebar')
+    let target = e.currentTarget
+    let spellName = document.querySelector('.ct-sidebar__heading').textContent
+    let effectDice = target.children[0].textContent;
+    let damageType = target.querySelector('.ct-tooltip').dataset.originalTitle.toLowerCase();
+    let restriction = target.children[2]
+    console.log({spellName})
+    console.log({effectDice})
+    console.log({damageType})
+    console.log({restriction})
 
-// function parseResult(apiResponse) {
-//     let rollObject = JSON.parse(apiResponse)
-//     let rollResult = rollObject.result.match(/\*(.*)\*/)[0].slice(1, -1)
-//     console.log("parsing " + rollResult)
-//     return rollResult
-// }
+    // if effect is a spell attack, roll spell attack
+    if (restriction && restriction.innerText.toLowerCase().includes('on hit')) {
+        return attackAndDamageRoll(e)
+    }
 
-// function parseRaw(apiResponse) {
-//     let rollObject = JSON.parse(apiResponse);
-//     let rawRoll = rollObject.result.match(/\((\d*)\)/)[1]
-//     console.log("parsing raw " + rawRoll)
-//     return rawRoll
-// }
+    // checks if spell has a save, and if so adds it to the spell object
+
+    let roll = await getRoll(effectDice);
+    console.log(roll.result)
+    console.log(roll.result.match(/(?<=\*)\d+/g))
+    let result = roll.result.match(/(?<=\*)\d+/g)[0];
+    let raw = roll.result.match(/(?<=\()[\d, ]+/g)
+
+    return renderSideBarSpell({spellName, effectDice, result, raw, damageType }, 'sidebar-spell-effect')
+}
+
+
+function renderSideBarSpell(input) {
+    const { result, raw, damageType } = input
+    // then add other things
+    const root = displayBoxContent
+
+    const subTitle = Subtitle(`${spellName}`)
+}
+
+
+
 function initializeClicks(interval) {
     window.setInterval(addOnClickToInitiative, interval)
     window.setInterval(addOnClickToSaves, interval)
@@ -1191,32 +1179,6 @@ displayBoxContent.id = 'display-box-content';
 displayBoxContent.innerText = "Welcome to Dicemagic.Beyond! \nRoll: shift-click \nAdvantage: shift-space-click \nDisadvantage: alt-space-click";
 displayBox.appendChild(displayBoxContent);
 
-function customRoll(event) {
-    console.log('customRoll', document.getElementById('display-box-input').value)
-    if ((event.key === "Enter") || event.type === "click") {
-        let cmdInput = document.getElementById('display-box-input').value
-        let roll = new XMLHttpRequest;
-            roll.open("POST", "https://api.dicemagic.io/roll");
-            roll.setRequestHeader("Content-Type", "application/json");
-            roll.send(`{"cmd":"${cmdInput}"}`)
-            console.log(`{"cmd":"${cmdInput}"}`)
-            roll.onreadystatechange = function() {
-            if (roll.readyState === 4) {
-                console.log("readyState = 4")
-                console.log(roll.responseText)
-                console.log(roll.responseText)
-                let reply = JSON.parse(roll.responseText)
-                if (reply.result) {
-                    return displayBoxContent.textContent = reply.result;
-                } else {
-                    return displayBoxContent.textContent = reply.err
-                }
-                
-            }
-        }
-    }
-}
-
 function makeDraggable(element) {
     console.log('initializing results window');
     var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
@@ -1225,21 +1187,19 @@ function makeDraggable(element) {
     element.addEventListener('mousedown', startDrag);
 
     function startDrag(event) {
-        if (event.button === 0 && event.target.id === 'display-box') {
+        if (event.button === 0 && event.currentTarget.id === 'display-box') {
             console.log('start')
-            event.preventDefault();
             pos3 = event.clientX;
             pos4 = event.clientY;
     
-            document.addEventListener('mouseup', stopDragging, false)
-            document.addEventListener('mousemove', dragElement, false)
+            document.addEventListener('mouseup', stopDragging)
+            document.addEventListener('mousemove', dragElement)
+            document.addEventListener('click', stopClick, true)
         }
     }
 
     function dragElement(event) {
         console.log('moving')
-        event.preventDefault();
-
         pos1 = pos3 - event.clientX;
         pos2 = pos4 - event.clientY;
         pos3 = event.clientX;
@@ -1251,13 +1211,21 @@ function makeDraggable(element) {
 
     function stopDragging(event) {
         console.log('stop')
-        document.removeEventListener('mouseup', stopDragging, false);
-        document.removeEventListener('mousemove', dragElement, false);
+        document.removeEventListener('mouseup', stopDragging);
+        document.removeEventListener('mousemove', dragElement);
+        
     }
 
+    function stopClick(event) {
+        console.log('stopclick')
+        event.preventDefault()
+        event.stopPropagation()
+        document.removeEventListener('click', stopClick, true)
+    }
 }
 
 makeDraggable(displayBox)
 
 //button class for nice red button
 //<button class="ct-theme-button ct-theme-button--filled ct-theme-button--interactive ct-button character-button character-button-small"><span class="ct-button__content">Save</span></button>
+

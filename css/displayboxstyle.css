@@ -172,3 +172,14 @@
 .text-left {
     text-align: left;
 }
+
+.roll-in-place {
+    font-family: "Roboto Condensed",Roboto,Helvetica,sans-serif;
+    color: #C53131;
+    font-size: 1.4em;
+    font-weight: bold;
+    text-transform: uppercase;
+
+    position: absolute;
+    
+}
