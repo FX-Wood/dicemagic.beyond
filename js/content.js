@@ -497,25 +497,12 @@ function renderSkillCheck(output) {
     let subHead = `You rolled ${result} with a modifier of ${modifier}`
 
     // string with rolling results
-    let title = document.createElement('span')
-        title.className = 'headline'
-        title.innerText = headline
-    let subTitle = document.createElement('span')
-        subTitle.className = 'subhead'
-        subTitle.innerText = subHead
-
+    let title = Title(headline)
+    let subTitle = subTitle(subHead)
     // flex row for roll info and labels
     let rollBox = Row('roll-box')
     
-    let col1 = Col()
-    // raw roll
-    let label1 = document.createElement('span')
-        label1.innerText = 'raw'
-        label1.className = 'roll-label'
-    col1.appendChild(label1)
-    let raw = document.createElement('span')
-        raw.innerText = result
-    col1.appendChild(raw)
+    let col1 = RollInfoColumn('raw', raw)
     rollBox.appendChild(col1)
 
     let col2 = Col()
@@ -580,48 +567,42 @@ function renderSkillCheck(output) {
     root.appendChild(rollBox)
 }
 
-async function attackAndDamageRoll(e) {
+async function attackAndDamageRoll(e, type) {
     if (e.shiftKey) {
         e.preventDefault()
         e.stopPropagation()
-        console.log('Rolling attack');
+        console.log('Rolling attack', e, type);
 
         const advantageState = determineAdvantage(e);
+        let hitModifier, damage, damageType;
         // handle primary box attacks
-        let hitModifier = e.currentTarget.querySelector('.ct-combat-attack__tohit .ct-signed-number')
-        if (hitModifier) {
-            hitModifier = hitModifier.textContent
+        if (!type) {
+            hitModifier = e.currentTarget.querySelector('.ct-combat-attack__tohit .ct-signed-number').textContent
+            damage = e.currentTarget.querySelector('.ct-damage__value').textContent.split(/(?=[+-])/)
+            damageType = e.currentTarget.querySelector('.ct-tooltip[data-original-title]').dataset.originalTitle.toLowerCase()
         }
-        let damage = e.currentTarget.querySelector('.ct-damage__value')
         // handle spell attacks from primary box spell tab
-        if (!hitModifier) {
+        if (type === 'primary-box-spell') {
             hitModifier = e.currentTarget.querySelector('.ct-spells-spell__tohit').textContent
-            damage = e.currentTarget.querySelector('.ct-damage__value')
+            damage = e.currentTarget.querySelector('.ct-damage__value').textContent.split(/(?=[+-])/)
+            damageType = e.currentTarget.querySelector('.ct-damage__icon .ct-tooltip').title.toLowerCase()
         }
         // handle spell attacks from sidebar
-        if (!hitModifier) {
+        if (type === 'sidebar-spell') {
             hitModifier = SPELLATTACKMOD
-            damage = e.currentTarget.querySelector('.ct-spell-caster__modifier-amount')
-        }
-        // parse damage roll into dice and modifier
-        damage = damage.textContent.split(/(?=[+-])/)
-        const damageDice = damage[0]
-        const damageModifier = (damage[1] || 0) // handle attacks without modifier
-        const numDamageDice = damage[0].split('d')[0]
-        const damageDiceAdvantage = parseInt(damage[0].split('d')[0]) * 2 + 'd' + damage[0].split('d')[1]
-        let damageType = e.currentTarget.querySelector('.ct-tooltip.ct-damage');
-        // handle primary box attack tab
-        if (damageType) {
-            damageType = damageType.dataset.originalTitle.toLowerCase()
-        }
-        // handle primary box spells tab
-        if (!damageType) {
-            damageType = e.currentTarget.querySelector('.ct-damage__icon .ct-tooltip').title.toLowerCase()
+            damage = e.currentTarget.querySelector('.ct-spell-caster__modifier-amount').textContent.split(/(?=[+-])/)
+            damageType = e.currentTarget.querySelector('.ct-tooltip[data-original-title]').dataset.originalTitle.toLowerCase()
         }
         // handle custom weapons
         if (damageType === "item is customized") {
             damageType = "non-mundane";
         }
+        // parse damage roll into dice and modifier
+        const damageDice = damage[0]
+        const damageModifier = (damage[1] || 0) // handle attacks without modifier
+        const numDamageDice = damage[0].split('d')[0]
+        const damageDiceAdvantage = parseInt(damage[0].split('d')[0]) * 2 + 'd' + damage[0].split('d')[1]
+
         let cmdString = `1d20,1d20,${damageDice},${damageDiceAdvantage}`
         let rolls = await getRoll(cmdString)
         let damageRolls = rolls.result.match(/(?<=\()[\d, ]+/g)
@@ -881,7 +862,7 @@ async function rollSpellPrimaryBox(e) {
         e.stopPropagation();
         // if it's a spell attack, use attack renderer
         if (e.currentTarget.querySelector('.ct-spells-spell__tohit')) {
-            return attackAndDamageRoll(e)
+            return attackAndDamageRoll(e, 'primary-box-spell')
         }
         let spellName = e.currentTarget.querySelector('.ct-spell-name').textContent
         let saveDC = e.currentTarget.querySelector('.ct-spells-spell__save-value');
@@ -968,13 +949,56 @@ function Title(text, className) {
     el.innerText = text
     return el
 }
-
+/**
+ * makes a span with subtitle styling
+ * @param {String} text 
+ * @param {String} className 
+ * @returns {HTMLSpanElement}
+ */
 function Subtitle(text, className) {
-    let el = document.createElement('span')
+    const el = document.createElement('span')
     el.className = 'subhead'
     el.innerText = text
     return el
 }
+
+function RollInfoLabel(text, className) {
+    const el = document.createElement('span')
+    el.className = 'roll-label nowrap'
+    el.innerText = text
+    return el
+}
+
+function RollInfoContent(text, className) {
+    const el = document.createElement('span')
+    el.className = 'roll-info nowrap'
+    el.innerText = text
+    return el
+}
+
+function RollInfoInput(value, className) {
+    let el = document.createElement('input')
+        el.type = 'number'
+        el.name = 'effectModifier'
+        el.className = 'ct-health-summary__adjuster-field-input modifier-input'
+        el.className.add(className || '')
+        el.value = parseInt(effectModifier)
+}
+
+function RollInfoColumn(label, value) {
+    const el = Col()
+    el.appendChild(RollInfoLabel(label))
+    el.appendChild(RollInfoContent(value))
+    return el
+}
+
+function RollInputColumn(label, value) {
+    const el = Col()
+    el.appendChild(RollInfoLabel(label))
+    el.appendChild(RollInfoInput(value))
+    return el
+}
+
 
 function renderPrimaryBoxSpells(spellInfo) {
     console.log('rendering primary box spells')
@@ -1002,43 +1026,17 @@ function renderPrimaryBoxSpells(spellInfo) {
 
     // flex row for roll info and labels
     let rollBox = Row('roll-box')
-
-    let effCol = Col()
-    // damage dice
-    let label1 = document.createElement('span')
-        label1.innerText = isHeal ? 'healing' : 'damage'
-        label1.className = 'roll-label'
-    effCol.appendChild(label1)
-    let eff = document.createElement('span')
-        eff.className = 'raw-roll raw-roll-damage'
-        eff.innerText = effectDice
-    effCol.appendChild(eff)
-    rollBox.appendChild(effCol)
+    
+    // column for the spell effect dice, e.g., '2d6'
+    let effectCol = RollInfoColumn(isHeal ? 'healing' : 'damage', effectDice)
+    rollBox.appendChild(effectCol)
 
     // damage rolls
-    let effRawCol = Col()
-    let label2 = document.createElement('span')
-        label2.innerText = 'roll results'
-        label2.className = 'roll-label nowrap'
-    effRawCol.appendChild(label2)
-    let effRaw = document.createElement('span')
-        effRaw.className = 'text-left nowrap'
-        effRaw.innerText = rawEffect
-    effRawCol.appendChild(effRaw)
+    let effRawCol = RollInfoColumn('roll results', rawEffect)
     rollBox.appendChild(effRawCol)
     if (effectModifier) {
-        let col4 = Col()
-        let label4 = document.createElement('span')
-            label4.innerText = 'modifier'
-            label4.className = 'roll-label'
-        col4.appendChild(label4)
-        let dmgMod = document.createElement('input')
-            dmgMod.type = 'number'
-            dmgMod.name = 'effectModifier'
-            dmgMod.className = 'ct-health-summary__adjuster-field-input modifier-input'
-            dmgMod.value = parseInt(effectModifier)
-        col4.appendChild(dmgMod)
-        rollBox.appendChild(col4)
+        let effectModifierCol = RollInputColumn('modifier', effectModifier)
+        rollBox.appendChild(effectModifierCol)
     }
     rollBox.appendChild(FlexSpacer())
 
@@ -1104,7 +1102,7 @@ function addOnClickToSidebarSpells() {
             let spellDamageEffects = sidebarSpell.querySelectorAll('.ct-spell-caster__modifier--damage')
             // adds click listener to box containing damages
             spellDamageEffects.forEach(item => {
-                item.classList.add('.sidebar-damage-box');
+                item.classList.add('sidebar-damage-box');
                 item.addEventListener('click', rollSpellSideBar);
             })
             console.log('adding event listener to sidebar damage box')
@@ -1114,40 +1112,62 @@ function addOnClickToSidebarSpells() {
 
 //event handler for sidebar box containing damages
 async function rollSpellSideBar(e) {
-    console.log('rolling from sidebar')
-    let target = e.currentTarget
-    let spellName = document.querySelector('.ct-sidebar__heading').textContent
-    let effectDice = target.children[0].textContent;
-    let damageType = target.querySelector('.ct-tooltip').dataset.originalTitle.toLowerCase();
-    let restriction = target.children[2]
-    console.log({spellName})
-    console.log({effectDice})
-    console.log({damageType})
-    console.log({restriction})
-
-    // if effect is a spell attack, roll spell attack
-    if (restriction && restriction.innerText.toLowerCase().includes('on hit')) {
-        return attackAndDamageRoll(e)
+    if (e.shiftKey) {
+        e.preventDefault()
+        e.stopPropagation()
+        console.log('rolling from sidebar')
+        let target = e.currentTarget
+        let spellName = document.querySelector('.ct-sidebar__heading').textContent
+        let effectDice = target.children[0].textContent;
+        let damageType = target.querySelector('.ct-tooltip').dataset.originalTitle.toLowerCase();
+        let restriction = target.children[2]
+        console.log({spellName})
+        console.log({effectDice})
+        console.log({damageType})
+        console.log({restriction})
+    
+        // if effect is a spell attack, roll spell attack
+        if (restriction && restriction.innerText.toLowerCase().includes('on hit')) {
+            console.log('found spell attack', e)
+            return attackAndDamageRoll(e, 'sidebar-spell')
+        }
+    
+        // checks if spell has a save, and if so adds it to the spell object
+    
+        let roll = await getRoll(effectDice);
+        console.log(roll.result)
+        console.log(roll.result.match(/(?<=\*)\d+/g))
+        let result = roll.result.match(/(?<=\*)\d+/g)[0];
+        let raw = roll.result.match(/(?<=\()[\d, ]+/g)
+    
+        return renderSideBarSpell({ spellName, effectDice, result, raw, damageType }, 'sidebar-spell-effect')
     }
-
-    // checks if spell has a save, and if so adds it to the spell object
-
-    let roll = await getRoll(effectDice);
-    console.log(roll.result)
-    console.log(roll.result.match(/(?<=\*)\d+/g))
-    let result = roll.result.match(/(?<=\*)\d+/g)[0];
-    let raw = roll.result.match(/(?<=\()[\d, ]+/g)
-
-    return renderSideBarSpell({spellName, effectDice, result, raw, damageType }, 'sidebar-spell-effect')
 }
 
 
-function renderSideBarSpell(input) {
-    const { result, raw, damageType } = input
+function renderSideBarSpell({ spellName, effectDice, result, raw, damageType }) {
     // then add other things
     const root = displayBoxContent
+    root.innerHTML = ''
+    const title = Title(`${spellName}:\n`)
+    const subTitle = Subtitle(`${result} ${damageType} damage`)
+    root.appendChild(title)
+    root.appendChild(subTitle)
+    root.appendChild(document.createElement('br'))
+    
+    const rollBox = Row('roll-box')
+    // show dice to be rolled
+    const effDiceCol = RollInfoColumn('dice', effectDice)
+    // show result
+    const resultCol = RollInfoColumn('result', result)
+    // show raw
+    const rawCol = RollInfoColumn('raw', raw)
 
-    const subTitle = Subtitle(`${spellName}`)
+    rollBox.appendChild(effDiceCol)
+    rollBox.appendChild(resultCol)
+    rollBox.appendChild(rawCol)
+    rollBox.appendChild(FlexSpacer())
+    root.appendChild(rollBox)
 }
 
 
