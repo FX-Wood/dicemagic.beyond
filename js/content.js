@@ -113,7 +113,7 @@ function getRoll(cmd) {
     console.log('cmd:', cmd )
     console.log('here is the promise')
     if (cmd) {
-        return new Promise(resolve => {
+        return new Promise((resolve) => {
             chrome.runtime.sendMessage({ msg: `{"cmd":"${cmd}"}` }, (roll) => {
                 resolve(roll)
             })
@@ -470,39 +470,52 @@ function rollSkillCheck(e) {
                 result = high
             }
             // handle disadvantage
-            if (advantageState == 2) {
+            if (advantageState === 2) {
                 result = low
             }
-            const output = {}
-            output.name = name
-            output.stat = stat
-            output.result = result
-            output.normal = first
-            output.high = high
-            output.low = low
-            output.modifier = modifier
-            output.advantageState = advantageState
-            console.log('output', output)
-            renderSkillCheck(output)
+            const props = {
+                name,
+                stat,
+                result,
+                first,
+                high,
+                low,
+                modifier,
+                advantageState,
+            }
+            console.log('props', props)
+            renderSkillCheck(props)
         })
     }
 }
 
-function renderSkillCheck(output) {
+function renderSkillCheck(props) {
+    const { name, stat, result, normal, high, low, modifier,  advantageState } = props
     console.log('rendering saving throw')
-    const { name, stat, result, normal, high, low, modifier,  advantageState} = output
     const root = displayBoxContent
     root.innerHTML = ''
     let headline = `${name}(${stat}): ${parseInt(result) + parseInt(modifier)}\n`
     let subHead = `You rolled ${result} with a modifier of ${modifier}`
 
     // string with rolling results
-    let title = Title(headline)
-    let subTitle = subTitle(subHead)
+    let title = document.createElement('span')
+        title.className = 'headline'
+        title.innerText = headline
+    let subTitle = document.createElement('span')
+        subTitle.className = 'subhead'
+        subTitle.innerText = subHead
     // flex row for roll info and labels
     let rollBox = Row('roll-box')
     
-    let col1 = RollInfoColumn('raw', raw)
+    let col1 = Col()
+    // raw roll result
+    let label1 = document.createElement('span')
+        label1.innerText = 'raw'
+        label1.className = 'roll-label'
+    col1.appendChild(label1)
+    let raw = document.createElement('span')
+        raw.innerText = result
+    col1.appendChild(raw)
     rollBox.appendChild(col1)
 
     let col2 = Col()
