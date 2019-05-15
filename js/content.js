@@ -302,7 +302,7 @@ function addOnClickToAbilities() {
         abilities.forEach(ability => {
             ability.addEventListener("click", rollAbilityCheck, true);
             // todo: make ability hover class
-            ability.classList.add('');
+            ability.classList.add('ability-roll-mouseover');
         })
     }
 }
@@ -313,8 +313,9 @@ function rollAbilityCheck(e) {
         e.stopPropagation()
         console.log('Rolling ability check. Space: ' + SPACEPRESSED + ' Shift: ' + e.shiftKey + ' Alt: ' + e.altKey)
 
-        let name = e.currentTarget.querySelector("ct-ability-summary__label").innerText
-        let modifier = e.currentTarget.querySelector("ct-ability-summary__label").textContent
+        let name = e.currentTarget.querySelector(".ct-ability-summary__label").innerText.toLowerCase()
+            name = name.charAt(0).toUpperCase() + name.slice(1) + ' check'
+        let modifier = e.currentTarget.querySelector(".ct-signed-number").textContent
 
         let advantageState = determineAdvantage(e)
 
@@ -331,7 +332,6 @@ function rollAbilityCheck(e) {
             }
             const props = {
                 name,
-                stat,
                 result,
                 first,
                 high,
@@ -340,7 +340,7 @@ function rollAbilityCheck(e) {
                 advantageState,
             }
             console.log('props', props)
-            renderAbilityCheck(props)
+            renderSkillorAbilityCheck(props)
         })
     }
 }
@@ -509,8 +509,9 @@ function rollSkillCheck(e) {
         e.stopPropagation()
         console.log('Rolling skill check. Space: ' + SPACEPRESSED + ' Shift: ' + e.shiftKey + ' Alt: ' + e.altKey)
 
-        let name = e.currentTarget.querySelector(".ct-skills__col--skill").innerText
+        let skillName = e.currentTarget.querySelector(".ct-skills__col--skill").innerText
         let stat = e.currentTarget.querySelector(".ct-skills__col--stat").innerText
+        let name = `${skillName}(${stat})`
         let modifier = e.currentTarget.querySelector(".ct-signed-number").textContent
 
         let advantageState = determineAdvantage(e)
@@ -537,17 +538,17 @@ function rollSkillCheck(e) {
                 advantageState,
             }
             console.log('props', props)
-            renderSkillCheck(props)
+            renderSkillorAbilityCheck(props)
         })
     }
 }
 
-function renderSkillCheck(props) {
-    const { name, stat, result, normal, high, low, modifier,  advantageState } = props
+function renderSkillorAbilityCheck(props) {
+    const { name, result, normal, high, low, modifier,  advantageState } = props
     console.log('rendering saving throw')
     const root = displayBoxContent
     root.innerHTML = ''
-    let headline = `${name}(${stat}): ${parseInt(result) + parseInt(modifier)}\n`
+    let headline = `${name}: ${parseInt(result) + parseInt(modifier)}\n`
     let subHead = `You rolled ${result} with a modifier of ${modifier}`
 
     // string with rolling results
@@ -606,7 +607,7 @@ function renderSkillCheck(props) {
     btns[advantageState].activate()
     // function to update roll
     function reRender(newRoll, newModifier) {
-        title.innerText = `${name}(${stat}):  ${parseInt(newRoll) + parseInt(newModifier)}\n`
+        title.innerText = `${name}:  ${parseInt(newRoll) + parseInt(newModifier)}\n`
         subTitle.innerText = `You rolled ${newRoll} with a modifier of ${newModifier}`
         raw.innerText = newRoll
     }
@@ -1242,6 +1243,7 @@ function initializeClicks(interval) {
     window.setInterval(addOnClickToInitiative, interval)
     window.setInterval(addOnClickToSaves, interval)
     window.setInterval(addOnClickToSkills, interval)
+    window.setInterval(addOnClickToAbilities, interval)
     window.setInterval(addOnclickToPrimaryBox, interval)
     window.setInterval(addOnClickToSidebarSpells, interval)
     
