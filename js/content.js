@@ -292,6 +292,59 @@ function renderInitiative(output) {
     root.appendChild(rollBox)
 }
 
+// abilities
+function addOnClickToAbilities() {
+    let abilitiesBox = document.querySelector('.ct-quick-info__abilities');
+    if (abilitiesBox && !abilitiesBox.iAmListening) {
+        abilitiesBox.iAmListening = true;
+        console.log("Adding listeners to abilities");
+        const abilities = abilitiesBox.querySelectorAll('.ct-ability-summary')
+        abilities.forEach(ability => {
+            ability.addEventListener("click", rollAbilityCheck, true);
+            // todo: make ability hover class
+            ability.classList.add('');
+        })
+    }
+}
+
+function rollAbilityCheck(e) {
+    if (e.shiftKey){
+        e.preventDefault()
+        e.stopPropagation()
+        console.log('Rolling ability check. Space: ' + SPACEPRESSED + ' Shift: ' + e.shiftKey + ' Alt: ' + e.altKey)
+
+        let name = e.currentTarget.querySelector("ct-ability-summary__label").innerText
+        let modifier = e.currentTarget.querySelector("ct-ability-summary__label").textContent
+
+        let advantageState = determineAdvantage(e)
+
+        getRoll().then((roll) => {
+            const { first, high, low } = roll
+            let result = first
+            // handle advantage
+            if (advantageState === 1) {
+                result = high
+            }
+            // handle disadvantage
+            if (advantageState === 2) {
+                result = low
+            }
+            const props = {
+                name,
+                stat,
+                result,
+                first,
+                high,
+                low,
+                modifier,
+                advantageState,
+            }
+            console.log('props', props)
+            renderAbilityCheck(props)
+        })
+    }
+}
+
 // Saves
 function addOnClickToSaves() {
     let saves = document.querySelector('.ct-saving-throws-summary');
