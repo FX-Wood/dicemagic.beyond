@@ -60,12 +60,6 @@ function RenderInPlace(input, className) {
     target.appendChild(span)
 }
 
-function ToolTip(text) {
-    let fragment = document.createDocumentFragment()
-    fragment.innerHTML = `<div class="tippy-popper" role="tooltip" id="tippy-1220" x-placement="top" style="z-index: 9999; transition-duration: 350ms; visibility: visible; position: absolute; top: 0px; left: 0px; will-change: transform; transform: translate3d(1083px, 526px, 0px);"><div class="tippy-tooltip dark-theme" data-size="regular" data-animation="scale" data-state="visible" style="transition-duration: 100ms; top: 0px;"><div class="tippy-arrow" style="left: 23px;"></div><div class="tippy-content">${text}</div></div></div>`
-    return fragment
-}
-
 // advantage/disadvantage logic
 var SPACEPRESSED = false;
 window.addEventListener('keydown', function(e) {
@@ -134,10 +128,6 @@ function getRoll(cmd) {
     }) 
 }
 
-// todo: sendToLog
-//      this function will send completed rolls to the log contained in the popup
-
-
 //global variable to grab spell attack modifier in case a user opens up their sidebar before navigating to spells
 //unfortunately the sidebar doesn't display spell attack modifier
 var SPELLATTACKMOD;
@@ -169,6 +159,7 @@ function addOnClickToInitiative() {
                 e.preventDefault();
                 e.stopPropagation();
 
+                let name = 'Your initiative'
                 let modifier = e.currentTarget.textContent;
                 let advantageState = determineAdvantage(e);
 
@@ -183,113 +174,74 @@ function addOnClickToInitiative() {
                     if (advantageState == 2) {
                         result = low
                     }
-                    const output = {}
-                    output.result = result
-                    output.normal = first
-                    output.high = high
-                    output.low = low
-                    output.modifier = modifier
-                    output.advantageState = advantageState
+                    const props = {
+                        name,
+                        result,
+                        first,
+                        high,
+                        low,
+                        modifier,
+                        advantageState,
+                    }
                     console.log('output', output)
-                    renderInitiative(output)
+                    renderSimple(props)
                 })
             }
         }
     }
 }
 
-function renderInitiative(output) {
-    const { result, normal, high, low, modifier,  advantageState} = output
-
-    const root = displayBoxContent
-    root.innerHTML = ''
-    let headline = `Your initiative: ${parseInt(result) + parseInt(modifier)}\n`
-    let subHead = `You rolled ${result} with a modifier of ${modifier}`
-
-    // string with rolling results
-    let title = document.createElement('span')
-        title.className = 'headline'
-        title.innerText = headline
-    let subTitle = document.createElement('span')
-        subTitle.className = 'subhead'
-        subTitle.innerText = subHead
-
-    // flex row for roll info and labels
-    let rollBox = Row('roll-box')
-    
-    let col1 = Col()
-    // raw roll
-    let label1 = document.createElement('span')
-        label1.innerText = 'raw'
-        label1.className = 'roll-label'
-    col1.appendChild(label1)
-    let raw = document.createElement('span')
-        raw.innerText = result
-    col1.appendChild(raw)
-    rollBox.appendChild(col1)
-
-    let col2 = Col()
-    // modifier input
-    let label2 = document.createElement('span')
-        label2.innerText = 'modifier'
-        label2.className = 'roll-label'
-    col2.appendChild(label2)
-    let mod = document.createElement('input')
-        mod.type = 'number'
-        mod.name = 'modifier'
-        mod.className = 'ct-health-summary__adjuster-field-input modifier-input'
-        mod.value = parseInt(modifier)
-    col2.appendChild(mod)
-    rollBox.appendChild(col2)
-    // append spacer to end of box
-    rollBox.appendChild(FlexSpacer())
-    
-
-    // advantage buttons    
-    // container for advantage buttons
-    let buttonBox = Row('button-box')
-
-    // normal
-    let norm = TabBtn('normal', normal)
-    buttonBox.appendChild(norm)
-    // advantage
-    let adv = TabBtn('advantage', high)
-    buttonBox.appendChild(adv)
-
-    // disadvantage
-    let dAdv = TabBtn('disadvantage', low)
-    buttonBox.appendChild(dAdv)
-
-    const btns = [norm, adv, dAdv]
-    console.log(advantageState)
-    btns[advantageState].activate()
-    // function to update roll
-    function reRender(newRoll, newModifier) {
-        title.innerText = `Your initiative: ${parseInt(newRoll) + parseInt(newModifier)}\n`
-        subTitle.innerText = `You rolled ${newRoll} with a modifier of ${newModifier}`
-        raw.innerText = newRoll
+// abilities
+function addOnClickToAbilities() {
+    let abilitiesBox = document.querySelector('.ct-quick-info__abilities');
+    if (abilitiesBox && !abilitiesBox.iAmListening) {
+        abilitiesBox.iAmListening = true;
+        console.log("Adding listeners to abilities");
+        const abilities = abilitiesBox.querySelectorAll('.ct-ability-summary')
+        abilities.forEach(ability => {
+            ability.addEventListener("click", rollAbilityCheck, true);
+            // todo: make ability hover class
+            ability.classList.add('ability-roll-mouseover');
+        })
     }
-    // function to toggle advantage buttons
-    function advantageToggle(e) {
-        if (e.button === 0) {
-            btns.forEach(btn => btn.deActivate())
-            e.currentTarget.activate()
-            reRender(e.currentTarget.dataset.value, mod.value)
-        }
-    }
-    // handle new modifier input
-    mod.addEventListener('change', (e) => {
-        reRender(parseInt(raw.innerText), e.target.value)
-    })
-    // handle changes in advantage
-    btns.forEach(btn => btn.addEventListener('mousedown', advantageToggle))
+}
 
-    // order of elements in box
-    root.appendChild(title)
-    root.appendChild(subTitle)
-    root.appendChild(document.createElement('br'))
-    root.appendChild(buttonBox)
-    root.appendChild(rollBox)
+function rollAbilityCheck(e) {
+    if (e.shiftKey){
+        e.preventDefault()
+        e.stopPropagation()
+        console.log('Rolling ability check. Space: ' + SPACEPRESSED + ' Shift: ' + e.shiftKey + ' Alt: ' + e.altKey)
+
+        let name = e.currentTarget.querySelector(".ct-ability-summary__label").innerText.toLowerCase()
+            name = name.charAt(0).toUpperCase() + name.slice(1) + ' check'
+        let modifier = e.currentTarget.querySelector(".ct-signed-number").textContent
+
+        let advantageState = determineAdvantage(e)
+
+        getRoll().then((roll) => {
+            const { first, high, low } = roll
+            let result = first
+            // handle advantage
+            if (advantageState === 1) {
+                result = high
+            }
+            // handle disadvantage
+            if (advantageState === 2) {
+                result = low
+            }
+            const props = {
+                name,
+                result,
+                first,
+                high,
+                low,
+                modifier,
+                advantageState,
+            }
+            console.log('props', props)
+            renderSimple(props)
+        })
+    }
 }
 
 // Saves
@@ -313,7 +265,7 @@ function addOnClickToSaves() {
                 event.stopPropagation();
 
                 let name = this.querySelector(".ct-saving-throws-summary__ability-name").textContent;
-                name = name.charAt(0).toUpperCase() + name.slice(1)
+                name = name.charAt(0).toUpperCase() + name.slice(1) + ' saving throw'
                 let modifier = this.querySelector(".ct-saving-throws-summary__ability-modifier").textContent;
                 let advantageState = determineAdvantage(event)
                 getRoll().then((roll) => {
@@ -327,114 +279,23 @@ function addOnClickToSaves() {
                     if (advantageState == 2) {
                         result = low
                     }
-                    const output = {}
-                    output.name = name
-                    output.result = result
-                    output.normal = first
-                    output.high = high
-                    output.low = low
-                    output.modifier = modifier
-                    output.advantageState = advantageState
-                    console.log('output', output)
-                    renderSavingThrow(output)
+                    const props = {
+                        name,
+                        result,
+                        first,
+                        high,
+                        low,
+                        modifier,
+                        advantageState,
+                    }
+                    console.log('props', props)
+                    renderSimple(props)
                 })
             }
         }
     }
 }
 
-function renderSavingThrow(output) {
-    console.log('rendering saving throw')
-    const { name, result, normal, high, low, modifier,  advantageState} = output
-    const root = displayBoxContent
-    root.innerHTML = ''
-    let headline = `${name} saving throw: ${parseInt(result) + parseInt(modifier)}\n`
-    let subHead = `You rolled ${result} with a modifier of ${modifier}`
-
-    // string with rolling results
-    let title = document.createElement('span')
-        title.className = 'headline'
-        title.innerText = headline
-    let subTitle = document.createElement('span')
-        subTitle.className = 'subhead'
-        subTitle.innerText = subHead
-
-    // flex row for roll info and labels
-    let rollBox = Row('roll-box')
-    
-    let col1 = Col()
-    // raw roll
-    let label1 = document.createElement('span')
-        label1.innerText = 'raw'
-        label1.className = 'roll-label'
-    col1.appendChild(label1)
-    let raw = document.createElement('span')
-        raw.innerText = result
-    col1.appendChild(raw)
-    rollBox.appendChild(col1)
-
-    let col2 = Col()
-    // modifier input
-    let label2 = document.createElement('span')
-        label2.innerText = 'modifier'
-        label2.className = 'roll-label'
-    col2.appendChild(label2)
-    let mod = document.createElement('input')
-        mod.type = 'number'
-        mod.name = 'modifier'
-        mod.className = 'ct-health-summary__adjuster-field-input modifier-input'
-        mod.value = parseInt(modifier)
-    col2.appendChild(mod)
-    rollBox.appendChild(col2)
-    rollBox.appendChild(FlexSpacer())
-    
-
-    // advantage buttons    
-    // container for advantage buttons
-    let buttonBox = Row('button-box')
-
-    // normal
-    let norm = TabBtn('normal', normal)
-    buttonBox.appendChild(norm)
-    // advantage
-    let adv = TabBtn('advantage', high)
-    buttonBox.appendChild(adv)
-
-    // disadvantage
-    let dAdv = TabBtn('disadvantage', low)
-    buttonBox.appendChild(dAdv)
-
-    const btns = [norm, adv, dAdv]
-    console.log(advantageState)
-    btns[advantageState].activate()
-    // function to update roll
-    function reRender(newRoll, newModifier) {
-        title.innerText = `${name} saving throw: ${parseInt(newRoll) + parseInt(newModifier)}\n`
-        subTitle.innerText = `You rolled ${newRoll} with a modifier of ${newModifier}`
-        raw.innerText = newRoll
-    }
-    // function to toggle advantage buttons
-    function advantageToggle(e) {
-        if (e.button === 0) {
-            btns.forEach(btn => btn.deActivate())
-            e.currentTarget.activate()
-            reRender(e.currentTarget.dataset.value, mod.value)
-        }
-    }
-    // handle new modifier input
-    mod.addEventListener('change', (e) => {
-        reRender(parseInt(raw.innerText), e.target.value)
-    })
-    // handle changes in advantage
-    btns.forEach(btn => btn.addEventListener('mousedown', advantageToggle))
-
-    // order of elements in box
-    root.appendChild(title)
-    root.appendChild(subTitle)
-    root.appendChild(document.createElement('br'))
-    root.appendChild(buttonBox)
-    root.appendChild(rollBox)
-}
 // Skills
 function addOnClickToSkills() {
     let skills = document.querySelector('.ct-skills__list');
@@ -456,8 +317,9 @@ function rollSkillCheck(e) {
         e.stopPropagation()
         console.log('Rolling skill check. Space: ' + SPACEPRESSED + ' Shift: ' + e.shiftKey + ' Alt: ' + e.altKey)
 
-        let name = e.currentTarget.querySelector(".ct-skills__col--skill").innerText
+        let skillName = e.currentTarget.querySelector(".ct-skills__col--skill").innerText
         let stat = e.currentTarget.querySelector(".ct-skills__col--stat").innerText
+        let name = `${skillName}(${stat})`
         let modifier = e.currentTarget.querySelector(".ct-signed-number").textContent
 
         let advantageState = determineAdvantage(e)
@@ -484,17 +346,17 @@ function rollSkillCheck(e) {
                 advantageState,
             }
             console.log('props', props)
-            renderSkillCheck(props)
+            renderSimple(props)
         })
     }
 }
 
-function renderSkillCheck(props) {
-    const { name, stat, result, normal, high, low, modifier,  advantageState } = props
+function renderSimple(props) {
+    const { name, result, normal, high, low, modifier,  advantageState } = props
     console.log('rendering saving throw')
     const root = displayBoxContent
     root.innerHTML = ''
-    let headline = `${name}(${stat}): ${parseInt(result) + parseInt(modifier)}\n`
+    let headline = `${name}: ${parseInt(result) + parseInt(modifier)}\n`
     let subHead = `You rolled ${result} with a modifier of ${modifier}`
 
     // string with rolling results
@@ -553,7 +415,7 @@ function renderSkillCheck(props) {
     btns[advantageState].activate()
     // function to update roll
     function reRender(newRoll, newModifier) {
-        title.innerText = `${name}(${stat}):  ${parseInt(newRoll) + parseInt(newModifier)}\n`
+        title.innerText = `${name}:  ${parseInt(newRoll) + parseInt(newModifier)}\n`
         subTitle.innerText = `You rolled ${newRoll} with a modifier of ${newModifier}`
         raw.innerText = newRoll
     }
@@ -930,24 +792,6 @@ async function rollSpellPrimaryBox(e) {
         }
         console.log(spellInfo)
         renderPrimaryBoxSpells(spellInfo)
-        
-        // // render to display
-        // } else if (saveDC) {            
-        //     let damageResult = reply.match(/\*([0-9]+)\*/g)[0].slice(1, -1);
-        //     let saveToHitPhrase = `Pending target's DC${saveDC} ${saveLabel} save,\nyour spell deals ${damageResult} ${damageType} damage!`
-        //     return displayBoxContent.innerText = saveToHitPhrase;
-        // //this block is for "booming blade" or "green flame blade"
-        // } else if (!hitModifier && !saveDC) {
-        //     let damageResult = reply.match(/\*([0-9]+)\*/g)[0].slice(1, -1);
-        //     let returnString = `${spellName} does ${damageResult} ${damageType} damage!`
-        //     return displayBoxContent.innerText = returnString;
-        // //this block is for magic missile
-        // } else if (spellName.toLowerCase().includes('missile')) {
-        //     let damageResult = reply.match(/\*([0-9]+)\*/g)[0].slice(1, -1);
-            
-        //     let magicMissilePhrase = `You fire ${magicMissileCount} missiles.\nEach deals ${damageResult} ${damageType} damage,\nfor a total of ${magicMissileCount * parseInt(damageResult)} damage!`
-        //     return displayBoxContent.innerText = magicMissilePhrase;
-        // }
     }
 }
 /**
@@ -1189,6 +1033,7 @@ function initializeClicks(interval) {
     window.setInterval(addOnClickToInitiative, interval)
     window.setInterval(addOnClickToSaves, interval)
     window.setInterval(addOnClickToSkills, interval)
+    window.setInterval(addOnClickToAbilities, interval)
     window.setInterval(addOnclickToPrimaryBox, interval)
     window.setInterval(addOnClickToSidebarSpells, interval)
     
