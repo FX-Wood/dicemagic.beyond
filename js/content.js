@@ -88,19 +88,6 @@ function determineAdvantage(e) {
     return 0
 }
 
-// listener for receiving messages from extension
-chrome.runtime.onMessage.addListener(
-    function(request, sender, sendResponse) {
-        console.log(sender.tab ? 
-            "from a content script:" + sender.tab.url :
-            "from the extension");
-        console.log('request', request)
-
-        if (request.command) {
-            sendResponse({status: 'got the message'})
-        }
-})
-
 // get rolls from background script
 function getRoll(cmd) {
     console.log('getting roll')

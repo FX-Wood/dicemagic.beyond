@@ -3,8 +3,7 @@
     "version": "1.0",
     "description": "Rolls dice using Aaron's API while using dndbeyond",
     "permissions": [
-        "activeTab", 
-        "declarativeContent", 
+        "activeTab",
         "https://www.dndbeyond.com/",
         "https://api.dicemagic.io/"
     ],
@@ -14,7 +13,7 @@
         "matches": [
             "https://www.dndbeyond.com/profile/*/characters/*", "http://www.dndbeyond.com/*"
         ],
-        "run at": "document_end",
+        "run_at": "document_end",
         "css": ["css/hoverstyle.css", "css/displayboxstyle.css"],
         "js": ["js/content.js"]
     }
