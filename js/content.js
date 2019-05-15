@@ -152,42 +152,41 @@ function addOnClickToInitiative() {
         console.log('adding listener to initiative');
 
         initiative.addEventListener("click", rollInitiative, true);
+    }
+}
+function rollInitiative(e) {
+    if (e.shiftKey) {
+        console.log('Rolling initiative!');
+        e.preventDefault();
+        e.stopPropagation();
 
-        function rollInitiative(e) {
-            if (e.shiftKey) {
-                console.log('Rolling initiative!');
-                e.preventDefault();
-                e.stopPropagation();
+        let name = 'Your initiative'
+        let modifier = e.currentTarget.textContent;
+        let advantageState = determineAdvantage(e);
 
-                let name = 'Your initiative'
-                let modifier = e.currentTarget.textContent;
-                let advantageState = determineAdvantage(e);
-
-                getRoll().then((roll) => {
-                    const { first, high, low } = roll
-                    let result = first
-                    // handle advantage
-                    if (advantageState === 1) {
-                        result = high
-                    }
-                    // handle disadvantage
-                    if (advantageState == 2) {
-                        result = low
-                    }
-                    const props = {
-                        name,
-                        result,
-                        first,
-                        high,
-                        low,
-                        modifier,
-                        advantageState,
-                    }
-                    console.log('output', output)
-                    renderSimple(props)
-                })
+        getRoll().then((roll) => {
+            const { first, high, low } = roll
+            let result = first
+            // handle advantage
+            if (advantageState === 1) {
+                result = high
             }
-        }
+            // handle disadvantage
+            if (advantageState == 2) {
+                result = low
+            }
+            const props = {
+                name,
+                result,
+                first,
+                high,
+                low,
+                modifier,
+                advantageState,
+            }
+            console.log('props', props)
+            renderSimple(props)
+        })
     }
 }
 
