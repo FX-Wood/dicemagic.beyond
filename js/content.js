@@ -466,7 +466,7 @@ async function attackAndDamageRoll(e, type) {
 
         let cmdString = `1d20,1d20,${damageDice},${damageDiceAdvantage}`
         let rolls = await getRoll(cmdString)
-        let damageRolls = rolls.result.match(/(?<=\()[\d, ]+/g)
+        let damageRolls = rolls.result.match(/[\d, ]+(?=\()/g)
         damageRolls = damageRolls[damageRolls.length - 1]
         rolls = rolls.result.match(/\d+(?=\*)/g)
         // handle to hit
@@ -760,9 +760,9 @@ async function rollSpellPrimaryBox(e) {
         console.log({effectDice, effectModifier})
         const numEffectDice = parseInt(effectDice.split('d')[0])
         console.log({numEffectDice})
-        const effectResult = roll.result.match(/(?<=\*)\d+/g)[0]
+        const effectResult = roll.result.match(/\d+(?=\*)/g)[0]
         console.log({effectResult})
-        const rawEffect = roll.result.match(/(?<=\()[\d, ]+/g)[0]
+        const rawEffect = roll.result.match(/[\d, ]+(?=\()/g)[0]
         const spellInfo = {
             spellName,
             saveDC,
@@ -979,9 +979,9 @@ async function rollSpellSideBar(e) {
     
         let roll = await getRoll(effectDice);
         console.log(roll.result)
-        console.log(roll.result.match(/(?<=\*)\d+/g))
-        let result = roll.result.match(/(?<=\*)\d+/g)[0];
-        let raw = roll.result.match(/(?<=\()[\d, ]+/g)
+        console.log(roll.result.match(/\d+(?=\*)/g))
+        let result = roll.result.match(/\d+(?=\*)/g)[0];
+        let raw = roll.result.match(/[\d, ]+(?=\()/g)
     
         return renderSideBarSpell({ spellName, effectDice, result, raw, damageType }, 'sidebar-spell-effect')
     }
