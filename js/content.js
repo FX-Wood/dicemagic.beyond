@@ -1033,9 +1033,7 @@ setTimeout(initializeClicks(1000), 3000)
 
 var displayBox = document.createElement('div')
 displayBox.id = 'display-box';
-backgroundURL = chrome.extension.getURL("images/bg.svg")
-displayBox.style.backgroundImage = `url('${backgroundURL}')`;
-console.log(backgroundURL)
+displayBox.className = 'ct-box-background ct-box-background--fancy-small'
 document.body.appendChild(displayBox);
 
 var displayBoxContent = document.createElement('div');

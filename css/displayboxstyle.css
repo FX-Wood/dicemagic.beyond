@@ -3,8 +3,6 @@
 } */
 
 #display-box {
-    
-    all:initial;
 
     position: absolute;
     z-index: 10;
@@ -13,7 +11,6 @@
     width : 281px;
     box-sizing: border-box;
 
-    background-size: 100%, 100%;
 
     cursor: grab;
     text-align: center;
