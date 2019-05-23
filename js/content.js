@@ -115,19 +115,6 @@ function getRoll(cmd) {
     }) 
 }
 
-//global variable to grab spell attack modifier in case a user opens up their sidebar before navigating to spells
-//unfortunately the sidebar doesn't display spell attack modifier
-var SPELLATTACKMOD;
-document.querySelector('body').onload = function() {
-    if (document.querySelector('.ct-combat-attack--spell .ct-combat-attack__tohit')) {
-        SPELLATTACKMOD = document.querySelector('.ct-combat-attack--spell .ct-combat-attack__tohit').textContent
-        console.log("got spell attack to hit on load")
-        console.log(SPELLATTACKMOD)
-    }
-};
-
-//greeting and instructions
-console.log("dicemagic.beyond! \nspace-click to roll. \nspace-shift-click for advantage \nspace-alt/option-click for disadvantage");
 
 
 // Initiative
@@ -141,6 +128,7 @@ function addOnClickToInitiative() {
         initiative.addEventListener("click", rollInitiative, true);
     }
 }
+
 function rollInitiative(e) {
     if (e.shiftKey) {
         console.log('Rolling initiative!');
@@ -450,7 +438,7 @@ async function attackAndDamageRoll(e, type) {
         }
         // handle spell attacks from sidebar
         if (type === 'sidebar-spell') {
-            hitModifier = SPELLATTACKMOD
+            hitModifier = SPELL_ATTACK_MOD
             damage = e.currentTarget.querySelector('.ct-spell-caster__modifier-amount').textContent.split(/(?=[+-])/)
             damageType = e.currentTarget.querySelector('.ct-tooltip[data-original-title]').dataset.originalTitle.toLowerCase()
         }
@@ -929,9 +917,9 @@ function addOnclickToPrimaryBox() {
 function addOnClickToSidebarSpells() {
     let primaryBoxSpellAttackElement = document.querySelectorAll(".ct-spells-level-casting__info-item")[1]
     //grabs spell attack mod from primary content box
-    if (primaryBoxSpellAttackElement && (SPELLATTACKMOD === undefined)) {
-        SPELLATTACKMOD = primaryBoxSpellAttackElement.textContent;
-        console.log("got spell attack to hit in loop: " + SPELLATTACKMOD)
+    if (primaryBoxSpellAttackElement && (SPELL_ATTACK_MOD === undefined)) {
+        SPELL_ATTACK_MOD = primaryBoxSpellAttackElement.textContent;
+        console.log("got spell attack to hit in loop: " + SPELL_ATTACK_MOD)
     }
     // check if sidebar exists
     const sidebarSpell = document.querySelector('.ct-sidebar__portal .ct-spell-caster__modifiers--damages')
@@ -1012,34 +1000,119 @@ function renderSideBarSpell({ spellName, effectDice, result, raw, damageType }) 
     rollBox.appendChild(FlexSpacer())
     root.appendChild(rollBox)
 }
-
-
-
-function initializeClicks(interval) {
-    window.setInterval(addOnClickToInitiative, interval)
-    window.setInterval(addOnClickToSaves, interval)
-    window.setInterval(addOnClickToSkills, interval)
-    window.setInterval(addOnClickToAbilities, interval)
-    window.setInterval(addOnclickToPrimaryBox, interval)
-    window.setInterval(addOnClickToSidebarSpells, interval)
-    
+class ThemeWatcher {
+    constructor(pollFrequency=1000) {
+        this.pollFrequency = pollFrequency
+        this.intervalHandle = setInterval(this.getThemeColor, pollFrequency)
+        this.color = '#c53131'
+        this.target = document.getElementsByClassName('ct-character-header-desktop__button')
+        this.fallback = document.getElementsByClassName('ct-status-summary-mobile__health')
+    }
+    getThemeColor = () => {
+        let nextColor;
+        // handle desktop version
+        if (this.target[0]) {
+            nextColor = window.getComputedStyle(this.target[0]).getPropertyValue('border-color')
+        }
+        // handle mobile
+        if (this.fallback[0]) {
+            nextColor = window.getComputedStyle(this.fallback[0])
+        }
+        if (nextColor && this.color !== nextColor) {
+            console.log('theme change!', nextColor)
+            this.color = nextColor
+            // TODO: set up mask for saves
+            // change classes
+        }
+    }
+    stop = () => clearInterval(this.interval)
+    start = () => this.intervalHandle = setInterval(this.getThemeColor, this.pollFrequency)
+    deconstruct = () => {
+        this.stop()
+        delete this
+    }
 }
 
-setTimeout(initializeClicks(1000), 3000)
+// var THEME = {
+//     INTERVAL: null,
+//     COLOR: '#c53131',
+//     TARGET: null,
+//     FALLBACK: null,
+// };
+//     // poll for target
+// function getThemeTarget() {
+//     THEME.TARGET = document.getElementsByClassName('ct-character-header-desktop__button')
+//     THEME.FALLBACK = document.getElementsByClassName('ct-status-summary-mobile__health')
+// }
+
+// function getThemeColor() {
+//     let newColor;
+//     if (THEME.TARGET[0]) {
+//         newColor = window.getComputedStyle(THEME.TARGET[0]).getPropertyValue('border-color')
+//     }
+//     if (THEME.FALLBACK[0]) {
+//         newColor = window.getComputedStyle(THEME.TARGET[0]).getPropertyValue('border-color')
+//     }
+//     if (newColor && THEME.COLOR !== newColor) {
+//         console.log('theme change!', newColor)
+//         THEME.COLOR = newColor
+//     }
+// }
+
+var THEME_WATCHER;
+//global variable to grab spell attack modifier in case a user opens up their sidebar before navigating to spells
+//unfortunately the sidebar doesn't display spell attack modifier
+var SPELL_ATTACK_MOD;
+function onLoad() {
+    THEME_WATCHER = new ThemeWatcher()
+    makeDraggable(displayBox)
+    setInterval(refreshClicks, 1000)
+    // TODO: make sure this actually works
+    if (document.querySelector('.ct-combat-attack--spell .ct-combat-attack__tohit')) {
+        SPELL_ATTACK_MOD = document.querySelector('.ct-combat-attack--spell .ct-combat-attack__tohit').textContent
+        console.log("got spell attack to hit on load")
+        console.log(SPELL_ATTACK_MOD)
+    }
+}
+
+
+
+
+
+class __main__ {
+    constructor() {
+        this.themeWatcher = new ThemeWatcher()
+    }
+}
+
+
+
+
+function refreshClicks() {
+    console.log('refreshing clicks')
+    addOnClickToInitiative()
+    addOnClickToSaves()
+    addOnClickToSkills()
+    addOnClickToAbilities()
+    addOnclickToPrimaryBox()
+    addOnClickToSidebarSpells()
+}
+
+
 
 //makes a display box
-
-
 
 var displayBox = document.createElement('div')
 displayBox.id = 'display-box';
 displayBox.className = 'ct-box-background ct-box-background--fancy-small'
-document.body.appendChild(displayBox);
+
 
 var displayBoxContent = document.createElement('div');
 displayBoxContent.id = 'display-box-content';
 displayBoxContent.innerText = "Welcome to Dicemagic.Beyond! \nRoll: shift-click \nAdvantage: shift-space-click \nDisadvantage: alt-space-click";
 displayBox.appendChild(displayBoxContent);
+
+document.body.appendChild(displayBox);
 
 function makeDraggable(element) {
     console.log('initializing results window');
@@ -1086,8 +1159,4 @@ function makeDraggable(element) {
     }
 }
 
-makeDraggable(displayBox)
-
-//button class for nice red button
-//<button class="ct-theme-button ct-theme-button--filled ct-theme-button--interactive ct-button character-button character-button-small"><span class="ct-button__content">Save</span></button>
-
+onLoad()
