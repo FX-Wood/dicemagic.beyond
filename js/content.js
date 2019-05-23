@@ -197,14 +197,12 @@ module.exports.addOnClickToInitiative = function addOnClickToInitiative() {
     if (initiative && !initiative.iAmListening) {
         initiative.iAmListening = true;
         initiative.classList.add('initiative-box-mouseover');
-        console.log('adding listener to initiative');
 
         initiative.addEventListener("click", rollInitiative, true);
     }
 }
 module.exports.rollInitiative = async function rollInitiative(e) {
     if (e.shiftKey) {
-        console.log('Rolling initiative!');
         e.preventDefault();
         e.stopPropagation();
 

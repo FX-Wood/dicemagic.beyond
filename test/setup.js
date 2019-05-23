@@ -1,18 +1,19 @@
-global.JSDOM = require('jsdom').JSDOM
-global.expect = require('chai').expect
-global.sinon = require('sinon')
 
 
-const { DisplayBox } = require('../js/content')
 
-before(async function() {
-    global.taman = await JSDOM.fromFile('test/taman.html')
-    global.window = taman.defaultView
-    global.document = taman.window.document
-    DisplayBox().displayBoxContent
-})
+const DisplayBox = require('../js/content').DisplayBox
+
 
 describe('template', function() {
+    before(async function() {
+        global.JSDOM = require('jsdom').JSDOM
+        global.expect = require('chai').expect
+        global.sinon = require('sinon')
+        global.taman = await JSDOM.fromFile('test/taman2.html')
+        global.window = taman.defaultView
+        global.document = taman.window.document
+        DisplayBox().displayBoxContent
+    })
     it('taman exists', function() {
         expect(taman).to.exist
     })
@@ -23,4 +24,5 @@ describe('template', function() {
         const box = document.querySelector('#display-box-content')
         expect(box).to.exist
     })
+
 })

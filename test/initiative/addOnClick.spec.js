@@ -1,5 +1,3 @@
-console.log('initiative -- onclick')
-
 var addOnClickToInitiative = require('../../js/content').addOnClickToInitiative
 
 describe('addOnClickToInitiative', function() {
