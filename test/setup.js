@@ -6,7 +6,7 @@ global.sinon = require('sinon')
 const { DisplayBox } = require('../js/content')
 
 before(async function() {
-    global.taman = await JSDOM.fromFile('test/taman2.html')
+    global.taman = await JSDOM.fromFile('test/taman.html')
     global.window = taman.defaultView
     global.document = taman.window.document
     DisplayBox().displayBoxContent

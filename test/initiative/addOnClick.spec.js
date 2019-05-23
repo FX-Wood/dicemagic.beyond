@@ -1,24 +1,25 @@
-console.log('initiative')
+console.log('initiative -- onclick')
 
-var { addOnClickToInitiative } = require('../../js/content')
-
-before(function() {
-    global.rollInitiative = sinon.stub()
-    console.log('before', typeof global.rollInitiative)
-})
-
-after(function() {
-    delete global.rollInitiative
-    console.log('after', typeof global.rollInitiative)
-})
+var addOnClickToInitiative = require('../../js/content').addOnClickToInitiative
 
 describe('addOnClickToInitiative', function() {
+    before(function() {
+        global.rollInitiative = sinon.stub()
+    })
+    
+    after(function() {
+        sinon.restore()
+        delete global.rollInitiative
+    })
+
     it('adds flag to box', function() {
         const initiativeBox = document.querySelector('.ct-initiative-box')
-        
         addOnClickToInitiative()
         expect(initiativeBox).to.have.property('iAmListening')
-
+    })
+    it('adds mouseover class to box', function() {
+        const initiativeBox = document.querySelector('.ct-initiative-box')
+        expect(initiativeBox.className).to.include('mouseover')
     })
     it('fires event when clicked', function() {
         const initiativeBox = document.querySelector('.ct-initiative-box')

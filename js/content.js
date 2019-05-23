@@ -202,39 +202,36 @@ module.exports.addOnClickToInitiative = function addOnClickToInitiative() {
         initiative.addEventListener("click", rollInitiative, true);
     }
 }
-module.exports.rollInitiative = function rollInitiative(e) {
+module.exports.rollInitiative = async function rollInitiative(e) {
     if (e.shiftKey) {
         console.log('Rolling initiative!');
         e.preventDefault();
         e.stopPropagation();
 
-        let name = 'Your initiative'
-        let modifier = e.currentTarget.textContent;
-        let advantageState = determineAdvantage(e);
+        const name = 'Your initiative'
+        const modifier = e.currentTarget.textContent;
+        const advantageState = determineAdvantage(e);
+        const { first, high, low } = await getRoll()
 
-        getRoll().then((roll) => {
-            const { first, high, low } = roll
-            let result = first
-            // handle advantage
-            if (advantageState === 1) {
-                result = high
-            }
-            // handle disadvantage
-            if (advantageState == 2) {
-                result = low
-            }
-            const props = {
-                name,
-                result,
-                first,
-                high,
-                low,
-                modifier,
-                advantageState,
-            }
-            console.log('props', props)
-            renderSimple(props)
-        })
+        let result = first
+        // handle advantage
+        if (advantageState === 1) {
+            result = high
+        }
+        // handle disadvantage
+        if (advantageState == 2) {
+            result = low
+        }
+        const props = {
+            name,
+            result,
+            first,
+            high,
+            low,
+            modifier,
+            advantageState,
+        }
+        renderSimple(props)
     }
 }
 
