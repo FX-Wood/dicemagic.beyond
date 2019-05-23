@@ -1,33 +1,26 @@
-const { JSDOM } = require('jsdom')
-const sinon = require('sinon')
+global.JSDOM = require('jsdom').JSDOM
+global.expect = require('chai').expect
+global.sinon = require('sinon')
 
-describe('initiative', function() {
-    var dom, window, document, displayBoxContent, addOnClickToInitiative
-    before(async () => {
-        // initialize dom
-        console.log('before')
-        dom = await JSDOM.fromFile('test/taman.html')
-        console.log('loaded')
-        window = dom.window
-        document = window.document
-        // initialize displaybox
-        displayBoxContent = document.createElement('div')
-        displayBoxContent.id = 'display-box-content'
-        document.body.appendChild(displayBoxContent)
-    })
 
-    it('makes a dom', function() {
-        console.log('first test')
-        expect(dom).is.not.undefined
-    })
+const { DisplayBox } = require('../js/content')
 
-    it('makes a window object', function() {
-        expect(window).is.not.undefined
+before(async function() {
+    global.taman = await JSDOM.fromFile('test/taman2.html')
+    global.window = taman.defaultView
+    global.document = taman.window.document
+    DisplayBox().displayBoxContent
+})
+
+describe('template', function() {
+    it('taman exists', function() {
+        expect(taman).to.exist
     })
-    
-    it('makes a displayBoxContent box', function() {
+    it('document exists', function() {
+        expect(document).to.exist
+    })
+    it('display box exists', function() {
         const box = document.querySelector('#display-box-content')
-        expect(box).to.be.not.undefined
+        expect(box).to.exist
     })
-
 })

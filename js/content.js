@@ -1,5 +1,5 @@
 // components for renderers
-function Row(className) {
+module.exports.Row = function Row(className) {
     const r = document.createElement('div')
     r.className = 'row'
     if (className) { 
@@ -8,7 +8,7 @@ function Row(className) {
     return r
 }
 
-function Col(className) {
+module.exports.Col = function Col(className) {
     const c = document.createElement('div')
     c.className = 'col'
     if (className) { 
@@ -17,7 +17,7 @@ function Col(className) {
     return c
 }
 
-function TabBtn(text, value) {
+module.exports.TabBtn = function TabBtn(text, value) {
     const outer = document.createElement('div')
     outer.className = 'ct-tab-options--layout-pill ct-tab-options__header '
     outer.dataset.value = value
@@ -36,7 +36,7 @@ function TabBtn(text, value) {
     return outer
 }
 
-function FlexSpacer(className) {
+module.exports.FlexSpacer = function FlexSpacer(className) {
     const div = document.createElement('div')
     div.className = 'grow'
     if (className) {
@@ -45,7 +45,7 @@ function FlexSpacer(className) {
     return div
 }
 
-function RenderInPlace(input, className) {
+module.exports.RenderInPlace = function RenderInPlace(input, className) {
     let { target, result, raw } = input
     // remove old rolls
     let old = target.querySelector('.roll-in-place')
@@ -60,21 +60,83 @@ function RenderInPlace(input, className) {
     target.appendChild(span)
 }
 
-// advantage/disadvantage logic
-var SPACEPRESSED = false;
-window.addEventListener('keydown', function(e) {
-    if (SPACEPRESSED == false && e.key == ' ' && e.shiftKey) {
-        e.preventDefault()
-        SPACEPRESSED = true;
-    }
-})
-window.addEventListener('keyup',function(e) {
-    if (e.key == ' ') {
-        SPACEPRESSED = false;
-    }
-})
+/**
+ * makes a span with title styling
+ * @param {String} text 
+ * @param {String} className 
+ * @returns {HTMLSpanElement}
+ */
+module.exports.Title = function Title(text, className) {
+    let el = document.createElement('span')
+    el.className = 'headline'
+    el.innerText = text
+    return el
+}
+/**
+ * makes a span with subtitle styling
+ * @param {String} text 
+ * @param {String} className 
+ * @returns {HTMLSpanElement}
+ */
+module.exports.Subtitle = function Subtitle(text, className) {
+    const el = document.createElement('span')
+    el.className = 'subhead'
+    el.innerText = text
+    return el
+}
 
-function determineAdvantage(e) {
+module.exports.RollInfoLabel = function RollInfoLabel(text, className) {
+    const el = document.createElement('span')
+    el.className = 'roll-label nowrap'
+    el.innerText = text
+    return el
+}
+
+module.exports.RollInfoContent = function RollInfoContent(text, className) {
+    const el = document.createElement('span')
+    el.className = 'roll-info nowrap'
+    el.innerText = text
+    return el
+}
+
+module.exports.RollInfoInput = function RollInfoInput(value, className) {
+    let el = document.createElement('input')
+        el.type = 'number'
+        el.name = 'effectModifier'
+        el.className = 'ct-health-summary__adjuster-field-input modifier-input'
+        el.className.add(className || '')
+        el.value = parseInt(effectModifier)
+}
+
+module.exports.RollInfoColumn = function RollInfoColumn(label, value) {
+    const el = Col()
+    el.appendChild(RollInfoLabel(label))
+    el.appendChild(RollInfoContent(value))
+    return el
+}
+
+module.exports.RollInputColumn = function RollInputColumn(label, value) {
+    const el = Col()
+    el.appendChild(RollInfoLabel(label))
+    el.appendChild(RollInfoInput(value))
+    return el
+}
+
+// // advantage/disadvantage logic
+// var SPACEPRESSED = false;
+// window.addEventListener('keydown', function(e) {
+//     if (SPACEPRESSED == false && e.key == ' ' && e.shiftKey) {
+//         e.preventDefault()
+//         SPACEPRESSED = true;
+//     }
+// })
+// window.addEventListener('keyup',function(e) {
+//     if (e.key == ' ') {
+//         SPACEPRESSED = false;
+//     }
+// })
+
+module.exports.determineAdvantage = function determineAdvantage(e) {
     // advantage
     if (SPACEPRESSED) {
         console.log('Advantage!');
@@ -89,7 +151,7 @@ function determineAdvantage(e) {
 }
 
 // get rolls from background script
-function getRoll(cmd) {
+module.exports.getRoll = function getRoll(cmd) {
     console.log('getting roll')
     console.log('cmd:', cmd )
     console.log('here is the promise')
@@ -117,21 +179,20 @@ function getRoll(cmd) {
 
 //global variable to grab spell attack modifier in case a user opens up their sidebar before navigating to spells
 //unfortunately the sidebar doesn't display spell attack modifier
-var SPELLATTACKMOD;
-document.querySelector('body').onload = function() {
-    if (document.querySelector('.ct-combat-attack--spell .ct-combat-attack__tohit')) {
-        SPELLATTACKMOD = document.querySelector('.ct-combat-attack--spell .ct-combat-attack__tohit').textContent
-        console.log("got spell attack to hit on load")
-        console.log(SPELLATTACKMOD)
-    }
-};
+// var SPELLATTACKMOD;
+// document.querySelector('body').onload = function() {
+//     if (document.querySelector('.ct-combat-attack--spell .ct-combat-attack__tohit')) {
+//         SPELLATTACKMOD = document.querySelector('.ct-combat-attack--spell .ct-combat-attack__tohit').textContent
+//         console.log("got spell attack to hit on load")
+//         console.log(SPELLATTACKMOD)
+//     }
+// };
 
 //greeting and instructions
-console.log("dicemagic.beyond! \nspace-click to roll. \nspace-shift-click for advantage \nspace-alt/option-click for disadvantage");
-
+// console.log("dicemagic.beyond! \nspace-click to roll. \nspace-shift-click for advantage \nspace-alt/option-click for disadvantage");
 
 // Initiative
-function addOnClickToInitiative() {
+module.exports.addOnClickToInitiative = function addOnClickToInitiative() {
     let initiative = document.querySelector('.ct-initiative-box');
     if (initiative && !initiative.iAmListening) {
         initiative.iAmListening = true;
@@ -141,7 +202,7 @@ function addOnClickToInitiative() {
         initiative.addEventListener("click", rollInitiative, true);
     }
 }
-function rollInitiative(e) {
+module.exports.rollInitiative = function rollInitiative(e) {
     if (e.shiftKey) {
         console.log('Rolling initiative!');
         e.preventDefault();
@@ -178,7 +239,7 @@ function rollInitiative(e) {
 }
 
 // abilities
-function addOnClickToAbilities() {
+module.exports.addOnClickToAbilities = function addOnClickToAbilities() {
     let abilitiesBox = document.querySelector('.ct-quick-info__abilities');
     if (abilitiesBox && !abilitiesBox.iAmListening) {
         abilitiesBox.iAmListening = true;
@@ -192,7 +253,7 @@ function addOnClickToAbilities() {
     }
 }
 
-function rollAbilityCheck(e) {
+module.exports.rollAbilityCheck = function rollAbilityCheck(e) {
     if (e.shiftKey){
         e.preventDefault()
         e.stopPropagation()
@@ -231,7 +292,7 @@ function rollAbilityCheck(e) {
 }
 
 // Saves
-function addOnClickToSaves() {
+module.exports.addOnClickToSaves = function addOnClickToSaves() {
     let saves = document.querySelector('.ct-saving-throws-summary');
     if (saves && !saves.iAmListening) {
         saves.iAmListening = true;
@@ -283,7 +344,7 @@ function addOnClickToSaves() {
 }
 
 // Skills
-function addOnClickToSkills() {
+module.exports.addOnClickToSkills = function addOnClickToSkills() {
     let skills = document.querySelector('.ct-skills__list');
     if (skills && !skills.iAmListening) {
         skills.iAmListening = true;
@@ -297,7 +358,7 @@ function addOnClickToSkills() {
     }
 }
 
-function rollSkillCheck(e) {
+module.exports.rollSkillCheck = function rollSkillCheck(e) {
     if (e.shiftKey){
         e.preventDefault()
         e.stopPropagation()
@@ -337,7 +398,7 @@ function rollSkillCheck(e) {
     }
 }
 
-function renderSimple(props) {
+module.exports.renderSimple = function renderSimple(props) {
     const { name, result, normal, high, low, modifier,  advantageState } = props
     console.log('rendering saving throw')
     const root = displayBoxContent
@@ -512,7 +573,7 @@ async function attackAndDamageRoll(e, type) {
     }
 }
 
-function renderAttack(output) {
+module.exports.renderAttack = function renderAttack(output) {
     console.log('rendering attack')
     const {
         hitResult,
@@ -683,7 +744,7 @@ function renderAttack(output) {
     root.appendChild(diceBox)
 }
 // Primary Box
-function addOnclickToPrimaryBox() {
+module.exports.addOnclickToPrimaryBox = function addOnclickToPrimaryBox() {
     //checks if the actions tab of the primary box is active
     if (document.querySelector('.ct-attack-table__content')) {
         //makes an array of each item on the attack table
@@ -780,70 +841,8 @@ async function rollSpellPrimaryBox(e) {
         renderPrimaryBoxSpells(spellInfo)
     }
 }
-/**
- * makes a span with title styling
- * @param {String} text 
- * @param {String} className 
- * @returns {HTMLSpanElement}
- */
-function Title(text, className) {
-    let el = document.createElement('span')
-    el.className = 'headline'
-    el.innerText = text
-    return el
-}
-/**
- * makes a span with subtitle styling
- * @param {String} text 
- * @param {String} className 
- * @returns {HTMLSpanElement}
- */
-function Subtitle(text, className) {
-    const el = document.createElement('span')
-    el.className = 'subhead'
-    el.innerText = text
-    return el
-}
 
-function RollInfoLabel(text, className) {
-    const el = document.createElement('span')
-    el.className = 'roll-label nowrap'
-    el.innerText = text
-    return el
-}
-
-function RollInfoContent(text, className) {
-    const el = document.createElement('span')
-    el.className = 'roll-info nowrap'
-    el.innerText = text
-    return el
-}
-
-function RollInfoInput(value, className) {
-    let el = document.createElement('input')
-        el.type = 'number'
-        el.name = 'effectModifier'
-        el.className = 'ct-health-summary__adjuster-field-input modifier-input'
-        el.className.add(className || '')
-        el.value = parseInt(effectModifier)
-}
-
-function RollInfoColumn(label, value) {
-    const el = Col()
-    el.appendChild(RollInfoLabel(label))
-    el.appendChild(RollInfoContent(value))
-    return el
-}
-
-function RollInputColumn(label, value) {
-    const el = Col()
-    el.appendChild(RollInfoLabel(label))
-    el.appendChild(RollInfoInput(value))
-    return el
-}
-
-
-function renderPrimaryBoxSpells(spellInfo) {
+module.exports.renderPrimaryBoxSpells = function renderPrimaryBoxSpells(spellInfo) {
     console.log('rendering primary box spells')
     const {
         spellName,
@@ -891,7 +890,7 @@ function renderPrimaryBoxSpells(spellInfo) {
 
 }
 // Primary Box
-function addOnclickToPrimaryBox() {
+module.exports.addOnclickToPrimaryBox = function addOnclickToPrimaryBox() {
     //checks if the actions tab of the primary box is active
     if (document.querySelector('.ct-attack-table__content')) {
         //makes an array of each item on the attack table
@@ -926,7 +925,7 @@ function addOnclickToPrimaryBox() {
 }
 
 // Sidebar
-function addOnClickToSidebarSpells() {
+module.exports.addOnClickToSidebarSpells = function addOnClickToSidebarSpells() {
     let primaryBoxSpellAttackElement = document.querySelectorAll(".ct-spells-level-casting__info-item")[1]
     //grabs spell attack mod from primary content box
     if (primaryBoxSpellAttackElement && (SPELLATTACKMOD === undefined)) {
@@ -988,7 +987,7 @@ async function rollSpellSideBar(e) {
 }
 
 
-function renderSideBarSpell({ spellName, effectDice, result, raw, damageType }) {
+module.exports.renderSideBarSpell = function renderSideBarSpell({ spellName, effectDice, result, raw, damageType }) {
     // then add other things
     const root = displayBoxContent
     root.innerHTML = ''
@@ -1015,35 +1014,39 @@ function renderSideBarSpell({ spellName, effectDice, result, raw, damageType }) 
 
 
 
-function initializeClicks(interval) {
-    window.setInterval(addOnClickToInitiative, interval)
-    window.setInterval(addOnClickToSaves, interval)
-    window.setInterval(addOnClickToSkills, interval)
-    window.setInterval(addOnClickToAbilities, interval)
-    window.setInterval(addOnclickToPrimaryBox, interval)
-    window.setInterval(addOnClickToSidebarSpells, interval)
-    
-}
-
-setTimeout(initializeClicks(1000), 3000)
+// function initializeClicks(interval) {
+//     window.setInterval(addOnClickToInitiative, interval)
+//     window.setInterval(addOnClickToSaves, interval)
+//     window.setInterval(addOnClickToSkills, interval)
+//     window.setInterval(addOnClickToAbilities, interval)
+//     window.setInterval(addOnclickToPrimaryBox, interval)
+//     window.setInterval(addOnClickToSidebarSpells, interval)
+// }
+// // initialize display box
+// makeDraggable(displayBox)
+// initialize clicks
+// setTimeout(initializeClicks(1000), 3000)
 
 //makes a display box
 
 
 
-var displayBox = document.createElement('div')
-displayBox.id = 'display-box';
-backgroundURL = chrome.extension.getURL("images/bg.svg")
-displayBox.style.backgroundImage = `url('${backgroundURL}')`;
-console.log(backgroundURL)
-document.body.appendChild(displayBox);
+module.exports.DisplayBox = function DisplayBox() {
+    var displayBox = document.createElement('div')
+    displayBox.id = 'display-box';
+    // backgroundURL = chrome.extension.getURL("images/bg.svg")
+    // displayBox.style.backgroundImage = `url('${backgroundURL}')`;
+    // console.log(backgroundURL)
+    document.body.appendChild(displayBox);
+    
+    var displayBoxContent = document.createElement('div');
+    displayBoxContent.id = 'display-box-content';
+    displayBoxContent.innerText = "Welcome to Dicemagic.Beyond! \nRoll: shift-click \nAdvantage: shift-space-click \nDisadvantage: alt-space-click";
+    displayBox.appendChild(displayBoxContent);
+    return {displayBox, displayBoxContent}
+}
 
-var displayBoxContent = document.createElement('div');
-displayBoxContent.id = 'display-box-content';
-displayBoxContent.innerText = "Welcome to Dicemagic.Beyond! \nRoll: shift-click \nAdvantage: shift-space-click \nDisadvantage: alt-space-click";
-displayBox.appendChild(displayBoxContent);
-
-function makeDraggable(element) {
+module.exports.makeDraggable = function makeDraggable(element) {
     console.log('initializing results window');
     var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
     element.style.top = '100px'
@@ -1088,7 +1091,7 @@ function makeDraggable(element) {
     }
 }
 
-makeDraggable(displayBox)
+
 
 //button class for nice red button
 //<button class="ct-theme-button ct-theme-button--filled ct-theme-button--interactive ct-button character-button character-button-small"><span class="ct-button__content">Save</span></button>

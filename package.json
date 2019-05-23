@@ -7,7 +7,7 @@
     "test": "test"
   },
   "scripts": {
-    "test": "mocha"
+    "test": "mocha --file ./test/setup.js --recursive"
   },
   "repository": {
     "type": "git",
@@ -23,6 +23,7 @@
     "chai": "^4.2.0",
     "jsdom": "^15.1.0",
     "mocha": "^6.1.4",
+    "sinon": "^7.3.2",
     "web-ext": "^3.0.0"
   }
 }
