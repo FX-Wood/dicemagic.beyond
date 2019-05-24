@@ -35,10 +35,3 @@
     border-left-color: #c53131;
     border-right-color: #c53131;
 }
-
-.initiative-box-mouseover:hover {
-    color: #c53131;
-}
-.initiative-box-mouseover:hover .ct-signed-number__sign {
-    color: #c53131;
-}

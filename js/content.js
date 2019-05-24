@@ -114,15 +114,12 @@ function getRoll(cmd) {
         })
     }) 
 }
-
-
-
 // Initiative
 function addOnClickToInitiative() {
     let initiative = document.querySelector('.ct-initiative-box');
     if (initiative && !initiative.iAmListening) {
         initiative.iAmListening = true;
-        initiative.classList.add('initiative-box-mouseover');
+        initiative.classList.add('simple-mouseover');
         console.log('adding listener to initiative');
 
         initiative.addEventListener("click", rollInitiative, true);
@@ -175,7 +172,7 @@ function addOnClickToAbilities() {
         abilities.forEach(ability => {
             ability.addEventListener("click", rollAbilityCheck, true);
             // todo: make ability hover class
-            ability.classList.add('ability-roll-mouseover');
+            ability.classList.add('simple-mouseover');
         })
     }
 }
@@ -1002,11 +999,13 @@ function renderSideBarSpell({ spellName, effectDice, result, raw, damageType }) 
 }
 class ThemeWatcher {
     constructor(pollFrequency=1000) {
+        this.styleSheet = document.head.appendChild(document.createElement('style')).sheet
         this.pollFrequency = pollFrequency
         this.intervalHandle = setInterval(this.getThemeColor, pollFrequency)
         this.color = '#c53131'
         this.target = document.getElementsByClassName('ct-character-header-desktop__button')
         this.fallback = document.getElementsByClassName('ct-status-summary-mobile__health')
+        this.changeThemeColor('#c53131')
     }
     getThemeColor = () => {
         let nextColor;
@@ -1021,9 +1020,19 @@ class ThemeWatcher {
         if (nextColor && this.color !== nextColor) {
             console.log('theme change!', nextColor)
             this.color = nextColor
-            // TODO: set up mask for saves
+            this.changeThemeColor(nextColor)
             // change classes
         }
+    }
+    changeThemeColor = (color) => {
+        const textRule = `color: ${color}`
+        // clear old rules
+        while (this.styleSheet.length) {
+            this.sheet.deleteRule(0)
+        }
+        // initiative
+        this.styleSheet.addRule('.simple-mouseover:hover span', textRule)
+        // 
     }
     stop = () => clearInterval(this.interval)
     start = () => this.intervalHandle = setInterval(this.getThemeColor, this.pollFrequency)
