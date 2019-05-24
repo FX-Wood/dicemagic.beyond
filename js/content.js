@@ -508,7 +508,7 @@ async function attackAndDamageRoll(e, type) {
     }
 }
 
-function renderAttack(output) {
+function renderAttack(props) {
     console.log('rendering attack')
     const {
         hitResult,
@@ -519,109 +519,43 @@ function renderAttack(output) {
         damageDice,
         numDamageDice,
         damageRolls,
+        damageDiceAdvantage,
         damageModifier,
         damageType,
         normalDamage,
         criticalDamage,
         advantageState,
-        criticalState,
-    } = output
-    const root = displayBoxContent
-    root.innerHTML = ''
-    let headline = criticalState ? 'Critical hit!\n' : `You rolled ${parseInt(hitResult) + parseInt(hitModifier)} to hit.\n`
-    let subHead = `If you strike true: ${ parseInt(criticalState ? criticalDamage : normalDamage) + parseInt(damageModifier)} ${damageType} damage!`
+        criticalState
+    } = props
+    const root = document.createDocumentFragment()
 
-    // string with rolling results
-    let title = document.createElement('span')
-        title.className = 'headline'
-        title.innerText = headline
-    let subTitle = document.createElement('span')
-        subTitle.className = 'subhead'
-        subTitle.innerText = subHead
+    const title = Title('')
+    let subTitle = Subtitle('')
 
     // flex row for roll info and labels
     let rollBox = Row('roll-box')
     
-    let col1 = Col()
-    // raw hit roll
-    let label1 = document.createElement('span')
-        label1.innerText = 'hit'
-        label1.className = 'roll-label'
-    col1.appendChild(label1)
-    let rawHit = document.createElement('span')
-        rawHit.className = 'raw-roll raw-roll-hit'
-        rawHit.innerText = hitResult
-    col1.appendChild(rawHit)
-    rollBox.appendChild(col1)
+    // raw hit
+    const rawHitColumn = RollInfoColumn('hit', '')
+    const rawHit = rawHitColumn.value
+    rollBox.appendChild(rawHitColumn.root)
     
+    // hit modifier number input
+    const hitModColumn = RollInputColumn('modifier', 0)
+    const hitMod = hitModColumn.value
+    rollBox.appendChild(hitModColumn.root)
 
-    rollBox.appendChild(col1)
+    // raw damage
+    const rawDmgColumn = RollInfoColumn('damage', '')
+    const dmg = rawDmgColumn.value
+    rollBox.appendChild(rawDmgColumn)
+
+    // damage modifier number input
+    const dmgModColumn = RollInputColumn('modifier', 0)
+    const dmgMod = dmgModColumn.value
+    rollBox.appendChild(dmgModColumn)
     
-    let col2 = Col()
-    // modifier input
-    let label2 = document.createElement('span')
-        label2.innerText = 'modifier'
-        label2.className = 'roll-label'
-    col2.appendChild(label2)
-    let hitMod = document.createElement('input')
-        hitMod.type = 'number'
-        hitMod.name = 'hitModifier'
-        hitMod.className = 'ct-health-summary__adjuster-field-input modifier-input'
-        hitMod.value = parseInt(hitModifier)
-    col2.appendChild(hitMod)
-    rollBox.appendChild(col2)
-
-    let col3 = Col()
-    // damage dice
-    let label3 = document.createElement('span')
-        label3.innerText = 'damage'
-        label3.className = 'roll-label'
-    col3.appendChild(label3)
-    let dmg = document.createElement('span')
-        dmg.className = 'raw-roll raw-roll-damage'
-        dmg.innerText = damageDice + damageModifier
-        dmg.innerText = criticalState ? criticalDamage : normalDamage
-    col3.appendChild(dmg)
-    rollBox.appendChild(col3)
-
-    let col4 = Col()
-    let label4 = document.createElement('span')
-        label4.innerText = 'modifier'
-        label4.className = 'roll-label'
-    col4.appendChild(label4)
-    let dmgMod = document.createElement('input')
-        dmgMod.type = 'number'
-        dmgMod.name = 'damageModifier'
-        dmgMod.className = 'ct-health-summary__adjuster-field-input modifier-input'
-        dmgMod.value = parseInt(damageModifier)
-    col4.appendChild(dmgMod)
-    rollBox.appendChild(col4)
-    
-    // row for dice roll results
-    let diceBox = Row('dice-box')
-    let hitCol = Col('dice-box-col')
-    diceBox.appendChild(hitCol)
-    let dmgCol = Col('dice-box-col')
-    diceBox.appendChild(dmgCol)
-
-    let hitDisplay = document.createElement('span')
-    let hitOptions = [` `, `(${hitAdvantage}, ${hitDisadvantage})`,`(${hitDisadvantage}, ${hitAdvantage})` ]
-        hitDisplay.innerText = hitOptions[advantageState]
-        hitDisplay.className = 'dice-display hit-display'
-    hitCol.appendChild(hitDisplay)
-
-    let dmgDisplay = document.createElement('span')
-        dmgOptions = [
-            numDamageDice > 1 ? `(${damageRolls})` : ' ',
-            `(${damageRolls})`,
-            numDamageDice > 1 ? `(${damageRolls})` : ' ',
-        ]
-        dmgDisplay.innerText = dmgOptions[advantageState]
-    dmgDisplay.className = 'dice-display damage-display'
-    dmgCol.appendChild(dmgDisplay)
-    
-    
-    // advantage buttons    
+    // advantage buttons
     // container for advantage buttons
     let buttonBox = Row('button-box')
     // normal
@@ -636,17 +570,8 @@ function renderAttack(output) {
     buttonBox.appendChild(dAdv)
 
     const btns = [norm, adv, dAdv]
-    console.log(advantageState)
     btns[advantageState].activate()
-    // function to update roll
-    function reRender(newHit, newHitModifier, newDmgMod) {
-        // update title
-        title.innerText = newHit === "20" ? 'Critical hit!\n' : `You rolled ${parseInt(newHit) + parseInt(newHitModifier)} to hit.\n`
-        subTitle.innerText = `If you strike true: ${ parseInt(newHit === "20" ? criticalDamage : normalDamage) + parseInt(newDmgMod)} ${damageType} damage!`
-        // update to hit
-        rawHit.innerText = newHit
-        rawHit.newHitModifier
-    }
+
     // function to toggle advantage buttons
     function advantageToggle(e) {
         if (e.button === 0) {
@@ -654,29 +579,61 @@ function renderAttack(output) {
             e.currentTarget.activate()
             let i = e.currentTarget.dataset.value
             let rawOptions = [hitNormalVantage, hitAdvantage, hitDisadvantage]
-            // handle dice result display
-            hitDisplay.innerText = hitOptions[i]
-            dmgDisplay.innerText = rawOptions[i] === "20" ? `(${damageRolls})` : dmgOptions[i]
-            reRender(rawOptions[i], hitMod.value, dmgMod.value)
+            // hit, mod, damage, criticalDamage
+            console.log('advantageToggle', {newHit: rawOptions[i], newHitMod: hitMod.value, newDmg: dmgMod.value})
+            renderText(rawOptions[i], hitMod.value, dmgMod.value)
         }
     }
     // handle new modifier input
     hitMod.addEventListener('change', (e) => {
-        reRender(parseInt(rawHit.innerText), e.target.value, dmgMod.value)
+        console.log({newHit: rawHit.innerText, newHitMod: e.target.value, newDmg: dmgMod.value})
+        renderText(parseInt(rawHit.innerText), e.target.value, dmgMod.value)
     })
     dmgMod.addEventListener('change', (e) => {
-        reRender(parseInt(rawHit.innerText), hitMod.value, e.target.value)
+        console.log({newHit: rawHit.innerText, newHitMod: hitMod.value, newDmg: e.target.value})
+        renderText(parseInt(rawHit.innerText), hitMod.value, e.target.value)
     })
     // handle changes in advantage
     btns.forEach(btn => btn.addEventListener('mousedown', advantageToggle))
+        // function to update roll
+    // encloses all of the above elements
+    const renderText = (newHit, newHitModifier, newDamageModifier) => {
+        // handle critical hit
+        if (parseInt(newHit) === 20) {
+            title.innerText = 'Critical hit!\n', 
+            subTitle.innerText = `If you strike true: ${ parseInt(criticalDamage) + parseInt(newDamageModifier)} ${damageType} damage!`
+            dmg.innerText = criticalDamage
 
-    // order of elements in box
+        // handle critical miss
+        } else if (parseInt(newHit) === 1) {
+            title.innerText =  'Critical miss...\n'
+            subTitle.innerText = `Better Luck next time`
+            dmg.innerText = normalDamage
+
+        // handle normal hits
+        } else {
+            // title / subtitle
+            title.innerText = `You rolled ${parseInt(newHit) + parseInt(newHitModifier)} to hit.\n`
+            subTitle.innerText = `If you strike true: ${ parseInt(normalDamage) + parseInt(newDamageModifier)} ${damageType} damage!`
+            dmg.innerText = normalDamage
+        }
+        // hit
+        rawHit.innerText = newHit
+        hitMod.value = parseInt(newHitModifier)
+        // damage
+        dmgMod.value = parseInt(newDamageModifier)
+    }
+    // first render of text:
+    renderText(hitResult, hitModifier, damageModifier)
+    // order of elements in display. 
     root.appendChild(title)
     root.appendChild(subTitle)
     root.appendChild(document.createElement('br'))
     root.appendChild(buttonBox)
     root.appendChild(rollBox)
-    root.appendChild(diceBox)
+    // browser rerenders once
+    displayBoxContent.innerHTML = ''
+    displayBoxContent.appendChild(root)
 }
 // Primary Box
 function addOnclickToPrimaryBox() {
@@ -778,11 +735,10 @@ async function rollSpellPrimaryBox(e) {
 }
 /**
  * makes a span with title styling
- * @param {String} text 
- * @param {String} className 
- * @returns {HTMLSpanElement}
+ * @param {String} text content
+ * @returns {HTMLSpanElement} <span> [text] </span>
  */
-function Title(text, className) {
+function Title(text) {
     let el = document.createElement('span')
     el.className = 'headline'
     el.innerText = text
@@ -791,51 +747,54 @@ function Title(text, className) {
 /**
  * makes a span with subtitle styling
  * @param {String} text 
- * @param {String} className 
  * @returns {HTMLSpanElement}
  */
-function Subtitle(text, className) {
+function Subtitle(text) {
     const el = document.createElement('span')
     el.className = 'subhead'
     el.innerText = text
     return el
 }
 
-function RollInfoLabel(text, className) {
+function RollInfoLabel(text) {
     const el = document.createElement('span')
     el.className = 'roll-label nowrap'
     el.innerText = text
     return el
 }
 
-function RollInfoContent(text, className) {
+function RollInfoContent(text) {
     const el = document.createElement('span')
     el.className = 'roll-info nowrap'
     el.innerText = text
     return el
 }
 
-function RollInfoInput(value, className) {
+function RollInfoInput(value) {
     let el = document.createElement('input')
-        el.type = 'number'
-        el.name = 'effectModifier'
-        el.className = 'ct-health-summary__adjuster-field-input modifier-input'
-        el.className.add(className || '')
-        el.value = parseInt(effectModifier)
-}
-
-function RollInfoColumn(label, value) {
-    const el = Col()
-    el.appendChild(RollInfoLabel(label))
-    el.appendChild(RollInfoContent(value))
+    el.type = 'number'
+    el.name = 'effectModifier'
+    el.className = 'ct-health-summary__adjuster-field-input modifier-input'
+    el.value = parseInt(value)
     return el
 }
 
-function RollInputColumn(label, value) {
-    const el = Col()
-    el.appendChild(RollInfoLabel(label))
-    el.appendChild(RollInfoInput(value))
-    return el
+function RollInfoColumn(labelText, valueText) {
+    const root = Col()
+    const label = RollInfoLabel(labelText)
+    const value = RollInfoContent(valueText)
+    root.appendChild(label)
+    root.appendChild(value)
+    return {root, label, value}
+}
+
+function RollInputColumn(labelText, valueText) {
+    const root = Col()
+    const label = RollInfoLabel(labelText)
+    const value = RollInfoInput(valueText)
+    root.appendChild(label)
+    root.appendChild(value)
+    return {root, label, value}
 }
 
 
@@ -867,14 +826,14 @@ function renderPrimaryBoxSpells(spellInfo) {
     let rollBox = Row('roll-box')
     
     // column for the spell effect dice, e.g., '2d6'
-    let effectCol = RollInfoColumn(isHeal ? 'healing' : 'damage', effectDice)
+    let effectCol = RollInfoColumn(isHeal ? 'healing' : 'damage', effectDice).root
     rollBox.appendChild(effectCol)
 
     // damage rolls
-    let effRawCol = RollInfoColumn('roll results', rawEffect)
+    let effRawCol = RollInfoColumn('roll results', rawEffect).root
     rollBox.appendChild(effRawCol)
     if (effectModifier) {
-        let effectModifierCol = RollInputColumn('modifier', effectModifier)
+        let effectModifierCol = RollInputColumn('modifier', effectModifier).root
         rollBox.appendChild(effectModifierCol)
     }
     rollBox.appendChild(FlexSpacer())
@@ -996,11 +955,11 @@ function renderSideBarSpell({ spellName, effectDice, result, raw, damageType }) 
     
     const rollBox = Row('roll-box')
     // show dice to be rolled
-    const effDiceCol = RollInfoColumn('dice', effectDice)
+    const effDiceCol = RollInfoColumn('dice', effectDice).root
     // show result
-    const resultCol = RollInfoColumn('result', result)
+    const resultCol = RollInfoColumn('result', result).root
     // show raw
-    const rawCol = RollInfoColumn('raw', raw)
+    const rawCol = RollInfoColumn('raw', raw).root
 
     rollBox.appendChild(effDiceCol)
     rollBox.appendChild(resultCol)
