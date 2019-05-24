@@ -51,6 +51,7 @@ chrome.runtime.onMessage.addListener(
                 getRoll(data, sendResponse)
                 return true
             case "THEME_CHANGE":
+                console.log('got a theme change', data)
                 //TODO: change popup styling
                 //TODO: save theme change to local storage
                 return;

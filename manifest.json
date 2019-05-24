@@ -4,6 +4,7 @@
     "description": "Rolls dice using Aaron's API while using dndbeyond",
     "permissions": [
         "activeTab",
+        "storage",
         "https://www.dndbeyond.com/",
         "https://api.dicemagic.io/"
     ],

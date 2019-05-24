@@ -969,15 +969,32 @@ function renderSideBarSpell({ spellName, effectDice, result, raw, damageType }) 
 }
 class ThemeWatcher {
     constructor(pollFrequency=1000) {
+        console.log('constructing theme watcher. setting theme to red')
         this.styleSheet = document.head.appendChild(document.createElement('style')).sheet
         this.pollFrequency = pollFrequency
         this.intervalHandle = setInterval(this.getThemeColor, pollFrequency)
-        this.color = '#c53131'
+        // default color
+        this.color = 'rgb(197, 49, 49)'
         this.target = document.getElementsByClassName('ct-character-header-desktop__button')
         this.fallback = document.getElementsByClassName('ct-status-summary-mobile__health')
-        this.changeThemeColor('#c53131')
+        this.themeWatcherDidConstruct()
+    }
+    themeWatcherDidConstruct = () => {
+        console.log('Theme watcher constructed, checking theme')
+        chrome.storage.sync.get(['themeColor'], (result) => {
+            console.log('storage found', result)
+            if (result.themeColor) {
+                console.log(result.themeColor)
+                this.color = result.themeColor
+                this.changeThemeColor(result.themeColor)
+            } else {
+                chrome.storage.sync.set({ themeColor: this.color })
+                this.getThemeColor()
+            }
+        })
     }
     getThemeColor = () => {
+        console.log('getting theme color from page')
         let nextColor;
         // handle desktop version
         if (this.target[0]) {
@@ -988,18 +1005,22 @@ class ThemeWatcher {
             nextColor = window.getComputedStyle(this.fallback[0]).getPropertyValue('border-color')
         }
         if (nextColor && this.color !== nextColor) {
+            console.log('old', this.color,'new', nextColor)
             console.log('theme change!', nextColor)
             this.color = nextColor
+            chrome.storage.sync.set({themeColor: nextColor})
             this.changeThemeColor(nextColor)
-            // change classes
+            dispatchToBackground("THEME_CHANGE")
         }
     }
     changeThemeColor = (color) => {
+        console.log('changing theme!', color)
         // clear old rules
         console.log('changing theme color to', color)
         while (this.styleSheet.cssRules.length) {
             this.styleSheet.deleteRule(0)
         }
+
         // initiative, ability checks
         // TODO: handle mobile
         this.styleSheet.insertRule(`.simple-mouseover:hover span { color: ${color}; }`)
