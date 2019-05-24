@@ -19,19 +19,3 @@
 .sidebar-damage-box:hover {
     outline: 1px solid #c53131;
 }
-
-.saving-throw-mouseover:hover {
-    background-image: url('chrome-extension://__MSG_@@extension_id__/images/saves_box_red.svg');
-}
-
-.saving-throw-mouseover:hover > div {
-    background-image: none;
-}
-
-.saving-throw-mouseover:hover .ct-no-proficiency-icon {
-    border: .5px solid;
-    border-top-color: #c53131;
-    border-bottom-color: #c53131;
-    border-left-color: #c53131;
-    border-right-color: #c53131;
-}

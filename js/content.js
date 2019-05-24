@@ -1025,14 +1025,23 @@ class ThemeWatcher {
         }
     }
     changeThemeColor = (color) => {
-        const textRule = `color: ${color}`
         // clear old rules
-        while (this.styleSheet.length) {
-            this.sheet.deleteRule(0)
+        console.log('changing theme color to', color)
+        while (this.styleSheet.cssRules.length) {
+            this.styleSheet.deleteRule(0)
         }
-        // initiative
-        this.styleSheet.addRule('.simple-mouseover:hover span', textRule)
-        // 
+        // initiative, ability checks
+        this.styleSheet.insertRule(`.simple-mouseover:hover span { color: ${color}; }`)
+        
+        // saves
+        // pleas note that this svg has a dynamic fill color off the screen to your right
+        const svg = `"data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%20116.1%2034%27%3E%3Cpath%20fill%3D%27${encodeURI(color)}%27%20d%3D%27M106.8%200h-22l-.3.2c-1.2.8-2.3%201.7-3.2%202.7H5.7l-.3.4c-.7%201.2-3%204.5-4.9%205.4l-.5.2V25l.5.2c1.8.9%204.1%204.2%204.9%205.4l.3.4h75.6c1%201%202.1%201.9%203.2%202.7l.3.2h21.9l.3-.2c5.6-3.8%209-10%209-16.8s-3.4-13-9-16.8l-.2-.1zm7.3%2017c0%205.8-2.9%2011.2-7.6%2014.5H96.2c-4.7-2.1-11.1-3.2-14.3-3.8-2.3-3-3.7-6.8-3.7-10.7%200-3.9%201.3-7.7%203.7-10.7%203.1-.6%209.5-1.7%2014.3-3.8h10.3c4.8%203.3%207.6%208.7%207.6%2014.5zM69.8%204.6c.8.7%202.5%201.8%205.7%202.1-.9%201.5-3%205.5-3%2010.3s2%208.8%203%2010.3c-3.2.3-4.9%201.4-5.7%202.1H14.4c-3.1-1.1-11.1-4.5-12.9-9.3v-6.2c1.9-4.8%209.9-8.1%2012.9-9.3h55.4zm6.8%202.2h2a20.4%2020.4%200%200%200-2.8%2010.3c0%203.7%201%207.2%202.9%2010.3-.7%200-1.3-.1-2%200-.6-1-3.1-5.2-3.1-10.2s2.4-9.4%203-10.4zm9.3%2024.7c-1.1-.8-2.1-1.7-3-2.6%202.4.5%205.1%201.3%208.3%202.6h-5.3zm-6.7-3.2l.8%201.1h-8.5c1.4-.7%203.8-1.5%207.7-1.1zM6.3%2029.4c-.7-1.1-2.8-4.1-4.9-5.4v-1.9c2.3%203.4%207.1%205.9%2010.4%207.3H6.3zM1.4%2010c2.1-1.3%204.2-4.3%204.9-5.4h5.5C8.5%206%203.8%208.5%201.4%2011.9V10zM80%204.6l-.8%201.1c-3.9.4-6.3-.4-7.7-1.1H80zm2.9.5c.9-1%201.9-1.9%203-2.6h5.3c-3.2%201.3-6%202.1-8.3%202.6z%27%20%2F%3E%3C%2Fsvg%3E"`
+        console.log(`div.saving-throw-mouseover:hover { background: none; background-image: url(${svg}); }`)
+        this.styleSheet.insertRule('.saving-throw-mouseover:hover > div { background: none }')
+        this.styleSheet.insertRule(`.saving-throw-mouseover:hover { background-image: url(${svg})}`)
+        this.styleSheet.insertRule(`.saving-throw-mouseover:hover .ct-no-proficiency-icon { border: .5px solid ${color}}`)
+        
+
     }
     stop = () => clearInterval(this.interval)
     start = () => this.intervalHandle = setInterval(this.getThemeColor, this.pollFrequency)
@@ -1041,32 +1050,6 @@ class ThemeWatcher {
         delete this
     }
 }
-
-// var THEME = {
-//     INTERVAL: null,
-//     COLOR: '#c53131',
-//     TARGET: null,
-//     FALLBACK: null,
-// };
-//     // poll for target
-// function getThemeTarget() {
-//     THEME.TARGET = document.getElementsByClassName('ct-character-header-desktop__button')
-//     THEME.FALLBACK = document.getElementsByClassName('ct-status-summary-mobile__health')
-// }
-
-// function getThemeColor() {
-//     let newColor;
-//     if (THEME.TARGET[0]) {
-//         newColor = window.getComputedStyle(THEME.TARGET[0]).getPropertyValue('border-color')
-//     }
-//     if (THEME.FALLBACK[0]) {
-//         newColor = window.getComputedStyle(THEME.TARGET[0]).getPropertyValue('border-color')
-//     }
-//     if (newColor && THEME.COLOR !== newColor) {
-//         console.log('theme change!', newColor)
-//         THEME.COLOR = newColor
-//     }
-// }
 
 var THEME_WATCHER;
 //global variable to grab spell attack modifier in case a user opens up their sidebar before navigating to spells
@@ -1084,19 +1067,6 @@ function onLoad() {
     }
 }
 
-
-
-
-
-class __main__ {
-    constructor() {
-        this.themeWatcher = new ThemeWatcher()
-    }
-}
-
-
-
-
 function refreshClicks() {
     console.log('refreshing clicks')
     addOnClickToInitiative()
@@ -1107,14 +1077,10 @@ function refreshClicks() {
     addOnClickToSidebarSpells()
 }
 
-
-
 //makes a display box
-
 var displayBox = document.createElement('div')
 displayBox.id = 'display-box';
 displayBox.className = 'ct-box-background ct-box-background--fancy-small'
-
 
 var displayBoxContent = document.createElement('div');
 displayBoxContent.id = 'display-box-content';
