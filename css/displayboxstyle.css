@@ -9,8 +9,9 @@
 
     height: 200px;
     width : 281px;
+    
+    padding: 10px 20px 0 20px;
     box-sizing: border-box;
-
 
     cursor: grab;
     text-align: center;
@@ -23,11 +24,6 @@
     position: relative;
     display: block;
     box-sizing: border-box;
-
-    width: 95%;
-    height:80%;
-
-    padding: 10px 20px 0 20px;
 
     text-align: left;
     overflow-wrap: break-word;
