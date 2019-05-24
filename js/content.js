@@ -89,11 +89,15 @@ function determineAdvantage(e) {
 }
 
 // get rolls from background script
-function getRoll(cmd) {
-    console.log('getting roll')
-    console.log('cmd:', cmd )
-    console.log('here is the promise')
-    if (cmd) {
+function dispatchToBackground({type, data}) {
+    console.log('dispatching', {type, data})
+    return new Promise((resolve) => {
+        chrome.runtime.sendMessage({type, data}, (response) => {
+            resolve(response)
+        })
+    })
+    
+    if (type === "roll") {
         return new Promise((resolve) => {
             chrome.runtime.sendMessage({ msg: `{"cmd":"${cmd}"}` }, (roll) => {
                 resolve(roll)
@@ -136,26 +140,27 @@ function rollInitiative(e) {
         let modifier = e.currentTarget.textContent;
         let advantageState = determineAdvantage(e);
 
-        getRoll().then((roll) => {
-            const { first, high, low } = roll
-            let result = first
-            // handle advantage
-            if (advantageState === 1) {
-                result = high
-            }
-            // handle disadvantage
-            if (advantageState == 2) {
-                result = low
-            }
-            const props = {
-                name,
-                result,
-                first,
-                high,
-                low,
-                modifier,
-                advantageState,
-            }
+        dispatchToBackground({type:"SIMPLE_ROLL", data: null})
+            .then((roll) => {
+                const { first, high, low } = roll
+                let result = first
+                // handle advantage
+                if (advantageState === 1) {
+                    result = high
+                }
+                // handle disadvantage
+                if (advantageState == 2) {
+                    result = low
+                }
+                const props = {
+                    name,
+                    result,
+                    first,
+                    high,
+                    low,
+                    modifier,
+                    advantageState,
+                }
             console.log('props', props)
             renderSimple(props)
         })
@@ -189,28 +194,29 @@ function rollAbilityCheck(e) {
 
         let advantageState = determineAdvantage(e)
 
-        getRoll().then((roll) => {
-            const { first, high, low } = roll
-            let result = first
-            // handle advantage
-            if (advantageState === 1) {
-                result = high
-            }
-            // handle disadvantage
-            if (advantageState === 2) {
-                result = low
-            }
-            const props = {
-                name,
-                result,
-                first,
-                high,
-                low,
-                modifier,
-                advantageState,
-            }
-            console.log('props', props)
-            renderSimple(props)
+        dispatchToBackground({type:"SIMPLE_ROLL", data: null})
+            .then((roll) => {
+                const { first, high, low } = roll
+                let result = first
+                // handle advantage
+                if (advantageState === 1) {
+                    result = high
+                }
+                // handle disadvantage
+                if (advantageState === 2) {
+                    result = low
+                }
+                const props = {
+                    name,
+                    result,
+                    first,
+                    high,
+                    low,
+                    modifier,
+                    advantageState,
+                }
+                console.log('props', props)
+                renderSimple(props)
         })
     }
 }
@@ -239,28 +245,29 @@ function addOnClickToSaves() {
                 name = name.charAt(0).toUpperCase() + name.slice(1) + ' saving throw'
                 let modifier = this.querySelector(".ct-saving-throws-summary__ability-modifier").textContent;
                 let advantageState = determineAdvantage(event)
-                getRoll().then((roll) => {
-                    const { first, high, low } = roll
-                    let result = first
-                    // handle advantage
-                    if (advantageState === 1) {
-                        result = high
-                    }
-                    // handle disadvantage
-                    if (advantageState == 2) {
-                        result = low
-                    }
-                    const props = {
-                        name,
-                        result,
-                        first,
-                        high,
-                        low,
-                        modifier,
-                        advantageState,
-                    }
-                    console.log('props', props)
-                    renderSimple(props)
+                dispatchToBackground({type:"SIMPLE_ROLL", data: null})
+                    .then((roll) => {
+                        const { first, high, low } = roll
+                        let result = first
+                        // handle advantage
+                        if (advantageState === 1) {
+                            result = high
+                        }
+                        // handle disadvantage
+                        if (advantageState == 2) {
+                            result = low
+                        }
+                        const props = {
+                            name,
+                            result,
+                            first,
+                            high,
+                            low,
+                            modifier,
+                            advantageState,
+                        }
+                        console.log('props', props)
+                        renderSimple(props)
                 })
             }
         }
@@ -295,35 +302,36 @@ function rollSkillCheck(e) {
 
         let advantageState = determineAdvantage(e)
 
-        getRoll().then((roll) => {
-            const { first, high, low } = roll
-            let result = first
-            // handle advantage
-            if (advantageState === 1) {
-                result = high
-            }
-            // handle disadvantage
-            if (advantageState === 2) {
-                result = low
-            }
-            const props = {
-                name,
-                stat,
-                result,
-                first,
-                high,
-                low,
-                modifier,
-                advantageState,
-            }
-            console.log('props', props)
-            renderSimple(props)
+        dispatchToBackground({type:"SIMPLE_ROLL", data: null})
+            .then((roll) => {
+                const { first, high, low } = roll
+                let result = first
+                // handle advantage
+                if (advantageState === 1) {
+                    result = high
+                }
+                // handle disadvantage
+                if (advantageState === 2) {
+                    result = low
+                }
+                const props = {
+                    name,
+                    stat,
+                    result,
+                    first,
+                    high,
+                    low,
+                    modifier,
+                    advantageState,
+                }
+                console.log('props', props)
+                renderSimple(props)
         })
     }
 }
 
 function renderSimple(props) {
-    const { name, result, normal, high, low, modifier,  advantageState } = props
+    const { name, result, first, high, low, modifier,  advantageState } = props
     console.log('rendering saving throw')
     const root = displayBoxContent
     root.innerHTML = ''
@@ -371,8 +379,9 @@ function renderSimple(props) {
     let buttonBox = Row('button-box')
 
     // normal
-    let norm = TabBtn('normal', normal)
+    let norm = TabBtn('normal', first)
     buttonBox.appendChild(norm)
+    console.log(norm)
     // advantage
     let adv = TabBtn('advantage', high)
     buttonBox.appendChild(adv)
@@ -386,6 +395,7 @@ function renderSimple(props) {
     btns[advantageState].activate()
     // function to update roll
     function reRender(newRoll, newModifier) {
+        console.log(newRoll, newModifier)
         title.innerText = `${name}:  ${parseInt(newRoll) + parseInt(newModifier)}\n`
         subTitle.innerText = `You rolled ${newRoll} with a modifier of ${newModifier}`
         raw.innerText = newRoll
@@ -395,6 +405,7 @@ function renderSimple(props) {
         if (e.button === 0) {
             btns.forEach(btn => btn.deActivate())
             e.currentTarget.activate()
+            console.log(e.currentTarget.dataset.value, mod.value)
             reRender(e.currentTarget.dataset.value, mod.value)
         }
     }
@@ -450,7 +461,7 @@ async function attackAndDamageRoll(e, type) {
         const damageDiceAdvantage = parseInt(damage[0].split('d')[0]) * 2 + 'd' + damage[0].split('d')[1]
 
         let cmdString = `1d20,1d20,${damageDice},${damageDiceAdvantage}`
-        let rolls = await getRoll(cmdString)
+        let rolls = await dispatchToBackground({type:"SPECIAL_ROLL", data: cmdString})
         let damageRolls = rolls.result.match(/[\d, ]+(?=\()/g)
         damageRolls = damageRolls[damageRolls.length - 1]
         rolls = rolls.result.match(/\d+(?=\*)/g)
@@ -739,7 +750,7 @@ async function rollSpellPrimaryBox(e) {
                 magicMissileCount += parseInt(additionalMissiles.textContent.split('+')[1]);
             }
         }
-        let roll = await getRoll( effect )
+        let roll = await dispatchToBackground({ type:"SPECIAL_ROLL", data: effect })
         console.log(roll)
         const [ effectDice, effectModifier ] = effect.split(/(?=[+-])/)
         console.log({effectDice, effectModifier})
@@ -962,7 +973,7 @@ async function rollSpellSideBar(e) {
     
         // checks if spell has a save, and if so adds it to the spell object
     
-        let roll = await getRoll(effectDice);
+        let roll = await dispatchToBackground({ type: "SPECIAL_ROLL", data: effectDice });
         console.log(roll.result)
         console.log(roll.result.match(/\d+(?=\*)/g))
         let result = roll.result.match(/\d+(?=\*)/g)[0];
@@ -1015,7 +1026,7 @@ class ThemeWatcher {
         }
         // handle mobile
         if (this.fallback[0]) {
-            nextColor = window.getComputedStyle(this.fallback[0])
+            nextColor = window.getComputedStyle(this.fallback[0]).getPropertyValue('border-color')
         }
         if (nextColor && this.color !== nextColor) {
             console.log('theme change!', nextColor)
@@ -1031,14 +1042,15 @@ class ThemeWatcher {
             this.styleSheet.deleteRule(0)
         }
         // initiative, ability checks
+        // TODO: handle mobile
         this.styleSheet.insertRule(`.simple-mouseover:hover span { color: ${color}; }`)
-        
         // saves
-        // TODO: handle small version for in-between mobile and widescreen
-        // please note that this svg has a dynamic fill color off the screen to your right
-        const svg = `"data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%20116.1%2034%27%3E%3Cpath%20fill%3D%27${encodeURI(color)}%27%20d%3D%27M106.8%200h-22l-.3.2c-1.2.8-2.3%201.7-3.2%202.7H5.7l-.3.4c-.7%201.2-3%204.5-4.9%205.4l-.5.2V25l.5.2c1.8.9%204.1%204.2%204.9%205.4l.3.4h75.6c1%201%202.1%201.9%203.2%202.7l.3.2h21.9l.3-.2c5.6-3.8%209-10%209-16.8s-3.4-13-9-16.8l-.2-.1zm7.3%2017c0%205.8-2.9%2011.2-7.6%2014.5H96.2c-4.7-2.1-11.1-3.2-14.3-3.8-2.3-3-3.7-6.8-3.7-10.7%200-3.9%201.3-7.7%203.7-10.7%203.1-.6%209.5-1.7%2014.3-3.8h10.3c4.8%203.3%207.6%208.7%207.6%2014.5zM69.8%204.6c.8.7%202.5%201.8%205.7%202.1-.9%201.5-3%205.5-3%2010.3s2%208.8%203%2010.3c-3.2.3-4.9%201.4-5.7%202.1H14.4c-3.1-1.1-11.1-4.5-12.9-9.3v-6.2c1.9-4.8%209.9-8.1%2012.9-9.3h55.4zm6.8%202.2h2a20.4%2020.4%200%200%200-2.8%2010.3c0%203.7%201%207.2%202.9%2010.3-.7%200-1.3-.1-2%200-.6-1-3.1-5.2-3.1-10.2s2.4-9.4%203-10.4zm9.3%2024.7c-1.1-.8-2.1-1.7-3-2.6%202.4.5%205.1%201.3%208.3%202.6h-5.3zm-6.7-3.2l.8%201.1h-8.5c1.4-.7%203.8-1.5%207.7-1.1zM6.3%2029.4c-.7-1.1-2.8-4.1-4.9-5.4v-1.9c2.3%203.4%207.1%205.9%2010.4%207.3H6.3zM1.4%2010c2.1-1.3%204.2-4.3%204.9-5.4h5.5C8.5%206%203.8%208.5%201.4%2011.9V10zM80%204.6l-.8%201.1c-3.9.4-6.3-.4-7.7-1.1H80zm2.9.5c.9-1%201.9-1.9%203-2.6h5.3c-3.2%201.3-6%202.1-8.3%202.6z%27%20%2F%3E%3C%2Fsvg%3E"`
+        // please note that the svgs have a dynamic fill color off the screen to your right
+        const svg = `"data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%20116.1%2034'%3E%3Cpath%20fill%3D'${encodeURI(color)}'%20d%3D'M106.8%200h-22l-.3.2c-1.2.8-2.3%201.7-3.2%202.7H5.7l-.3.4c-.7%201.2-3%204.5-4.9%205.4l-.5.2V25l.5.2c1.8.9%204.1%204.2%204.9%205.4l.3.4h75.6c1%201%202.1%201.9%203.2%202.7l.3.2h21.9l.3-.2c5.6-3.8%209-10%209-16.8s-3.4-13-9-16.8l-.2-.1zm7.3%2017c0%205.8-2.9%2011.2-7.6%2014.5H96.2c-4.7-2.1-11.1-3.2-14.3-3.8-2.3-3-3.7-6.8-3.7-10.7%200-3.9%201.3-7.7%203.7-10.7%203.1-.6%209.5-1.7%2014.3-3.8h10.3c4.8%203.3%207.6%208.7%207.6%2014.5zM69.8%204.6c.8.7%202.5%201.8%205.7%202.1-.9%201.5-3%205.5-3%2010.3s2%208.8%203%2010.3c-3.2.3-4.9%201.4-5.7%202.1H14.4c-3.1-1.1-11.1-4.5-12.9-9.3v-6.2c1.9-4.8%209.9-8.1%2012.9-9.3h55.4zm6.8%202.2h2a20.4%2020.4%200%200%200-2.8%2010.3c0%203.7%201%207.2%202.9%2010.3-.7%200-1.3-.1-2%200-.6-1-3.1-5.2-3.1-10.2s2.4-9.4%203-10.4zm9.3%2024.7c-1.1-.8-2.1-1.7-3-2.6%202.4.5%205.1%201.3%208.3%202.6h-5.3zm-6.7-3.2l.8%201.1h-8.5c1.4-.7%203.8-1.5%207.7-1.1zM6.3%2029.4c-.7-1.1-2.8-4.1-4.9-5.4v-1.9c2.3%203.4%207.1%205.9%2010.4%207.3H6.3zM1.4%2010c2.1-1.3%204.2-4.3%204.9-5.4h5.5C8.5%206%203.8%208.5%201.4%2011.9V10zM80%204.6l-.8%201.1c-3.9.4-6.3-.4-7.7-1.1H80zm2.9.5c.9-1%201.9-1.9%203-2.6h5.3c-3.2%201.3-6%202.1-8.3%202.6z'%20%2F%3E%3C%2Fsvg%3E"`
+        const svgSmall = `"data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2088%2028'%3E%3Cpath%20fill%3D'${encodeURI(color)}'%20d%3D'M81.02%200H64.332l-.228.165a13.192%2013.192%200%200%200-2.427%202.23H4.324l-.227.33c-.531.992-2.276%203.717-3.718%204.46L0%207.352V20.65l.38.165c1.365.744%203.11%203.47%203.717%204.46l.227.33h57.352a20.967%2020.967%200%200%200%202.427%202.23l.228.166h16.614l.227-.165A17.166%2017.166%200%200%200%2088%2013.959%2017.166%2017.166%200%200%200%2081.172.083zm5.539%2014.041a15.101%2015.101%200%200%201-5.766%2011.977H72.98c-3.565-1.735-8.42-2.643-10.848-3.139a15.532%2015.532%200%200%201-2.807-8.838%2014.986%2014.986%200%200%201%202.807-8.837c2.352-.496%207.207-1.405%2010.848-3.14h7.814a14.88%2014.88%200%200%201%205.766%2011.977zM52.952%203.8a7.091%207.091%200%200%200%204.324%201.735A18.402%2018.402%200%200%200%2055%2014.04a17.505%2017.505%200%200%200%202.276%208.508%207.091%207.091%200%200%200-4.324%201.734H10.924c-2.352-.909-8.42-3.717-9.786-7.681V11.48c1.441-3.965%207.51-6.69%209.786-7.682h42.028zm5.158%201.817h1.518a18.006%2018.006%200%200%200-2.125%208.508%2017.221%2017.221%200%200%200%202.2%208.507%209.309%209.309%200%200%200-1.517%200%2018.184%2018.184%200%200%201-2.352-8.425%2019.362%2019.362%200%200%201%202.276-8.59zm7.056%2020.402a19.91%2019.91%200%200%201-2.276-2.148%2034.161%2034.161%200%200%201%206.296%202.148zm-5.083-2.643c.227.33.38.578.607.908h-6.45a9.567%209.567%200%200%201%205.842-.908zm-55.304.908a15.79%2015.79%200%200%200-3.717-4.46v-1.57c1.745%202.809%205.386%204.874%207.89%206.03H4.779zM1.062%208.26A15.789%2015.789%200%200%200%204.78%203.8h4.173c-2.504%201.156-6.07%203.22-7.89%206.029v-1.57zM60.69%203.8c-.228.33-.38.578-.607.908a9.566%209.566%200%200%201-5.842-.909zm2.2.412a11.529%2011.529%200%200%201%202.276-2.147h4.02a36.164%2036.164%200%200%201-6.296%202.147z'%2F%3E%3C%2Fsvg%3E"`
         console.log(`div.saving-throw-mouseover:hover { background: none; background-image: url(${svg}); }`)
         this.styleSheet.insertRule('.saving-throw-mouseover:hover > div { background: none }')
+        this.styleSheet.insertRule(`@media (max-width: 1199px) and (min-width: 1024px) (max-width) { saving-throw-mouseover:hover { background-image: url${svgSmall}}}`)
         this.styleSheet.insertRule(`.saving-throw-mouseover:hover { background-image: url(${svg})}`)
         this.styleSheet.insertRule(`.saving-throw-mouseover:hover .ct-no-proficiency-icon { border: .5px solid ${color}}`)
         // skills
