@@ -45,21 +45,6 @@ function FlexSpacer(className) {
     return div
 }
 
-function RenderInPlace(input, className) {
-    let { target, result, raw } = input
-    // remove old rolls
-    let old = target.querySelector('.roll-in-place')
-    old ? target.removeChild(old) : null
-    
-    // make element
-    let span = document.createElement('span')
-    span.innerText = result
-    span.className = 'roll-in-place '
-    span.classList.add(className)
-    target.appendChild(ToolTip(raw))
-    target.appendChild(span)
-}
-
 // advantage/disadvantage logic
 var SPACEPRESSED = false;
 window.addEventListener('keydown', function(e) {
@@ -96,27 +81,6 @@ function dispatchToBackground({type, data}) {
             resolve(response)
         })
     })
-    
-    if (type === "roll") {
-        return new Promise((resolve) => {
-            chrome.runtime.sendMessage({ msg: `{"cmd":"${cmd}"}` }, (roll) => {
-                resolve(roll)
-            })
-        })
-    }
-    return new Promise((resolve) => {
-        chrome.runtime.sendMessage({ msg: '{"cmd":"1d20,1d20"}' }, (roll) => {
-            let rawRoll = roll.result.match(/\*\d+\*/g).map(str => str.replace(/\*/g, ''))
-            let first = rawRoll[0]
-            console.log(rawRoll)
-            rawRoll = rawRoll.sort((a, b) =>  parseInt(a) - parseInt(b))
-            console.log(rawRoll)
-            // handle advantage
-            let low = rawRoll[0]
-            let high = rawRoll[1]
-            return resolve({ first, high, low })
-        })
-    }) 
 }
 // Initiative
 function addOnClickToInitiative() {
@@ -333,46 +297,25 @@ function rollSkillCheck(e) {
 function renderSimple(props) {
     const { name, result, first, high, low, modifier,  advantageState } = props
     console.log('rendering saving throw')
-    const root = displayBoxContent
-    root.innerHTML = ''
-    let headline = `${name}: ${parseInt(result) + parseInt(modifier)}\n`
-    let subHead = `You rolled ${result} with a modifier of ${modifier}`
+    const root = document.createDocumentFragment()
 
     // string with rolling results
-    let title = document.createElement('span')
-        title.className = 'headline'
-        title.innerText = headline
-    let subTitle = document.createElement('span')
-        subTitle.className = 'subhead'
-        subTitle.innerText = subHead
-    // flex row for roll info and labels
-    let rollBox = Row('roll-box')
-    
-    let col1 = Col()
-    // raw roll result
-    let label1 = document.createElement('span')
-        label1.innerText = 'raw'
-        label1.className = 'roll-label'
-    col1.appendChild(label1)
-    let raw = document.createElement('span')
-        raw.innerText = result
-    col1.appendChild(raw)
-    rollBox.appendChild(col1)
+    let title = Title('')
+    let subtitle = Subtitle('')
 
-    let col2 = Col()
-    // modifier input
-    let label2 = document.createElement('span')
-        label2.innerText = 'modifier'
-        label2.className = 'roll-label'
-    col2.appendChild(label2)
-    let mod = document.createElement('input')
-        mod.type = 'number'
-        mod.name = 'modifier'
-        mod.className = 'ct-health-summary__adjuster-field-input modifier-input'
-        mod.value = parseInt(modifier)
-    col2.appendChild(mod)
-    rollBox.appendChild(col2)
-    rollBox.appendChild(FlexSpacer())
+    let rollInfoRow = Row('roll-box')
+    
+    // raw roll result
+    let rawRollColumn = RollInfoColumn('raw', '')
+    let raw = rawRollColumn.value
+    rollInfoRow.appendChild(rawRollColumn.root)
+
+    // roll modifier w/input
+    let modifierColumn = RollInputColumn('modifier', 0)
+    let mod = modifierColumn.value
+    rollInfoRow.appendChild(modifierColumn.root)
+
+    rollInfoRow.appendChild(FlexSpacer())
 
     // advantage buttons    
     // container for advantage buttons
@@ -393,35 +336,41 @@ function renderSimple(props) {
     const btns = [norm, adv, dAdv]
     console.log(advantageState)
     btns[advantageState].activate()
-    // function to update roll
-    function reRender(newRoll, newModifier) {
-        console.log(newRoll, newModifier)
+
+    function renderText(newRoll, newModifier) {
+        console.log('rendering', newRoll, newModifier)
         title.innerText = `${name}:  ${parseInt(newRoll) + parseInt(newModifier)}\n`
-        subTitle.innerText = `You rolled ${newRoll} with a modifier of ${newModifier}`
+        subtitle.innerText = `You rolled ${newRoll} with a ${parseInt(newModifier) >= 0 ? '+' + newModifier : '-' + newModifier } modifier`
         raw.innerText = newRoll
+        mod.value = parseInt(newModifier)
     }
+
     // function to toggle advantage buttons
     function advantageToggle(e) {
         if (e.button === 0) {
             btns.forEach(btn => btn.deActivate())
             e.currentTarget.activate()
-            console.log(e.currentTarget.dataset.value, mod.value)
-            reRender(e.currentTarget.dataset.value, mod.value)
+            console.log({'roll':e.currentTarget.dataset.value, 'mod':mod.value})
+            renderText(e.currentTarget.dataset.value, mod.value)
         }
     }
+    // first render
+    renderText(result, modifier)
+
     // handle new modifier input
-    mod.addEventListener('change', (e) => {
-        reRender(parseInt(raw.innerText), e.target.value)
-    })
+    mod.addEventListener('change', (e) => renderText(parseInt(raw.innerText), e.target.value))
     // handle changes in advantage
     btns.forEach(btn => btn.addEventListener('mousedown', advantageToggle))
 
     // order of elements in box
     root.appendChild(title)
-    root.appendChild(subTitle)
+    root.appendChild(subtitle)
     root.appendChild(document.createElement('br'))
     root.appendChild(buttonBox)
-    root.appendChild(rollBox)
+    root.appendChild(rollInfoRow)
+
+    displayBoxContent.innerHTML = ''
+    displayBoxContent.appendChild(root)
 }
 
 async function attackAndDamageRoll(e, type) {
@@ -973,12 +922,21 @@ class ThemeWatcher {
         this.styleSheet = document.head.appendChild(document.createElement('style')).sheet
         this.pollFrequency = pollFrequency
         this.intervalHandle = setInterval(this.getThemeColor, pollFrequency)
-        // default color
-        this.color = 'rgb(197, 49, 49)'
         this.target = document.getElementsByClassName('ct-character-header-desktop__button')
         this.fallback = document.getElementsByClassName('ct-status-summary-mobile__health')
+        // default color
+        this.color = 'rgb(197, 49, 49)'
         this.themeWatcherDidConstruct()
     }
+    stop = () => clearInterval(this.intervalHandle)
+
+    start = () => this.intervalHandle = setInterval(this.getThemeColor, this.pollFrequency)
+
+    deconstruct = () => {
+        this.stop()
+        delete this
+    }
+
     themeWatcherDidConstruct = () => {
         console.log('Theme watcher constructed, checking theme')
         chrome.storage.sync.get(['themeColor'], (result) => {
@@ -993,6 +951,7 @@ class ThemeWatcher {
             }
         })
     }
+
     getThemeColor = () => {
         console.log('getting theme color from page')
         let nextColor;
@@ -1041,12 +1000,7 @@ class ThemeWatcher {
         this.styleSheet.insertRule(`.sidebar-damage-box:hover { color: ${color}; font-weight: bolder;}`)
 
     }
-    stop = () => clearInterval(this.interval)
-    start = () => this.intervalHandle = setInterval(this.getThemeColor, this.pollFrequency)
-    deconstruct = () => {
-        this.stop()
-        delete this
-    }
+
 }
 
 var THEME_WATCHER;
