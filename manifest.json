@@ -8,7 +8,11 @@
         "https://www.dndbeyond.com/",
         "https://api.dicemagic.io/"
     ],
-
+    "commands": {
+        "_execute_browser_action": {
+            "suggested_key": "Ctrl + 0"
+        }
+    },
     "content_scripts": [
     {
         "matches": [
