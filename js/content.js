@@ -45,6 +45,70 @@ function FlexSpacer(className) {
     return div
 }
 
+/**
+ * makes a span with title styling
+ * @param {String} text content
+ * @returns {HTMLSpanElement} <span> [text] </span>
+ */
+function Title(text) {
+    let el = document.createElement('span')
+    el.className = 'headline'
+    el.innerText = text
+    return el
+}
+/**
+ * makes a span with subtitle styling
+ * @param {String} text 
+ * @returns {HTMLSpanElement}
+ */
+function Subtitle(text) {
+    const el = document.createElement('span')
+    el.className = 'subhead'
+    el.innerText = text
+    return el
+}
+
+function RollInfoLabel(text) {
+    const el = document.createElement('span')
+    el.className = 'roll-label nowrap'
+    el.innerText = text
+    return el
+}
+
+function RollInfoContent(text) {
+    const el = document.createElement('span')
+    el.className = 'roll-info nowrap'
+    el.innerText = text
+    return el
+}
+
+function RollInfoInput(value) {
+    let el = document.createElement('input')
+    el.type = 'number'
+    el.name = 'effectModifier'
+    el.className = 'ct-health-summary__adjuster-field-input modifier-input'
+    el.value = parseInt(value)
+    return el
+}
+
+function RollInfoColumn(labelText, valueText) {
+    const root = Col()
+    const label = RollInfoLabel(labelText)
+    const value = RollInfoContent(valueText)
+    root.appendChild(label)
+    root.appendChild(value)
+    return {root, label, value}
+}
+
+function RollInputColumn(labelText, valueText) {
+    const root = Col()
+    const label = RollInfoLabel(labelText)
+    const value = RollInfoInput(valueText)
+    root.appendChild(label)
+    root.appendChild(value)
+    return {root, label, value}
+}
+
 // advantage/disadvantage logic
 var SPACEPRESSED = false;
 window.addEventListener('keydown', function(e) {
@@ -369,8 +433,8 @@ function renderSimple(props) {
     root.appendChild(buttonBox)
     root.appendChild(rollInfoRow)
 
-    displayBoxContent.innerHTML = ''
-    displayBoxContent.appendChild(root)
+    DISPLAY_BOX_CONTENT.innerHTML = ''
+    DISPLAY_BOX_CONTENT.appendChild(root)
 }
 
 async function attackAndDamageRoll(e, type) {
@@ -384,19 +448,19 @@ async function attackAndDamageRoll(e, type) {
         // handle primary box attacks
         if (!type) {
             hitModifier = e.currentTarget.querySelector('.ct-combat-attack__tohit .ct-signed-number').textContent
-            damage = e.currentTarget.querySelector('.ct-damage__value').textContent.split(/(?=[+-])/)
+            damage = e.currentTarget.querySelector('.ct-damage__value').textContent
             damageType = e.currentTarget.querySelector('.ct-tooltip[data-original-title]').dataset.originalTitle.toLowerCase()
         }
         // handle spell attacks from primary box spell tab
         if (type === 'primary-box-spell') {
             hitModifier = e.currentTarget.querySelector('.ct-spells-spell__tohit').textContent
-            damage = e.currentTarget.querySelector('.ct-damage__value').textContent.split(/(?=[+-])/)
+            damage = e.currentTarget.querySelector('.ct-damage__value').textContent
             damageType = e.currentTarget.querySelector('.ct-damage__icon .ct-tooltip').title.toLowerCase()
         }
         // handle spell attacks from sidebar
         if (type === 'sidebar-spell') {
             hitModifier = SPELL_ATTACK_MOD
-            damage = e.currentTarget.querySelector('.ct-spell-caster__modifier-amount').textContent.split(/(?=[+-])/)
+            damage = e.currentTarget.querySelector('.ct-spell-caster__modifier-amount').textContent
             damageType = e.currentTarget.querySelector('.ct-tooltip[data-original-title]').dataset.originalTitle.toLowerCase()
         }
         // handle custom weapons
@@ -404,11 +468,21 @@ async function attackAndDamageRoll(e, type) {
             damageType = "non-mundane";
         }
         // parse damage roll into dice and modifier
+        damage = damage.split(/(?=[+-])/)
         const damageDice = damage[0]
         const damageModifier = (damage[1] || 0) // handle attacks without modifier
-        const numDamageDice = damage[0].split('d')[0]
-        const damageDiceAdvantage = parseInt(damage[0].split('d')[0]) * 2 + 'd' + damage[0].split('d')[1]
 
+        // parse damage dice into number and type of dice
+        const [ numDamageDice, numDamageFaces ] = damageDice.split('d')
+        // determine the roll for advantage
+        let damageDiceAdvantage;
+        if (numDamageFaces) {
+            damageDiceAdvantage = parseInt(numDamageDice) * 2 + 'd' + numDamageFaces
+        } else {
+            // handle attacks with flat damage (like unarmed attack in some cases)
+            console.log('flat damage')
+            damageDiceAdvantage = numDamageDice
+        }
         let cmdString = `1d20,1d20,${damageDice},${damageDiceAdvantage}`
         let rolls = await dispatchToBackground({type:"SPECIAL_ROLL", data: cmdString})
         let damageRolls = rolls.result.match(/[\d, ]+(?=\()/g)
@@ -497,12 +571,12 @@ function renderAttack(props) {
     // raw damage
     const rawDmgColumn = RollInfoColumn('damage', '')
     const dmg = rawDmgColumn.value
-    rollBox.appendChild(rawDmgColumn)
+    rollBox.appendChild(rawDmgColumn.root)
 
     // damage modifier number input
     const dmgModColumn = RollInputColumn('modifier', 0)
     const dmgMod = dmgModColumn.value
-    rollBox.appendChild(dmgModColumn)
+    rollBox.appendChild(dmgModColumn.root)
     
     // advantage buttons
     // container for advantage buttons
@@ -581,8 +655,8 @@ function renderAttack(props) {
     root.appendChild(buttonBox)
     root.appendChild(rollBox)
     // browser rerenders once
-    displayBoxContent.innerHTML = ''
-    displayBoxContent.appendChild(root)
+    DISPLAY_BOX_CONTENT.innerHTML = ''
+    DISPLAY_BOX_CONTENT.appendChild(root)
 }
 // Primary Box
 function addOnclickToPrimaryBox() {
@@ -682,69 +756,7 @@ async function rollSpellPrimaryBox(e) {
         renderPrimaryBoxSpells(spellInfo)
     }
 }
-/**
- * makes a span with title styling
- * @param {String} text content
- * @returns {HTMLSpanElement} <span> [text] </span>
- */
-function Title(text) {
-    let el = document.createElement('span')
-    el.className = 'headline'
-    el.innerText = text
-    return el
-}
-/**
- * makes a span with subtitle styling
- * @param {String} text 
- * @returns {HTMLSpanElement}
- */
-function Subtitle(text) {
-    const el = document.createElement('span')
-    el.className = 'subhead'
-    el.innerText = text
-    return el
-}
 
-function RollInfoLabel(text) {
-    const el = document.createElement('span')
-    el.className = 'roll-label nowrap'
-    el.innerText = text
-    return el
-}
-
-function RollInfoContent(text) {
-    const el = document.createElement('span')
-    el.className = 'roll-info nowrap'
-    el.innerText = text
-    return el
-}
-
-function RollInfoInput(value) {
-    let el = document.createElement('input')
-    el.type = 'number'
-    el.name = 'effectModifier'
-    el.className = 'ct-health-summary__adjuster-field-input modifier-input'
-    el.value = parseInt(value)
-    return el
-}
-
-function RollInfoColumn(labelText, valueText) {
-    const root = Col()
-    const label = RollInfoLabel(labelText)
-    const value = RollInfoContent(valueText)
-    root.appendChild(label)
-    root.appendChild(value)
-    return {root, label, value}
-}
-
-function RollInputColumn(labelText, valueText) {
-    const root = Col()
-    const label = RollInfoLabel(labelText)
-    const value = RollInfoInput(valueText)
-    root.appendChild(label)
-    root.appendChild(value)
-    return {root, label, value}
-}
 
 
 function renderPrimaryBoxSpells(spellInfo) {
@@ -762,8 +774,7 @@ function renderPrimaryBoxSpells(spellInfo) {
         rawEffect,
         isHeal
     } = spellInfo
-    const root = displayBoxContent
-    root.innerHTML = ''
+    const root = document.createDocumentFragment()
     const headlineTemplate = () => `${spellName} ${ isHeal ? 'heals for' : 'does' } ${effectResult} ${isHeal ? '' : effectType + ' damage'}\n`
     const subHeadTemplate = () => `Targets must make a DC${saveDC} ${saveLabel} save`
 
@@ -792,6 +803,8 @@ function renderPrimaryBoxSpells(spellInfo) {
     root.appendChild(subTitle)
     root.appendChild(document.createElement('br'))
     root.appendChild(rollBox)
+    DISPLAY_BOX_CONTENT.innerHTML = ''
+    DISPLAY_BOX_CONTENT.appendChild(root)
 
 }
 // Primary Box
@@ -894,8 +907,7 @@ async function rollSpellSideBar(e) {
 
 function renderSideBarSpell({ spellName, effectDice, result, raw, damageType }) {
     // then add other things
-    const root = displayBoxContent
-    root.innerHTML = ''
+    const root = document.createDocumentFragment()
     const title = Title(`${spellName}:\n`)
     const subTitle = Subtitle(`${result} ${damageType} damage`)
     root.appendChild(title)
@@ -915,6 +927,9 @@ function renderSideBarSpell({ spellName, effectDice, result, raw, damageType }) 
     rollBox.appendChild(rawCol)
     rollBox.appendChild(FlexSpacer())
     root.appendChild(rollBox)
+
+    DISPLAY_BOX_CONTENT.innerHTML = ''
+    DISPLAY_BOX_CONTENT.appendChild(root)
 }
 class ThemeWatcher {
     constructor(pollFrequency=1000) {
@@ -1003,19 +1018,64 @@ class ThemeWatcher {
 
 }
 
-var THEME_WATCHER;
-//global variable to grab spell attack modifier in case a user opens up their sidebar before navigating to spells
-//unfortunately the sidebar doesn't display spell attack modifier
-var SPELL_ATTACK_MOD;
-function onLoad() {
-    THEME_WATCHER = new ThemeWatcher()
-    makeDraggable(displayBox)
-    setInterval(refreshClicks, 1000)
-    // TODO: make sure this actually works
-    if (document.querySelector('.ct-combat-attack--spell .ct-combat-attack__tohit')) {
-        SPELL_ATTACK_MOD = document.querySelector('.ct-combat-attack--spell .ct-combat-attack__tohit').textContent
-        console.log("got spell attack to hit on load")
-        console.log(SPELL_ATTACK_MOD)
+//makes a display box
+class DisplayBox {
+    constructor() {
+        this.root = document.createElement('div')
+        this.root.id = 'display-box';
+        this.root.className = 'ct-box-background ct-box-background--fancy-small'
+
+        this.contentBox = document.createElement('div');
+        this.contentBox.id = 'display-box-content';
+        this.contentBox.innerText = "Welcome to Dicemagic.Beyond! \nRoll: shift-click \nAdvantage: shift-space-click \nDisadvantage: alt-space-click";
+        this.root.appendChild(this.contentBox);
+        document.body.appendChild(this.root);
+        this.makeDraggable()
+    }
+
+    makeDraggable = () => {
+        const element = this.root
+        var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+        element.style.top = '100px'
+        element.style.left = '100px'
+        element.addEventListener('mousedown', startDrag);
+    
+        function startDrag(event) {
+            if (event.button === 0 && event.currentTarget.id === 'display-box') {
+                console.log('start')
+                pos3 = event.clientX;
+                pos4 = event.clientY;
+        
+                document.addEventListener('mouseup', stopDragging)
+                document.addEventListener('mousemove', dragElement)
+                document.addEventListener('click', stopClick, true)
+            }
+        }
+    
+        function dragElement(event) {
+            console.log('moving')
+            pos1 = pos3 - event.clientX;
+            pos2 = pos4 - event.clientY;
+            pos3 = event.clientX;
+            pos4 = event.clientY;
+    
+            element.style.top = (element.offsetTop - pos2) + "px";
+            element.style.left = (element.offsetLeft - pos1) + "px";
+        }
+    
+        function stopDragging(event) {
+            console.log('stop')
+            document.removeEventListener('mouseup', stopDragging);
+            document.removeEventListener('mousemove', dragElement);
+            
+        }
+    
+        function stopClick(event) {
+            console.log('stopclick')
+            event.preventDefault()
+            event.stopPropagation()
+            document.removeEventListener('click', stopClick, true)
+        }
     }
 }
 
@@ -1029,60 +1089,22 @@ function refreshClicks() {
     addOnClickToSidebarSpells()
 }
 
-//makes a display box
-var displayBox = document.createElement('div')
-displayBox.id = 'display-box';
-displayBox.className = 'ct-box-background ct-box-background--fancy-small'
-
-var displayBoxContent = document.createElement('div');
-displayBoxContent.id = 'display-box-content';
-displayBoxContent.innerText = "Welcome to Dicemagic.Beyond! \nRoll: shift-click \nAdvantage: shift-space-click \nDisadvantage: alt-space-click";
-displayBox.appendChild(displayBoxContent);
-
-document.body.appendChild(displayBox);
-
-function makeDraggable(element) {
-    console.log('initializing results window');
-    var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-    element.style.top = '100px'
-    element.style.left = '100px'
-    element.addEventListener('mousedown', startDrag);
-
-    function startDrag(event) {
-        if (event.button === 0 && event.currentTarget.id === 'display-box') {
-            console.log('start')
-            pos3 = event.clientX;
-            pos4 = event.clientY;
-    
-            document.addEventListener('mouseup', stopDragging)
-            document.addEventListener('mousemove', dragElement)
-            document.addEventListener('click', stopClick, true)
-        }
-    }
-
-    function dragElement(event) {
-        console.log('moving')
-        pos1 = pos3 - event.clientX;
-        pos2 = pos4 - event.clientY;
-        pos3 = event.clientX;
-        pos4 = event.clientY;
-
-        element.style.top = (element.offsetTop - pos2) + "px";
-        element.style.left = (element.offsetLeft - pos1) + "px";
-    }
-
-    function stopDragging(event) {
-        console.log('stop')
-        document.removeEventListener('mouseup', stopDragging);
-        document.removeEventListener('mousemove', dragElement);
-        
-    }
-
-    function stopClick(event) {
-        console.log('stopclick')
-        event.preventDefault()
-        event.stopPropagation()
-        document.removeEventListener('click', stopClick, true)
+var THEME_WATCHER;
+var DISPLAY_BOX
+var DISPLAY_BOX_CONTENT;
+//global variable to grab spell attack modifier in case a user opens up their sidebar before navigating to spells
+//unfortunately the sidebar doesn't display spell attack modifier
+var SPELL_ATTACK_MOD;
+function onLoad() {
+    THEME_WATCHER = new ThemeWatcher()
+    DISPLAY_BOX = new DisplayBox()
+    DISPLAY_BOX_CONTENT = DISPLAY_BOX.contentBox
+    setInterval(refreshClicks, 1000)
+    // TODO: make sure this actually works
+    if (document.querySelector('.ct-combat-attack--spell .ct-combat-attack__tohit')) {
+        SPELL_ATTACK_MOD = document.querySelector('.ct-combat-attack--spell .ct-combat-attack__tohit').textContent
+        console.log("got spell attack to hit on load")
+        console.log(SPELL_ATTACK_MOD)
     }
 }
 
