@@ -1,28 +1,59 @@
 * {
     box-sizing: border-box;
 }
-
-h1,h2,h3,h4,h5,h6 {
+:root {
+    --theme-color: #c15131
+}
+html, body {
+    overflow: scroll;
+    font-family: "Roboto Condensed",Helvetica,sans-serif;
     margin: 0;
+    padding: 0;
+}
+.title {
+    font-size: 20px;
+    padding-bottom: .1em;
+    border-bottom: 1px solid #efefef;
+    margin-bottom: .4em;
+}
+.issue-link {
+    float: right;
+    text-align: right;
+    font-size: 12px;
+    line-height:20px;
+    padding-bottom: .1em;
+    text-decoration: none;
+    font-weight: 700;
+}
+.issue-link:visited {
+    color: black;
+
 }
 body {
-    font-family: Roboto,Helvetica,sans-serif;
-    padding: 1em;
+    padding: 0 1.5em 0 1.5em;
     width: 300px;
-    height: 208px;
-    background-size: cover;
+    height: 214px;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    background-size: contain;
 }
+.settings-button {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
 
+}
 .roll-input-box {
+    display: flex;
     width: 100%;
     padding: 5px 5px;
     border: 1px solid #eaeaea;
     border-radius: 3px;
-    display: flex;
+    margin-bottom: .4em
 }
 input,
 input:focus {
-    font-size: 12px;
+    font-size: 13px;
     border: none;
     outline: none;
     flex-grow: 2;
@@ -32,15 +63,52 @@ input:focus {
     z-index: 10;
     height: 22px;
     margin-right: 3px;
+    margin-left: 2px;
     float:right;
-
-    background-color: #C53131;
     border-radius: 3px;
 
+    font-family: "Roboto Condensed",Helvetica,sans-serif;
     font-size: 10px;
     color: #fff;
-    font-family: "Roboto Condensed",Roboto,Helvetica,sans-serif;
 
     cursor: pointer;
-
 }
+.results-command-header {
+    display: block;
+    font-size: 13px;
+    height: 18px;
+    line-height: 18.2px;
+    font-weight: 700;
+    border-bottom: 1px solid #efefef;
+    text-transform: uppercase;
+}
+
+.results-command {
+    font-weight: 400;
+    color: black;
+    font-size: 12px;
+    text-transform: none;
+}
+
+.roll-result-text {
+    display: inline-block;
+    text-align: right;
+    font-weight: 700;
+    color: black;
+    width: 2em;
+}
+.roll-raw-text {
+    font-weight: 400;
+    color: black;
+}
+/* add spacer */
+.roll-result-text + .roll-raw-text {
+    margin-left: 10px;
+}
+
+.roll-total-text {
+    margin-left: 10px;
+    font-size: 14px;
+    font-weight: 700;
+}
+

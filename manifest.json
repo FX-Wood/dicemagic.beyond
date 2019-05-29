@@ -4,17 +4,22 @@
     "description": "Rolls dice using Aaron's API while using dndbeyond",
     "permissions": [
         "activeTab",
+        "storage",
         "https://www.dndbeyond.com/",
         "https://api.dicemagic.io/"
     ],
-
+    "commands": {
+        "_execute_browser_action": {
+            "suggested_key": "Ctrl + 0"
+        }
+    },
     "content_scripts": [
     {
         "matches": [
             "https://www.dndbeyond.com/profile/*/characters/*", "http://www.dndbeyond.com/*"
         ],
-        "run_at": "document_end",
-        "css": ["css/hoverstyle.css", "css/displayboxstyle.css"],
+        "run_at": "document_idle",
+        "css": ["css/displayboxstyle.css"],
         "js": ["js/content.js"]
     }
     ],
@@ -25,21 +30,21 @@
         "default_popup": "html/popup.html",
         "default_title": "diceMagic.Beyond",
         "default_icon": {
-            "512": "images/roller_icon512.png",
-            "128": "images/roller_icon128.png",
-            "64": "images/roller_icon64.png",
-            "32": "images/roller_icon32.png",
-            "24": "images/roller_icon24.png",
-            "16": "images/roller_icon16.png"
+            "512": "icon/roller_icon512.png",
+            "128": "icon/roller_icon128.png",
+            "64": "icon/roller_icon64.png",
+            "32": "icon/roller_icon32.png",
+            "24": "icon/roller_icon24.png",
+            "16": "icon/roller_icon16.png"
         }
     },
     "icons": {
-        "512": "images/roller_icon512.png",
-        "128": "images/roller_icon128.png",
-        "64": "images/roller_icon64.png",
-        "32": "images/roller_icon32.png",
-        "24": "images/roller_icon24.png",
-        "16": "images/roller_icon16.png"
+        "512": "icon/roller_icon512.png",
+        "128": "icon/roller_icon128.png",
+        "64": "icon/roller_icon64.png",
+        "32": "icon/roller_icon32.png",
+        "24": "icon/roller_icon24.png",
+        "16": "icon/roller_icon16.png"
     },
     "manifest_version": 2,
     "web_accessible_resources": ["images/*","js/*","css/*","html/*"]
