@@ -109,34 +109,6 @@ function RollInputColumn(labelText, valueText) {
     return {root, label, value}
 }
 
-// advantage/disadvantage logic
-var SPACEPRESSED = false;
-window.addEventListener('keydown', function(e) {
-    if (SPACEPRESSED == false && e.key == ' ' && e.shiftKey) {
-        e.preventDefault()
-        SPACEPRESSED = true;
-    }
-})
-window.addEventListener('keyup',function(e) {
-    if (e.key == ' ') {
-        SPACEPRESSED = false;
-    }
-})
-
-function determineAdvantage(e) {
-    // advantage
-    if (SPACEPRESSED) {
-        console.log('Advantage!');
-        return 1;
-    // disadvantage
-    } else if (e.altKey) {
-        console.log('Disadvantage!');
-        return 2;
-    }
-    // normal
-    return 0
-}
-
 // get rolls from background script
 function dispatchToBackground({type, data}) {
     console.log('dispatching', {type, data})
@@ -933,7 +905,6 @@ function renderSideBarSpell({ spellName, effectDice, result, raw, damageType }) 
 }
 class ThemeWatcher {
     constructor(pollFrequency=1000) {
-        console.log('constructing theme watcher. setting theme to red')
         this.styleSheet = document.head.appendChild(document.createElement('style')).sheet
         this.pollFrequency = pollFrequency
         this.intervalHandle = setInterval(this.getThemeColor, pollFrequency)
@@ -942,15 +913,19 @@ class ThemeWatcher {
         // default color
         this.color = 'rgb(197, 49, 49)'
         this.themeWatcherDidConstruct()
-    }
-    stop = () => clearInterval(this.intervalHandle)
+    };
 
-    start = () => this.intervalHandle = setInterval(this.getThemeColor, this.pollFrequency)
+    start = () => {
+        if (this.intervalHandle) {
+            clearInterval(this.intervalHandle)
+        }
+        this.intervalHandle = setInterval(this.getThemeColor, this.pollFrequency)
+    };
 
-    deconstruct = () => {
-        this.stop()
-        delete this
-    }
+    stop = () => {
+        clearInterval(this.intervalHandle)
+    };
+
 
     themeWatcherDidConstruct = () => {
         console.log('Theme watcher constructed, checking theme')
@@ -965,7 +940,7 @@ class ThemeWatcher {
                 this.getThemeColor()
             }
         })
-    }
+    };
 
     getThemeColor = () => {
         console.log('getting theme color from page')
@@ -986,7 +961,8 @@ class ThemeWatcher {
             this.changeThemeColor(nextColor)
             dispatchToBackground("THEME_CHANGE")
         }
-    }
+    };
+
     changeThemeColor = (color) => {
         console.log('changing theme!', color)
         // clear old rules
@@ -1014,9 +990,8 @@ class ThemeWatcher {
         // sidebar damage
         this.styleSheet.insertRule(`.sidebar-damage-box:hover { color: ${color}; font-weight: bolder;}`)
 
-    }
-
-}
+    };
+};
 
 //makes a display box
 class DisplayBox {
@@ -1079,6 +1054,55 @@ class DisplayBox {
     }
 }
 
+// advantage/disadvantage logic
+class SpacebarListener {
+    constructor() {
+        SPACEPRESSED = false;
+        this.keydown = null;
+        this.keyup = null;
+        this.start()
+    }
+    start = () => {
+        if (this.keydown) {
+            clearInterval(this.keydown)
+        }
+        if (this.keyup) {
+            clearInterval(this.keyup)
+        }
+        SPACEPRESSED = false;
+        this.keydown = window.addEventListener('keydown', function(e) {
+            if (SPACEPRESSED === false && e.key === ' ' && e.shiftKey) {
+                e.preventDefault()
+                SPACEPRESSED = true;
+            }
+        })
+        this.keyup = window.addEventListener('keyup',function(e) {
+            if (e.key == ' ') {
+                SPACEPRESSED = false;
+            }
+        })
+        
+    }
+    stop = () => {
+        clearInterval(this.keyup)
+        clearInterval(this.keydown)
+        SPACEPRESSED = false;
+    }
+}
+function determineAdvantage(e) {
+    // advantage
+    if (SPACEPRESSED) {
+        console.log('Advantage!');
+        return 1;
+    // disadvantage
+    } else if (e.altKey) {
+        console.log('Disadvantage!');
+        return 2;
+    }
+    // normal
+    return 0
+}
+
 function refreshClicks() {
     console.log('refreshing clicks')
     addOnClickToInitiative()
@@ -1090,16 +1114,18 @@ function refreshClicks() {
 }
 
 var THEME_WATCHER;
-var DISPLAY_BOX
-var DISPLAY_BOX_CONTENT;
-//global variable to grab spell attack modifier in case a user opens up their sidebar before navigating to spells
-//unfortunately the sidebar doesn't display spell attack modifier
-var SPELL_ATTACK_MOD;
-function onLoad() {
-    THEME_WATCHER = new ThemeWatcher()
+var SPACEBAR_LISTENER, SPACEPRESSED;
+var DISPLAY_BOX, DISPLAY_BOX_CONTENT;
+var SPELL_ATTACK_MOD; //holds spell attack modifier in case users roll from their sidebar without the primary box spells tab open
+function onLoad(pollFrequency) {
+    SPACEBAR_LISTENER = new SpacebarListener()
+    
     DISPLAY_BOX = new DisplayBox()
     DISPLAY_BOX_CONTENT = DISPLAY_BOX.contentBox
-    setInterval(refreshClicks, 1000)
+    
+    THEME_WATCHER = new ThemeWatcher(pollFrequency)
+    setInterval(refreshClicks, pollFrequency)
+
     // TODO: make sure this actually works
     if (document.querySelector('.ct-combat-attack--spell .ct-combat-attack__tohit')) {
         SPELL_ATTACK_MOD = document.querySelector('.ct-combat-attack--spell .ct-combat-attack__tohit').textContent
@@ -1107,5 +1133,7 @@ function onLoad() {
         console.log(SPELL_ATTACK_MOD)
     }
 }
-
-onLoad()
+if (typeof window !== 'undefined') {
+    let pollFrequency = 1000 //ms
+    onLoad(pollFrequency)
+}
