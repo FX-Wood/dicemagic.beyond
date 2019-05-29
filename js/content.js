@@ -234,43 +234,43 @@ function addOnClickToSaves() {
             save.addEventListener("click", rollSavingThrow, true);
             save.classList.add('saving-throw-mouseover');
         });
+    }
+}
 
-        function rollSavingThrow(event) {
-            if (event.shiftKey) {
-                console.log('rolling a save!');
-                event.preventDefault();
-                event.stopPropagation();
+function rollSavingThrow(event) {
+    if (event.shiftKey) {
+        console.log('rolling a save!');
+        event.preventDefault();
+        event.stopPropagation();
 
-                let name = this.querySelector(".ct-saving-throws-summary__ability-name").textContent;
-                name = name.charAt(0).toUpperCase() + name.slice(1) + ' saving throw'
-                let modifier = this.querySelector(".ct-saving-throws-summary__ability-modifier").textContent;
-                let advantageState = determineAdvantage(event)
-                dispatchToBackground({type:"SIMPLE_ROLL", data: null})
-                    .then((roll) => {
-                        const { first, high, low } = roll
-                        let result = first
-                        // handle advantage
-                        if (advantageState === 1) {
-                            result = high
-                        }
-                        // handle disadvantage
-                        if (advantageState == 2) {
-                            result = low
-                        }
-                        const props = {
-                            name,
-                            result,
-                            first,
-                            high,
-                            low,
-                            modifier,
-                            advantageState,
-                        }
-                        console.log('props', props)
-                        renderSimple(props)
-                })
-            }
-        }
+        let name = event.currentTarget.querySelector(".ct-saving-throws-summary__ability-name").textContent;
+        name = name.charAt(0).toUpperCase() + name.slice(1) + ' saving throw'
+        let modifier = event.currentTarget.querySelector(".ct-saving-throws-summary__ability-modifier").textContent;
+        let advantageState = determineAdvantage(event)
+        dispatchToBackground({type:"SIMPLE_ROLL", data: null})
+            .then((roll) => {
+                const { first, high, low } = roll
+                let result = first
+                // handle advantage
+                if (advantageState === 1) {
+                    result = high
+                }
+                // handle disadvantage
+                if (advantageState == 2) {
+                    result = low
+                }
+                const props = {
+                    name,
+                    result,
+                    first,
+                    high,
+                    low,
+                    modifier,
+                    advantageState,
+                }
+                console.log('props', props)
+                renderSimple(props)
+        })
     }
 }
 
@@ -779,40 +779,6 @@ function renderPrimaryBoxSpells(spellInfo) {
     DISPLAY_BOX_CONTENT.appendChild(root)
 
 }
-// Primary Box
-function addOnclickToPrimaryBox() {
-    //checks if the actions tab of the primary box is active
-    if (document.querySelector('.ct-attack-table__content')) {
-        //makes an array of each item on the attack table
-        let attacks = Array.from(document.querySelector('.ct-attack-table__content').children);
-
-        //adds an event listener and flags each item in the attack table
-        attacks.forEach(attack => {
-            if(!attack.iAmListening) {
-                attack.addEventListener('click', attackAndDamageRoll, true);
-                attack.iAmListening = true;
-                console.log('Adding listeners to attack table');
-                attack.classList.add('primary-box-mouseover')
-            }
-        })
-    // This block executes if the spells tab is active in the primary box
-    } else if (document.querySelector('.ct-spells')) {
-        let spells = Array.from(document.querySelectorAll('.ct-spells-spell'));
-        
-        spells.forEach(spell => {
-            //checks if each spell has a to-Hit roll or a damage roll 
-            if (spell.querySelector('ct-spells-spell__tohit') || spell.querySelector('.ct-damage__value')) {
-                //checks if the spell has a listener yet
-                if (!spell.iAmListening) {
-                    spell.iAmListening = true;
-                    spell.addEventListener('click', rollSpellPrimaryBox, true);
-                    console.log('adding listeners to spells');
-                    spell.classList.add('primary-box-mouseover');
-                }
-            }
-        });
-    }
-}
 
 // Sidebar
 function addOnClickToSidebarSpells() {
@@ -907,7 +873,7 @@ class ThemeWatcher {
     constructor(pollFrequency=1000) {
         this.styleSheet = document.head.appendChild(document.createElement('style')).sheet
         this.pollFrequency = pollFrequency
-        this.intervalHandle = setInterval(this.getThemeColor, pollFrequency)
+        this.intervalHandle = null;
         this.target = document.getElementsByClassName('ct-character-header-desktop__button')
         this.fallback = document.getElementsByClassName('ct-status-summary-mobile__health')
         // default color
@@ -1005,9 +971,10 @@ class DisplayBox {
         this.contentBox.innerText = "Welcome to Dicemagic.Beyond! \nRoll: shift-click \nAdvantage: shift-space-click \nDisadvantage: alt-space-click";
         this.root.appendChild(this.contentBox);
         document.body.appendChild(this.root);
+    }
+    start = () => {
         this.makeDraggable()
     }
-
     makeDraggable = () => {
         const element = this.root
         var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
@@ -1060,7 +1027,6 @@ class SpacebarListener {
         SPACEPRESSED = false;
         this.keydown = null;
         this.keyup = null;
-        this.start()
     }
     start = () => {
         if (this.keydown) {
@@ -1119,11 +1085,14 @@ var DISPLAY_BOX, DISPLAY_BOX_CONTENT;
 var SPELL_ATTACK_MOD; //holds spell attack modifier in case users roll from their sidebar without the primary box spells tab open
 function onLoad(pollFrequency) {
     SPACEBAR_LISTENER = new SpacebarListener()
+    SPACEBAR_LISTENER.start()
     
     DISPLAY_BOX = new DisplayBox()
     DISPLAY_BOX_CONTENT = DISPLAY_BOX.contentBox
+    DISPLAY_BOX.start()
     
     THEME_WATCHER = new ThemeWatcher(pollFrequency)
+    THEME_WATCHER.start()
     setInterval(refreshClicks, pollFrequency)
 
     // TODO: make sure this actually works
@@ -1136,4 +1105,52 @@ function onLoad(pollFrequency) {
 if (typeof window !== 'undefined') {
     let pollFrequency = 1000 //ms
     onLoad(pollFrequency)
+}
+
+module.exports = {
+    // chrome messaging
+    dispatchToBackground,
+    
+    // initiative
+    addOnClickToInitiative,
+    rollInitiative,
+    
+    // ability checks
+    addOnClickToAbilities,
+    rollAbilityCheck,
+    
+    // saves
+    addOnClickToSaves,
+    rollSavingThrow,
+    
+    // skill checks
+    addOnClickToSkills,
+    rollSkillCheck,
+    
+    // renderer for all of the above
+    renderSimple,
+
+    // primary box
+    addOnclickToPrimaryBox,
+    
+    attackAndDamageRoll,
+    renderAttack,
+    
+    rollSpellPrimaryBox,
+    renderPrimaryBoxSpells,
+
+    // sidebar
+    addOnClickToSidebarSpells,
+    rollSpellSideBar,
+    renderSideBarSpell,
+
+    // classes
+    ThemeWatcher,
+    DisplayBox,
+    SpacebarListener,
+    determineAdvantage,
+    refreshClicks,
+
+    determineAdvantage,
+    refreshClicks,
 }
