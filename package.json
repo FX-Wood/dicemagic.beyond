@@ -21,7 +21,7 @@
   "homepage": "https://github.com/FX-Wood/dicemagic.beyond#readme",
   "devDependencies": {
     "chai": "^4.2.0",
-    "jsdom": "^15.1.0",
+    "jsdom": "^15.1.1",
     "mocha": "^6.1.4",
     "sinon": "^7.3.2",
     "web-ext": "^3.0.0"
