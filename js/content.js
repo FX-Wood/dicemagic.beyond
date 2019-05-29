@@ -118,53 +118,60 @@ function dispatchToBackground({type, data}) {
         })
     })
 }
-// Initiative
-function addOnClickToInitiative() {
-    let initiative = document.querySelector('.ct-initiative-box');
-    if (initiative && !initiative.iAmListening) {
-        initiative.iAmListening = true;
-        initiative.classList.add('simple-mouseover');
-        console.log('adding listener to initiative');
-
-        initiative.addEventListener("click", rollInitiative, true);
+class InitiativeListener {
+    constructor(pollFrequency) {
+        this.pollHandle = null;
+        this.pollFrequency = pollFrequency;
     }
-}
 
-function rollInitiative(e) {
-    if (e.shiftKey) {
-        console.log('Rolling initiative!');
-        e.preventDefault();
-        e.stopPropagation();
-
-        let name = 'Your initiative'
-        let modifier = e.currentTarget.textContent;
-        let advantageState = determineAdvantage(e);
-
-        dispatchToBackground({type:"SIMPLE_ROLL", data: null})
-            .then((roll) => {
-                const { first, high, low } = roll
-                let result = first
-                // handle advantage
-                if (advantageState === 1) {
-                    result = high
-                }
-                // handle disadvantage
-                if (advantageState == 2) {
-                    result = low
-                }
-                const props = {
-                    name,
-                    result,
-                    first,
-                    high,
-                    low,
-                    modifier,
-                    advantageState,
-                }
-            console.log('props', props)
-            renderSimple(props)
-        })
+    start = () => {
+        this.pollHandle = setInterval(this.poll.bind(this), this.pollFrequency)
     }
+    stop = () => {
+        clearInterval(this.listenerHandle)
+    }
+    poll = () => {
+        let initiative = document.querySelector('.ct-initiative-box');
+        if (initiative && !initiative.iAmListening) {
+            initiative.iAmListening = true;
+            initiative.classList.add('simple-mouseover');
+            this.listenerHandle = initiative.addEventListener("click", this.roll, true);
+        }
+    }
+    roll = async (e) => {
+        if (e.shiftKey) {
+            e.preventDefault();
+            e.stopPropagation();
+    
+            let name = 'Your initiative'
+            let modifier = e.currentTarget.textContent;
+            let advantageState = determineAdvantage(e);
+    
+            let roll = await dispatchToBackground({type:"SIMPLE_ROLL", data: null})
+
+            const { first, high, low } = roll
+            let result = first
+            // handle advantage
+            if (advantageState === 1) {
+                result = high
+            }
+            // handle disadvantage
+            if (advantageState == 2) {
+                result = low
+            }
+            const props = {
+                name,
+                result,
+                first,
+                high,
+                low,
+                modifier,
+                advantageState,
+            }
+        DISPLAY_BOX.renderSimple(props)
+        }
+    }
+
 }
 
 // abilities
@@ -329,7 +336,6 @@ function rollSkillCheck(e) {
         })
     }
 }
-
 function renderSimple(props) {
     const { name, result, first, high, low, modifier,  advantageState } = props
     console.log('rendering saving throw')
@@ -1019,6 +1025,84 @@ class DisplayBox {
             document.removeEventListener('click', stopClick, true)
         }
     }
+    renderSimple = (props) => {
+        const { name, result, first, high, low, modifier,  advantageState } = props
+        console.log('rendering saving throw')
+        const root = document.createDocumentFragment()
+    
+        // string with rolling results
+        let title = Title('')
+        let subtitle = Subtitle('')
+    
+        let rollInfoRow = Row('roll-box')
+        
+        // raw roll result
+        let rawRollColumn = RollInfoColumn('raw', '')
+        let raw = rawRollColumn.value
+        rollInfoRow.appendChild(rawRollColumn.root)
+    
+        // roll modifier w/input
+        let modifierColumn = RollInputColumn('modifier', 0)
+        let mod = modifierColumn.value
+        rollInfoRow.appendChild(modifierColumn.root)
+    
+        rollInfoRow.appendChild(FlexSpacer())
+    
+        // advantage buttons    
+        // container for advantage buttons
+        let buttonBox = Row('button-box')
+    
+        // normal
+        let norm = TabBtn('normal', first)
+        buttonBox.appendChild(norm)
+        console.log(norm)
+        // advantage
+        let adv = TabBtn('advantage', high)
+        buttonBox.appendChild(adv)
+    
+        // disadvantage
+        let dAdv = TabBtn('disadvantage', low)
+        buttonBox.appendChild(dAdv)
+    
+        const btns = [norm, adv, dAdv]
+        console.log(advantageState)
+        btns[advantageState].activate()
+    
+        function renderText(newRoll, newModifier) {
+            console.log('rendering', newRoll, newModifier)
+            title.innerText = `${name}:  ${parseInt(newRoll) + parseInt(newModifier)}\n`
+            subtitle.innerText = `You rolled ${newRoll} with a ${parseInt(newModifier) >= 0 ? '+' + newModifier : '-' + newModifier } modifier`
+            raw.innerText = newRoll
+            mod.value = parseInt(newModifier)
+        }
+    
+        // function to toggle advantage buttons
+        function advantageToggle(e) {
+            if (e.button === 0) {
+                btns.forEach(btn => btn.deActivate())
+                e.currentTarget.activate()
+                console.log({'roll':e.currentTarget.dataset.value, 'mod':mod.value})
+                renderText(e.currentTarget.dataset.value, mod.value)
+            }
+        }
+        // first render
+        renderText(result, modifier)
+    
+        // handle new modifier input
+        mod.addEventListener('change', (e) => renderText(parseInt(raw.innerText), e.target.value))
+        // handle changes in advantage
+        btns.forEach(btn => btn.addEventListener('mousedown', advantageToggle))
+    
+        // order of elements in box
+        root.appendChild(title)
+        root.appendChild(subtitle)
+        root.appendChild(document.createElement('br'))
+        root.appendChild(buttonBox)
+        root.appendChild(rollInfoRow)
+    
+        this.contentBox.innerHTML = ''
+        this.contentBox.appendChild(root)
+    }
 }
 
 // advantage/disadvantage logic
@@ -1071,7 +1155,6 @@ function determineAdvantage(e) {
 
 function refreshClicks() {
     console.log('refreshing clicks')
-    addOnClickToInitiative()
     addOnClickToSaves()
     addOnClickToSkills()
     addOnClickToAbilities()
@@ -1081,6 +1164,7 @@ function refreshClicks() {
 
 var THEME_WATCHER;
 var SPACEBAR_LISTENER, SPACEPRESSED;
+var INITIATIVE_LISTENER;
 var DISPLAY_BOX, DISPLAY_BOX_CONTENT;
 var SPELL_ATTACK_MOD; //holds spell attack modifier in case users roll from their sidebar without the primary box spells tab open
 function onLoad(pollFrequency) {
@@ -1093,64 +1177,65 @@ function onLoad(pollFrequency) {
     
     THEME_WATCHER = new ThemeWatcher(pollFrequency)
     THEME_WATCHER.start()
-    setInterval(refreshClicks, pollFrequency)
+    
+    INITIATIVE_LISTENER = new InitiativeListener(pollFrequency)
+    INITIATIVE_LISTENER.start()
 
+    setInterval(refreshClicks, pollFrequency)
     // TODO: make sure this actually works
     if (document.querySelector('.ct-combat-attack--spell .ct-combat-attack__tohit')) {
         SPELL_ATTACK_MOD = document.querySelector('.ct-combat-attack--spell .ct-combat-attack__tohit').textContent
-        console.log("got spell attack to hit on load")
-        console.log(SPELL_ATTACK_MOD)
     }
 }
 if (typeof window !== 'undefined') {
     let pollFrequency = 1000 //ms
     onLoad(pollFrequency)
+} else {
+    module.exports = {
+        // chrome messaging
+        dispatchToBackground,
+        
+        // initiative
+        InitiativeListener,
+        
+        // ability checks
+        addOnClickToAbilities,
+        rollAbilityCheck,
+        
+        // saves
+        addOnClickToSaves,
+        rollSavingThrow,
+        
+        // skill checks
+        addOnClickToSkills,
+        rollSkillCheck,
+        
+        // renderer for all of the above
+        renderSimple,
+    
+        // primary box
+        addOnclickToPrimaryBox,
+        
+        attackAndDamageRoll,
+        renderAttack,
+        
+        rollSpellPrimaryBox,
+        renderPrimaryBoxSpells,
+    
+        // sidebar
+        addOnClickToSidebarSpells,
+        rollSpellSideBar,
+        renderSideBarSpell,
+    
+        // classes
+        ThemeWatcher,
+        DisplayBox,
+        SpacebarListener,
+        determineAdvantage,
+        refreshClicks,
+    
+        determineAdvantage,
+        refreshClicks,
+    }
 }
 
-module.exports = {
-    // chrome messaging
-    dispatchToBackground,
-    
-    // initiative
-    addOnClickToInitiative,
-    rollInitiative,
-    
-    // ability checks
-    addOnClickToAbilities,
-    rollAbilityCheck,
-    
-    // saves
-    addOnClickToSaves,
-    rollSavingThrow,
-    
-    // skill checks
-    addOnClickToSkills,
-    rollSkillCheck,
-    
-    // renderer for all of the above
-    renderSimple,
-
-    // primary box
-    addOnclickToPrimaryBox,
-    
-    attackAndDamageRoll,
-    renderAttack,
-    
-    rollSpellPrimaryBox,
-    renderPrimaryBoxSpells,
-
-    // sidebar
-    addOnClickToSidebarSpells,
-    rollSpellSideBar,
-    renderSideBarSpell,
-
-    // classes
-    ThemeWatcher,
-    DisplayBox,
-    SpacebarListener,
-    determineAdvantage,
-    refreshClicks,
-
-    determineAdvantage,
-    refreshClicks,
-}
