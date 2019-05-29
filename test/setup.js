@@ -1,23 +1,11 @@
+// conveniently put expect and sinon in global scope
+global.expect = require('chai').expect
+global.sinon = require('sinon')
 
-describe('template', function() {
-    before(async function() {
-        this.app = require('../js/content')
-        global.JSDOM = require('jsdom').JSDOM
-        global.expect = require('chai').expect
-        global.sinon = require('sinon')
-        global.taman = await JSDOM.fromFile('test/taman2.html')
-        global.window = taman.defaultView
-        global.document = taman.window.document
-    })
-    it('taman exists', function() {
-        expect(taman).to.exist
-    })
-    it('document exists', function() {
-        expect(document).to.exist
-    })
-    it('display box exists', function() {
-        const box = new this.app.DisplayBox()
-        expect(box.root.constructor.name).to.equal('HTMLDivElement')
-    })
+// import content script before constructing DOM
+global.content = require('../js/content')
 
-})
+// read html file and instantiate DOM
+const fs = require('fs')
+const tamanHTML = fs.readFileSync('test/taman2.html')
+require('jsdom-global')(tamanHTML)

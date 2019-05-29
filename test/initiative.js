@@ -1,15 +1,16 @@
-before(async function() {
-    global.initiativeListener = new (require('../js/content.js').InitiativeListener)()
-    global.initiativeBox = document.querySelector('.ct-initiative-box')
-})
 describe('Initiative', function() {
-    it('adds flag to initiative box', function() {
-        expect(initiativeBox.iAmListening).to.be.undefined
-        initiativeListener.poll()
-        expect(initiativeBox.iAmListening).is.true
-
+    before(function() {
+        this.initiativeListener = new content.InitiativeListener()
     })
-    it('adds mouseover class to box', function() {
-        expect(initiativeBox.className).to.include('mouseover')
+
+    describe('tests', function() {
+        it('adds flag to initiative box', function() {
+            expect(global.initiativeBox.iAmListening).to.be.undefined
+            global.initiativeListener.poll()
+            expect(global.initiativeBox.iAmListening).is.true
+        })
+        it('adds mouseover class to box', function() {
+            expect(global.initiativeBox.className).to.include('mouseover')
+        })
     })
 })
