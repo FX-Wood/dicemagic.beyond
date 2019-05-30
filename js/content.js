@@ -175,56 +175,76 @@ class InitiativeListener {
 }
 
 // abilities
-function addOnClickToAbilities() {
-    let abilitiesBox = document.querySelector('.ct-quick-info__abilities');
-    if (abilitiesBox && !abilitiesBox.iAmListening) {
-        abilitiesBox.iAmListening = true;
-        console.log("Adding listeners to abilities");
-        const abilities = abilitiesBox.querySelectorAll('.ct-ability-summary')
-        abilities.forEach(ability => {
-            ability.addEventListener("click", rollAbilityCheck, true);
-            // todo: make ability hover class
-            ability.classList.add('simple-mouseover');
-        })
+class AbilityListener {
+    constructor(pollFrequency=1000) {
+        this.pollHandle = null
+        this.pollFrequency = pollFrequency
+        this.clickableSkills = []
     }
-}
-
-function rollAbilityCheck(e) {
-    if (e.shiftKey){
-        e.preventDefault()
-        e.stopPropagation()
-        console.log('Rolling ability check. Space: ' + SPACEPRESSED + ' Shift: ' + e.shiftKey + ' Alt: ' + e.altKey)
-
-        let name = e.currentTarget.querySelector(".ct-ability-summary__label").innerText.toLowerCase()
+    start = () => {
+        if (this.pollHandle) {
+            clearInterval(this.pollHandle)
+        }
+        this.pollHandle = setInterval(this.poll)
+    }
+    stop = () => {
+        if (this.pollHandle) {
+            clearInterval(this.pollHandle)
+        }
+        this.listenerTargets.forEach((target) => target.removeEventListener('click', this.roll))
+    }
+    poll = () => {
+        let abilitiesBox = document.querySelector('.ct-quick-info__abilities');
+        if (abilitiesBox && !abilitiesBox.iAmListening) {
+            // remove old, detached event listeners
+            if (this.clickableSkills.length) {
+                console.log('found old, detached abilities', console.log(this.clickableSkills))
+                this.clickableSkills.forEach((target) => target.removeEventListener('click', this.roll))
+                this.clickableSkills = []
+            }
+            abilitiesBox.iAmListening = true;
+            const abilities = abilitiesBox.querySelectorAll('.ct-ability-summary');
+            abilities.forEach(ability => {
+                this.clickableSkills.push(ability);
+                ability.addEventListener('click', this.roll);
+                ability.classList.add('simple-mouseover');
+            })
+        }
+    }
+    roll = async (e) => {
+        if (e.shiftKey){
+            e.preventDefault()
+            e.stopPropagation()
+    
+            let name = e.currentTarget.querySelector(".ct-ability-summary__label").innerText.toLowerCase()
             name = name.charAt(0).toUpperCase() + name.slice(1) + ' check'
-        let modifier = e.currentTarget.querySelector(".ct-signed-number").textContent
-
-        let advantageState = determineAdvantage(e)
-
-        dispatchToBackground({type:"SIMPLE_ROLL", data: null})
-            .then((roll) => {
-                const { first, high, low } = roll
-                let result = first
-                // handle advantage
-                if (advantageState === 1) {
-                    result = high
-                }
-                // handle disadvantage
-                if (advantageState === 2) {
-                    result = low
-                }
-                const props = {
-                    name,
-                    result,
-                    first,
-                    high,
-                    low,
-                    modifier,
-                    advantageState,
-                }
-                console.log('props', props)
-                renderSimple(props)
-        })
+            let modifier = e.currentTarget.querySelector(".ct-signed-number").textContent
+    
+            let advantageState = determineAdvantage(e)
+    
+            const roll = await dispatchToBackground({type:"SIMPLE_ROLL", data: null})
+            
+            const { first, high, low } = roll
+            let result = first
+            // handle advantage
+            if (advantageState === 1) {
+                result = high
+            }
+            // handle disadvantage
+            if (advantageState === 2) {
+                result = low
+            }
+            const props = {
+                name,
+                result,
+                first,
+                high,
+                low,
+                modifier,
+                advantageState,
+            }
+            DISPLAY_BOX.renderSimple(props)
+        }
     }
 }
 
@@ -1157,14 +1177,13 @@ function refreshClicks() {
     console.log('refreshing clicks')
     addOnClickToSaves()
     addOnClickToSkills()
-    addOnClickToAbilities()
     addOnclickToPrimaryBox()
     addOnClickToSidebarSpells()
 }
 
 var THEME_WATCHER;
 var SPACEBAR_LISTENER, SPACEPRESSED;
-var INITIATIVE_LISTENER;
+var INITIATIVE_LISTENER, ABILITY_LISTENER;
 var DISPLAY_BOX, DISPLAY_BOX_CONTENT;
 var SPELL_ATTACK_MOD; //holds spell attack modifier in case users roll from their sidebar without the primary box spells tab open
 function onLoad(pollFrequency) {
@@ -1180,6 +1199,10 @@ function onLoad(pollFrequency) {
     
     INITIATIVE_LISTENER = new InitiativeListener(pollFrequency)
     INITIATIVE_LISTENER.start()
+
+    ABILITY_LISTENER = new AbilityListener(pollFrequency)
+    ABILITY_LISTENER.start()
+
 
     setInterval(refreshClicks, pollFrequency)
     // TODO: make sure this actually works
@@ -1199,8 +1222,7 @@ if (typeof window !== 'undefined') {
         InitiativeListener,
         
         // ability checks
-        addOnClickToAbilities,
-        rollAbilityCheck,
+        AbilityListener,
         
         // saves
         addOnClickToSaves,
