@@ -119,16 +119,21 @@ function dispatchToBackground({type, data}) {
     })
 }
 class InitiativeListener {
-    constructor(pollFrequency) {
+    constructor(pollFrequency=1000) {
         this.pollHandle = null;
         this.pollFrequency = pollFrequency;
     }
 
     start = () => {
+        if (this.pollHandle) {
+            clearInterval(pollHandle)
+        }
         this.pollHandle = setInterval(this.poll.bind(this), this.pollFrequency)
     }
     stop = () => {
-        clearInterval(this.listenerHandle)
+        if (this.pollHandle) {
+            clearInterval(this.listenerHandle)
+        }
     }
     poll = () => {
         let initiative = document.querySelector('.ct-initiative-box');
@@ -180,20 +185,25 @@ class AbilityListener {
         this.pollHandle = null
         this.pollFrequency = pollFrequency
         this.clickableSkills = []
+
+        this.start = this.start.bind(this)
+        this.stop = this.stop.bind(this)
+        this.poll = this.poll.bind(this)
+        this.roll = this.roll.bind(this)
     }
-    start = () => {
+    start() {
         if (this.pollHandle) {
             clearInterval(this.pollHandle)
         }
         this.pollHandle = setInterval(this.poll)
     }
-    stop = () => {
+    stop() {
         if (this.pollHandle) {
             clearInterval(this.pollHandle)
         }
-        this.listenerTargets.forEach((target) => target.removeEventListener('click', this.roll))
+        this.abilitiesBox.forEach((target) => target.removeEventListener('click', this.roll))
     }
-    poll = () => {
+    poll() {
         let abilitiesBox = document.querySelector('.ct-quick-info__abilities');
         if (abilitiesBox && !abilitiesBox.iAmListening) {
             // remove old, detached event listeners
@@ -211,7 +221,7 @@ class AbilityListener {
             })
         }
     }
-    roll = async (e) => {
+    async roll (e) {
         if (e.shiftKey){
             e.preventDefault()
             e.stopPropagation()

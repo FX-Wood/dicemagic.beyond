@@ -1,6 +1,7 @@
 describe('Initiative', function() {
     before(function() {
-        this.initiativeListener = new content.InitiativeListener()
+        global.initiativeBox = document.querySelector('.ct-initiative-box')
+        global.initiativeListener = new content.InitiativeListener()
     })
 
     describe('tests', function() {
