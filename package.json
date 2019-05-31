@@ -7,7 +7,17 @@
     "test": "test"
   },
   "scripts": {
-    "test": "mocha --file ./test/setup.js"
+    "test": "npm run lint & mocha --file ./test/setup.js",
+    "lint": "eslint js/*.js test/*.js"
+  },
+  "eslintConfig": {
+    "env": {
+      "es6": true,
+      "browser": true
+    },
+    "parserOptions": {
+      "ecmaVersion": 8
+    }
   },
   "repository": {
     "type": "git",
