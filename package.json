@@ -7,7 +7,17 @@
     "test": "test"
   },
   "scripts": {
-    "test": "mocha"
+    "test": "npm run lint & mocha --file ./test/setup.js",
+    "lint": "eslint js/*.js test/*.js"
+  },
+  "eslintConfig": {
+    "env": {
+      "es6": true,
+      "browser": true
+    },
+    "parserOptions": {
+      "ecmaVersion": 8
+    }
   },
   "repository": {
     "type": "git",
@@ -21,7 +31,10 @@
   "homepage": "https://github.com/FX-Wood/dicemagic.beyond#readme",
   "devDependencies": {
     "chai": "^4.2.0",
+    "jsdom": "^15.1.1",
     "mocha": "^6.1.4",
-    "web-ext": "^3.0.0"
+    "sinon": "^7.3.2",
+    "web-ext": "^3.0.0",
+    "jsdom-global": "^3.0.2"
   }
 }

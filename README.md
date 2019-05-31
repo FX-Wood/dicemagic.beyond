@@ -1,6 +1,8 @@
 ## dicemagic.beyond 
 ###### README
 
+![build status](https://travis-ci.org/FX-Wood/dicemagic.beyond.svg?branch=master)
+
 ### About
 DiceMagic.Beyond is a chrome extension that allows users of dndbeyond.com to display dice rolling results when they click on a roll in their character sheet.
 
