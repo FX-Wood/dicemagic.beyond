@@ -1,7 +1,7 @@
 {
     "name": "dicemagic.beyond",
-    "version": "1.1.5",
-    "description": "Rolls dice using Aaron's API while using dndbeyond",
+    "version": "1.1.9",
+    "description": "Roll cryptographically secure dice right from your character sheet",
     "permissions": [
         "activeTab",
         "storage",
@@ -16,11 +16,19 @@
     "content_scripts": [
     {
         "matches": [
-            "https://www.dndbeyond.com/profile/*/characters/*", "http://www.dndbeyond.com/*"
+            "https://www.dndbeyond.com/profile/*/characters/*"
         ],
         "run_at": "document_idle",
         "css": ["css/displayboxstyle.css"],
         "js": ["js/content.js"]
+    },
+    {
+        "matches": [
+            "https://www.dndbeyond.com/encounters/*"
+        ],
+        "run_at": "document_idle",
+        "css": ["css/displayboxstyle.css"],
+        "js": ["js/content.js", "js/encounters.js"]
     }
     ],
     "background": {

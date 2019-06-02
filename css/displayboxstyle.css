@@ -176,3 +176,44 @@
     position: absolute;
     
 }
+
+/* bringing over results text */
+
+.results-command-header {
+    display: block;
+    font-size: 13px;
+    height: 18px;
+    line-height: 18.2px;
+    font-weight: 700;
+    border-bottom: 1px solid #efefef;
+    text-transform: uppercase;
+}
+
+.results-command {
+    font-weight: 400;
+    color: black;
+    font-size: 12px;
+    text-transform: none;
+}
+
+.roll-result-text {
+    display: inline-block;
+    text-align: right;
+    font-weight: 700;
+    color: black;
+    width: 2em;
+}
+.roll-raw-text {
+    font-weight: 400;
+    color: black;
+}
+/* add spacer */
+.roll-result-text + .roll-raw-text {
+    margin-left: 10px;
+}
+
+.roll-total-text {
+    margin-left: 10px;
+    font-size: 14px;
+    font-weight: 700;
+}

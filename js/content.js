@@ -1007,10 +1007,13 @@ class DisplayBox {
         this.contentBox.id = 'display-box-content';
         this.contentBox.innerText = 'Welcome to Dicemagic.Beyond! \nRoll: shift-click \nAdvantage: shift-space-click \nDisadvantage: shift-alt-click';
         this.root.appendChild(this.contentBox);
+        
         document.body.appendChild(this.root);
+
         this.start = this.start.bind(this);
         this.makeDraggable = this.makeDraggable.bind(this);
         this.renderSimple = this.renderSimple.bind(this);
+        this.renderCustomRoll = this.renderCustomRoll.bind(this);
     }
     start () {
         this.makeDraggable();
@@ -1134,6 +1137,72 @@ class DisplayBox {
         root.appendChild(buttonBox);
         root.appendChild(rollInfoRow);
 
+        this.contentBox.innerHTML = '';
+        this.contentBox.appendChild(root);
+
+        
+    }
+    renderCustomRoll (roll, optionsObject={}) {
+        const { cmd, result } = roll;
+        
+        const defaultOptions = {
+            titleText: "Custom Roll",
+            subtitleText: "fingers crossed..."
+        }
+        const { titleText, subtitleText } = Object.assign(defaultOptions, optionsObject)
+        console.log(titleText)
+        const rolls = result.split('\n');
+        const root = document.createDocumentFragment();
+        // render header
+        const titleEl = Title(titleText + '\n')
+        console.log(titleEl)
+        root.appendChild(titleEl)
+        const subtitleEl = Subtitle(subtitleText)
+        root.appendChild(subtitleEl)
+        const resultsHeader = document.createElement('div');
+        resultsHeader.className = 'results-command-header';
+        resultsHeader.innerText = 'result \u2022 ';
+        resultsHeader.style.color = THEME_WATCHER.color;
+        const command = document.createElement('span');
+        command.className = 'results-command';
+        command.innerText = cmd;
+        resultsHeader.appendChild(command);
+        root.appendChild(resultsHeader);
+        // render roll(s)
+        const resultCharWidth = rolls.reduce((max, next) => {
+            let [raw, result] = next.split(' = '); // eslint-disable-line
+            if (result) {
+                result = result.replace(/\*/g, '');
+                if (result.length > max) {
+                    max = result.length;
+                    return max;
+                }
+            }
+            return max;
+        }, 0);
+        rolls.forEach((roll) => {
+            const [raw, result] = roll.split(' = ');
+            const row = document.createElement('div');
+            if (result) {
+                const resultSpan = document.createElement('span');
+                resultSpan.className = 'roll-result-text';
+                resultSpan.style.color = THEME_WATCHER.color;
+                resultSpan.innerText = result.replace(/\*/g, '').padStart(resultCharWidth, '\xa0');
+                const rawSpan = document.createElement('span');
+                rawSpan.className = 'roll-raw-text';
+                rawSpan.innerText = raw;
+                row.appendChild(resultSpan);
+                row.appendChild(rawSpan);
+            } else {
+                // handle "total: xx" at the end
+                const totalSpan = document.createElement('span');
+                totalSpan.innerText = roll;
+                totalSpan.className = 'roll-total-text';
+    
+                row.appendChild(totalSpan);
+            }
+            root.appendChild(row);
+        });
         this.contentBox.innerHTML = '';
         this.contentBox.appendChild(root);
     }
