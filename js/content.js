@@ -1005,7 +1005,7 @@ class DisplayBox {
 
         this.contentBox = document.createElement('div');
         this.contentBox.id = 'display-box-content';
-        this.contentBox.innerText = 'Welcome to Dicemagic.Beyond! \nRoll: shift-click \nAdvantage: shift-space-click \nDisadvantage: alt-space-click';
+        this.contentBox.innerText = 'Welcome to Dicemagic.Beyond! \nRoll: shift-click \nAdvantage: shift-space-click \nDisadvantage: shift-alt-click';
         this.root.appendChild(this.contentBox);
         document.body.appendChild(this.root);
         this.start = this.start.bind(this);
