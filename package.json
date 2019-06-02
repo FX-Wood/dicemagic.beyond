@@ -1,6 +1,6 @@
 {
   "name": "dicemagic.beyond",
-  "version": "1.1.5",
+  "version": "1.1.9",
   "description": "dice rolling web extension for d&d beyond",
   "main": "manifest.json",
   "directories": {
