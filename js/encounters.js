@@ -8,7 +8,9 @@
 
 class MonsterStatBlockListener {
     constructor(target) {
-        const statBlock = target.children[0]
+        this.rollHitPoints = this.rollHitPoints.bind(this)
+        this.rollAbilityCheck = this.rollAbilityCheck.bind(this)
+
         this.monsterName = target.children[0].children[0].children[0].innerText
         console.log('monsterName', this.monsterName)
         // add to hit points
@@ -17,13 +19,18 @@ class MonsterStatBlockListener {
         this.hitPoints.classList.add('simple-mouseover')
         this.hitPoints.addEventListener('click', (e) => this.rollHitPoints(e))
         // add to abilities
-        
+        this.abilities = Array.from(target.children[0].children[2].children[1].children)
+        console.log('abilities', this.abilities)
+        this.abilities.forEach(ability => {
+            ability.classList.add('simple-mouseover')
+            ability.addEventListener('click', this.rollAbilityCheck)
+        })
         // add to skills
 
         // add to actions
 
         // add to legendary actions
-        this.rollHitPoints = this.rollHitPoints.bind(this)
+        
     }
     async rollHitPoints(e) {
         if (e.shiftKey) {
@@ -32,6 +39,37 @@ class MonsterStatBlockListener {
             const roll = await dispatchToBackground({type:'SPECIAL_ROLL', data: cmd})
             console.log(this.monsterName)
             DISPLAY_BOX.renderCustomRoll(roll, { titleText: this.monsterName, subtitleText: 'Hit Points'})
+        }
+    }
+    async rollAbilityCheck(e) {
+        if (e.shiftKey) {
+            const abilityName = e.currentTarget.children[0].innerText.toUpperCase()
+            const name = this.monsterName + ` (${abilityName})`;
+            const modifier = parseInt(e.currentTarget.children[1].children[1].innerText.replace(/\(|\)/g,''), 10)
+            const advantageState = determineAdvantage(e)
+            const { first, low, high } = await dispatchToBackground({ type: 'SIMPLE_ROLL', data: null })
+            // handle advantage
+            let result = first;
+            // handle advantage
+            if (advantageState === 1) {
+                result = high;
+            }
+            // handle disadvantage
+            if (advantageState === 2) {
+                result = low;
+            }
+            
+            const props = {
+                name,
+                result,
+                first,
+                low,
+                high,
+                modifier,
+                advantageState
+            };
+            console.log('props', props)
+            DISPLAY_BOX.renderSimple(props)
         }
     }
 }

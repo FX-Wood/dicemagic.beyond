@@ -1064,7 +1064,6 @@ class DisplayBox {
     }
     renderSimple (props) {
         const { name, result, first, high, low, modifier, advantageState } = props;
-        console.log('rendering saving throw');
         const root = document.createDocumentFragment();
 
         // string with rolling results

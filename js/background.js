@@ -5,13 +5,10 @@ function getSimpleRoll (sendResponse) {
     roll.send('{"cmd":"1d20,1d20"}');
     roll.onreadystatechange = function () {
         if (roll.readyState === 4) {
-            console.log('done', roll);
             const res = JSON.parse(roll.responseText);
             let rawRoll = res.result.match(/\*\d+\*/g).map((str) => { return str.replace(/\*/g, ''); });
             const first = rawRoll[0];
-            console.log(rawRoll);
             rawRoll = rawRoll.sort((a, b) => { return parseInt(a, 10) - parseInt(b, 10); });
-            console.log(rawRoll);
             // handle advantage
             const low = rawRoll[0];
             const high = rawRoll[1];
