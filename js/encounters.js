@@ -317,7 +317,7 @@ class EncounterListener {
         this.mutationObserver = null;
         this.monsters = [];
         this.selectorString = 'encounter-builder-root';
-
+        
         this.start = this.start.bind(this);
         this.handleMutation = this.handleMutation.bind(this);
     }
@@ -332,6 +332,7 @@ class EncounterListener {
                 console.log('block', block);
                 if (block) {
                     this.monsters.push(new MonsterStatBlockListener(block));
+
                 }
             }
         });
