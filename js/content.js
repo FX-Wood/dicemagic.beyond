@@ -277,40 +277,34 @@ function addOnClickToSaves () {
     }
 }
 
-function rollSavingThrow (event) {
+async function rollSavingThrow (event) {
     if (event.shiftKey) {
-        console.log('rolling a save!');
         event.preventDefault();
         event.stopPropagation();
-
         let name = event.currentTarget.querySelector('.ct-saving-throws-summary__ability-name').textContent;
         name = name.charAt(0).toUpperCase() + name.slice(1) + ' saving throw';
         const modifier = event.currentTarget.querySelector('.ct-saving-throws-summary__ability-modifier').textContent;
         const advantageState = determineAdvantage(event);
-        dispatchToBackground({ type: 'SIMPLE_ROLL', data: null })
-            .then((roll) => {
-                const { first, high, low } = roll;
-                let result = first;
-                // handle advantage
-                if (advantageState === 1) {
-                    result = high;
-                }
-                // handle disadvantage
-                if (advantageState === 2) {
-                    result = low;
-                }
-                const props = {
-                    name,
-                    result,
-                    first,
-                    high,
-                    low,
-                    modifier,
-                    advantageState
-                };
-                console.log('props', props);
-                renderSimple(props);
-            });
+        const { first, high, low } = await dispatchToBackground({ type: 'SIMPLE_ROLL', data: null });
+        let result = first;
+        // handle advantage
+        if (advantageState === 1) {
+            result = high;
+        }
+        // handle disadvantage
+        if (advantageState === 2) {
+            result = low;
+        }
+        const props = {
+            name,
+            result,
+            first,
+            high,
+            low,
+            modifier,
+            advantageState
+        };
+        DISPLAY_BOX.renderSimple(props);
     }
 }
 
@@ -319,133 +313,46 @@ function addOnClickToSkills () {
     let skills = document.querySelector('.ct-skills__list');
     if (skills && !skills.iAmListening) {
         skills.iAmListening = true;
-        console.log('Adding listeners to skills');                      // debug
 
-        skills = document.querySelectorAll('.ct-skills__item');         // Gets all skill boxes
-        skills.forEach((skill) => {                                       // Loops over skills
-            skill.addEventListener('click', rollSkillCheck, true);      // listener
-            skill.classList.add('skills-pane-mouseover');               // adds class for mouseover style
+        skills = document.querySelectorAll('.ct-skills__item');
+        skills.forEach((skill) => {
+            skill.addEventListener('click', rollSkillCheck, true);
+            skill.classList.add('skills-pane-mouseover');
         });
     }
 }
 
-function rollSkillCheck (e) {
+async function rollSkillCheck (e) {
     if (e.shiftKey) {
         e.preventDefault();
         e.stopPropagation();
-        console.log('Rolling skill check. Space: ' + SPACEPRESSED + ' Shift: ' + e.shiftKey + ' Alt: ' + e.altKey);
-
         const skillName = e.currentTarget.querySelector('.ct-skills__col--skill').innerText;
         const stat = e.currentTarget.querySelector('.ct-skills__col--stat').innerText;
         const name = `${skillName}(${stat})`;
         const modifier = e.currentTarget.querySelector('.ct-signed-number').textContent;
-
         const advantageState = determineAdvantage(e);
-
-        dispatchToBackground({ type: 'SIMPLE_ROLL', data: null })
-            .then((roll) => {
-                const { first, high, low } = roll;
-                let result = first;
-                // handle advantage
-                if (advantageState === 1) {
-                    result = high;
-                }
-                // handle disadvantage
-                if (advantageState === 2) {
-                    result = low;
-                }
-                const props = {
-                    name,
-                    stat,
-                    result,
-                    first,
-                    high,
-                    low,
-                    modifier,
-                    advantageState
-                };
-                console.log('props', props);
-                renderSimple(props);
-            });
-    }
-}
-function renderSimple (props) {
-    const { name, result, first, high, low, modifier, advantageState } = props;
-    console.log('rendering saving throw');
-    const root = document.createDocumentFragment();
-
-    // string with rolling results
-    const title = Title('');
-    const subtitle = Subtitle('');
-
-    const rollInfoRow = Row('roll-box');
-
-    // raw roll result
-    const rawRollColumn = RollInfoColumn('raw', '');
-    const raw = rawRollColumn.value;
-    rollInfoRow.appendChild(rawRollColumn.root);
-
-    // roll modifier w/input
-    const modifierColumn = RollInputColumn('modifier', 0);
-    const mod = modifierColumn.value;
-    rollInfoRow.appendChild(modifierColumn.root);
-
-    rollInfoRow.appendChild(FlexSpacer());
-
-    // advantage buttons
-    // container for advantage buttons
-    const buttonBox = Row('button-box');
-
-    // normal
-    const norm = TabBtn('normal', first);
-    buttonBox.appendChild(norm);
-    console.log(norm);
-    // advantage
-    const adv = TabBtn('advantage', high);
-    buttonBox.appendChild(adv);
-
-    // disadvantage
-    const dAdv = TabBtn('disadvantage', low);
-    buttonBox.appendChild(dAdv);
-
-    const btns = [norm, adv, dAdv];
-    console.log(advantageState);
-    btns[advantageState].activate();
-
-    function renderText (newRoll, newModifier) {
-        console.log('rendering', newRoll, newModifier);
-        title.innerText = `${name}:  ${parseInt(newRoll, 10) + parseInt(newModifier, 10)}\n`;
-        subtitle.innerText = `You rolled ${newRoll} with a ${parseInt(newModifier, 10) >= 0 ? '+' + newModifier : '-' + newModifier} modifier`;
-        raw.innerText = newRoll;
-        mod.value = parseInt(newModifier, 10);
-    }
-
-    // function to toggle advantage buttons
-    function advantageToggle (e) {
-        if (e.button === 0) {
-            btns.forEach((btn) => { return btn.deActivate(); });
-            e.currentTarget.activate();
-            console.log({ 'roll': e.currentTarget.dataset.value, 'mod': mod.value });
-            renderText(e.currentTarget.dataset.value, mod.value);
+        const { first, high, low } = await dispatchToBackground({ type: 'SIMPLE_ROLL', data: null });
+        let result = first;
+        // handle advantage
+        if (advantageState === 1) {
+            result = high;
         }
+        // handle disadvantage
+        if (advantageState === 2) {
+            result = low;
+        }
+        const props = {
+            name,
+            stat,
+            result,
+            first,
+            high,
+            low,
+            modifier,
+            advantageState
+        };
+        DISPLAY_BOX.renderSimple(props);
     }
-    // first render
-    renderText(result, modifier);
-
-    // handle new modifier input
-    mod.addEventListener('change', (e) => { return renderText(parseInt(raw.innerText, 10), e.target.value); });
-    // handle changes in advantage
-    btns.forEach((btn) => { return btn.addEventListener('mousedown', advantageToggle); });
-
-    // order of elements in box
-    root.appendChild(title);
-    root.appendChild(subtitle);
-    root.appendChild(document.createElement('br'));
-    root.appendChild(buttonBox);
-    root.appendChild(rollInfoRow);
-
-    DISPLAY_BOX_CONTENT.innerHTML = '';
-    DISPLAY_BOX_CONTENT.appendChild(root);
 }
 
 async function attackAndDamageRoll (e, type) {
@@ -539,132 +446,11 @@ async function attackAndDamageRoll (e, type) {
             criticalState
         };
         console.log('output', output);
-        renderAttack(output);
+        DISPLAY_BOX.renderAttack(output);
     }
 }
 
-function renderAttack (props) {
-    console.log('rendering attack');
-    const {
-        hitResult,
-        hitNormalVantage,
-        hitAdvantage,
-        hitDisadvantage,
-        hitModifier,
-        damageModifier,
-        damageType,
-        normalDamage,
-        criticalDamage,
-        advantageState
-    } = props;
-    const root = document.createDocumentFragment();
 
-    const title = Title('');
-    const subTitle = Subtitle('');
-
-    // flex row for roll info and labels
-    const rollBox = Row('roll-box');
-
-    // raw hit
-    const rawHitColumn = RollInfoColumn('hit', '');
-    const rawHit = rawHitColumn.value;
-    rollBox.appendChild(rawHitColumn.root);
-
-    // hit modifier number input
-    const hitModColumn = RollInputColumn('modifier', 0);
-    const hitMod = hitModColumn.value;
-    rollBox.appendChild(hitModColumn.root);
-
-    // raw damage
-    const rawDmgColumn = RollInfoColumn('damage', '');
-    const dmg = rawDmgColumn.value;
-    rollBox.appendChild(rawDmgColumn.root);
-
-    // damage modifier number input
-    const dmgModColumn = RollInputColumn('modifier', 0);
-    const dmgMod = dmgModColumn.value;
-    rollBox.appendChild(dmgModColumn.root);
-
-    // advantage buttons
-    // container for advantage buttons
-    const buttonBox = Row('button-box');
-    // normal
-    const norm = TabBtn('normal', 0);
-    buttonBox.appendChild(norm);
-    // advantage
-    const adv = TabBtn('advantage', 1);
-    buttonBox.appendChild(adv);
-
-    // disadvantage
-    const dAdv = TabBtn('disadvantage', 2);
-    buttonBox.appendChild(dAdv);
-
-    const btns = [norm, adv, dAdv];
-    btns[advantageState].activate();
-
-    // function to toggle advantage buttons
-    function advantageToggle (e) {
-        if (e.button === 0) {
-            btns.forEach((btn) => { return btn.deActivate(); });
-            e.currentTarget.activate();
-            const i = e.currentTarget.dataset.value;
-            const rawOptions = [hitNormalVantage, hitAdvantage, hitDisadvantage];
-            // hit, mod, damage, criticalDamage
-            console.log('advantageToggle', { newHit: rawOptions[i], newHitMod: hitMod.value, newDmg: dmgMod.value });
-            renderText(rawOptions[i], hitMod.value, dmgMod.value);
-        }
-    }
-    // handle new modifier input
-    hitMod.addEventListener('change', (e) => {
-        console.log({ newHit: rawHit.innerText, newHitMod: e.target.value, newDmg: dmgMod.value });
-        renderText(parseInt(rawHit.innerText, 10), e.target.value, dmgMod.value);
-    });
-    dmgMod.addEventListener('change', (e) => {
-        console.log({ newHit: rawHit.innerText, newHitMod: hitMod.value, newDmg: e.target.value });
-        renderText(parseInt(rawHit.innerText, 10), hitMod.value, e.target.value);
-    });
-    // handle changes in advantage
-    btns.forEach((btn) => { return btn.addEventListener('mousedown', advantageToggle); });
-    // function to update roll
-    // encloses all of the above elements
-    const renderText = (newHit, newHitModifier, newDamageModifier) => {
-        // handle critical hit
-        if (parseInt(newHit, 10) === 20) {
-            title.innerText = 'Critical hit!\n';
-            subTitle.innerText = `If you strike true: ${parseInt(criticalDamage, 10) + parseInt(newDamageModifier, 10)} ${damageType} damage!`;
-            dmg.innerText = criticalDamage;
-
-        // handle critical miss
-        } else if (parseInt(newHit, 10) === 1) {
-            title.innerText = 'Critical miss...\n';
-            subTitle.innerText = 'Better Luck next time';
-            dmg.innerText = normalDamage;
-
-        // handle normal hits
-        } else {
-            // title / subtitle
-            title.innerText = `You rolled ${parseInt(newHit, 10) + parseInt(newHitModifier, 10)} to hit.\n`;
-            subTitle.innerText = `If you strike true: ${parseInt(normalDamage, 10) + parseInt(newDamageModifier, 10)} ${damageType} damage!`;
-            dmg.innerText = normalDamage;
-        }
-        // hit
-        rawHit.innerText = newHit;
-        hitMod.value = parseInt(newHitModifier, 10);
-        // damage
-        dmgMod.value = parseInt(newDamageModifier, 10);
-    };
-    // first render of text:
-    renderText(hitResult, hitModifier, damageModifier);
-    // order of elements in display.
-    root.appendChild(title);
-    root.appendChild(subTitle);
-    root.appendChild(document.createElement('br'));
-    root.appendChild(buttonBox);
-    root.appendChild(rollBox);
-    // browser rerenders once
-    DISPLAY_BOX_CONTENT.innerHTML = '';
-    DISPLAY_BOX_CONTENT.appendChild(root);
-}
 // Primary Box
 function addOnclickToPrimaryBox () {
     // checks if the actions tab of the primary box is active
@@ -1015,6 +801,7 @@ class DisplayBox {
         this.start = this.start.bind(this);
         this.makeDraggable = this.makeDraggable.bind(this);
         this.renderSimple = this.renderSimple.bind(this);
+        this.renderAttack = this.renderAttack.bind(this);
         this.renderCustomRoll = this.renderCustomRoll.bind(this);
     }
     start () {
@@ -1138,6 +925,128 @@ class DisplayBox {
         root.appendChild(buttonBox);
         root.appendChild(rollInfoRow);
 
+        this.contentBox.innerHTML = '';
+        this.contentBox.appendChild(root);
+    }
+    renderAttack (props) {
+        console.log('rendering attack');
+        const {
+            hitResult,
+            hitNormalVantage,
+            hitAdvantage,
+            hitDisadvantage,
+            hitModifier,
+            damageModifier,
+            damageType,
+            normalDamage,
+            criticalDamage,
+            advantageState
+        } = props;
+        const root = document.createDocumentFragment();
+
+        const title = Title('');
+        const subTitle = Subtitle('');
+
+        // flex row for roll info and labels
+        const rollBox = Row('roll-box');
+
+        // raw hit
+        const rawHitColumn = RollInfoColumn('hit', '');
+        const rawHit = rawHitColumn.value;
+        rollBox.appendChild(rawHitColumn.root);
+
+        // hit modifier number input
+        const hitModColumn = RollInputColumn('modifier', 0);
+        const hitMod = hitModColumn.value;
+        rollBox.appendChild(hitModColumn.root);
+
+        // raw damage
+        const rawDmgColumn = RollInfoColumn('damage', '');
+        const dmg = rawDmgColumn.value;
+        rollBox.appendChild(rawDmgColumn.root);
+
+        // damage modifier number input
+        const dmgModColumn = RollInputColumn('modifier', 0);
+        const dmgMod = dmgModColumn.value;
+        rollBox.appendChild(dmgModColumn.root);
+
+        // advantage buttons
+        // container for advantage buttons
+        const buttonBox = Row('button-box');
+        // normal
+        const norm = TabBtn('normal', 0);
+        buttonBox.appendChild(norm);
+        // advantage
+        const adv = TabBtn('advantage', 1);
+        buttonBox.appendChild(adv);
+
+        // disadvantage
+        const dAdv = TabBtn('disadvantage', 2);
+        buttonBox.appendChild(dAdv);
+
+        const btns = [norm, adv, dAdv];
+        btns[advantageState].activate();
+
+        // function to toggle advantage buttons
+        function advantageToggle (e) {
+            if (e.button === 0) {
+                btns.forEach((btn) => { return btn.deActivate(); });
+                e.currentTarget.activate();
+                const i = e.currentTarget.dataset.value;
+                const rawOptions = [hitNormalVantage, hitAdvantage, hitDisadvantage];
+                // hit, mod, damage, criticalDamage
+                console.log('advantageToggle', { newHit: rawOptions[i], newHitMod: hitMod.value, newDmg: dmgMod.value });
+                renderText(rawOptions[i], hitMod.value, dmgMod.value);
+            }
+        }
+        // handle new modifier input
+        hitMod.addEventListener('change', (e) => {
+            console.log({ newHit: rawHit.innerText, newHitMod: e.target.value, newDmg: dmgMod.value });
+            renderText(parseInt(rawHit.innerText, 10), e.target.value, dmgMod.value);
+        });
+        dmgMod.addEventListener('change', (e) => {
+            console.log({ newHit: rawHit.innerText, newHitMod: hitMod.value, newDmg: e.target.value });
+            renderText(parseInt(rawHit.innerText, 10), hitMod.value, e.target.value);
+        });
+        // handle changes in advantage
+        btns.forEach((btn) => { return btn.addEventListener('mousedown', advantageToggle); });
+        // function to update roll
+        // encloses all of the above elements
+        const renderText = (newHit, newHitModifier, newDamageModifier) => {
+            // handle critical hit
+            if (parseInt(newHit, 10) === 20) {
+                title.innerText = 'Critical hit!\n';
+                subTitle.innerText = `If you strike true: ${parseInt(criticalDamage, 10) + parseInt(newDamageModifier, 10)} ${damageType} damage!`;
+                dmg.innerText = criticalDamage;
+
+            // handle critical miss
+            } else if (parseInt(newHit, 10) === 1) {
+                title.innerText = 'Critical miss...\n';
+                subTitle.innerText = 'Better Luck next time';
+                dmg.innerText = normalDamage;
+
+            // handle normal hits
+            } else {
+                // title / subtitle
+                title.innerText = `You rolled ${parseInt(newHit, 10) + parseInt(newHitModifier, 10)} to hit.\n`;
+                subTitle.innerText = `If you strike true: ${parseInt(normalDamage, 10) + parseInt(newDamageModifier, 10)} ${damageType} damage!`;
+                dmg.innerText = normalDamage;
+            }
+            // hit
+            rawHit.innerText = newHit;
+            hitMod.value = parseInt(newHitModifier, 10);
+            // damage
+            dmgMod.value = parseInt(newDamageModifier, 10);
+        };
+        // first render of text:
+        renderText(hitResult, hitModifier, damageModifier);
+        // order of elements in display.
+        root.appendChild(title);
+        root.appendChild(subTitle);
+        root.appendChild(document.createElement('br'));
+        root.appendChild(buttonBox);
+        root.appendChild(rollBox);
+        // browser rerenders once
         this.contentBox.innerHTML = '';
         this.contentBox.appendChild(root);
     }
@@ -1320,14 +1229,10 @@ if (typeof window !== 'undefined') {
         addOnClickToSkills,
         rollSkillCheck,
 
-        // renderer for all of the above
-        renderSimple,
-
         // primary box
         addOnclickToPrimaryBox,
 
         attackAndDamageRoll,
-        renderAttack,
 
         rollSpellPrimaryBox,
         renderPrimaryBoxSpells,
