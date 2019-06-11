@@ -8,6 +8,7 @@
 
 class MonsterStatBlockListener {
     constructor(target) {
+        console.log('target', target)
         this.rollHitPoints = this.rollHitPoints.bind(this);
         this.rollAbilityCheck = this.rollAbilityCheck.bind(this);
         this.rollSave = this.rollSave.bind(this);
@@ -317,7 +318,7 @@ class EncounterListener {
         this.mutationObserver = null;
         this.monsters = [];
         this.selectorString = 'encounter-builder-root';
-        
+
         this.start = this.start.bind(this);
         this.handleMutation = this.handleMutation.bind(this);
     }
@@ -332,7 +333,6 @@ class EncounterListener {
                 console.log('block', block);
                 if (block) {
                     this.monsters.push(new MonsterStatBlockListener(block));
-
                 }
             }
         });
