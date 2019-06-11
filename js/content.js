@@ -488,7 +488,7 @@ async function attackAndDamageRoll (e, type) {
         const [numDamageDice, numDamageFaces] = damageDice.split('d');
         // determine the roll for advantage
         let damageDiceAdvantage;
-        if (numDamageFaces) {
+        if (numDamageFaces) { // check for attacks with flat damage (like unarmed attack in some cases)
             damageDiceAdvantage = parseInt(numDamageDice, 10) * 2 + 'd' + numDamageFaces;
         } else {
             // handle attacks with flat damage (like unarmed attack in some cases)
@@ -930,7 +930,6 @@ class ThemeWatcher {
         clearInterval(this.intervalHandle);
     }
 
-
     themeWatcherDidConstruct () {
         console.log('Theme watcher constructed, checking theme');
         chrome.storage.sync.get(['themeColor'], (result) => {
@@ -993,6 +992,9 @@ class ThemeWatcher {
         this.styleSheet.insertRule(`.primary-box-mouseover:hover { color: ${color}; font-weight: bolder; }`);
         // sidebar damage
         this.styleSheet.insertRule(`.sidebar-damage-box:hover { color: ${color}; font-weight: bolder;}`);
+
+        // encounter saves text
+        this.styleSheet.insertRule(`.text-mouseover:hover { color: ${color}; font-weight: bolder; }`);
     }
 }
 
@@ -1007,7 +1009,7 @@ class DisplayBox {
         this.contentBox.id = 'display-box-content';
         this.contentBox.innerText = 'Welcome to Dicemagic.Beyond! \nRoll: shift-click \nAdvantage: shift-space-click \nDisadvantage: shift-alt-click';
         this.root.appendChild(this.contentBox);
-        
+
         document.body.appendChild(this.root);
 
         this.start = this.start.bind(this);
@@ -1138,26 +1140,25 @@ class DisplayBox {
 
         this.contentBox.innerHTML = '';
         this.contentBox.appendChild(root);
-
-        
     }
-    renderCustomRoll (roll, optionsObject={}) {
+
+    renderCustomRoll (roll, optionsObject = {}) {
         const { cmd, result } = roll;
-        
+
         const defaultOptions = {
-            titleText: "Custom Roll",
-            subtitleText: "fingers crossed..."
-        }
-        const { titleText, subtitleText } = Object.assign(defaultOptions, optionsObject)
-        console.log(titleText)
+            titleText: 'Custom Roll',
+            subtitleText: 'fingers crossed...'
+        };
+        const { titleText, subtitleText } = Object.assign(defaultOptions, optionsObject);
+        console.log(titleText);
         const rolls = result.split('\n');
         const root = document.createDocumentFragment();
         // render header
-        const titleEl = Title(titleText + '\n')
-        console.log(titleEl)
-        root.appendChild(titleEl)
-        const subtitleEl = Subtitle(subtitleText)
-        root.appendChild(subtitleEl)
+        const titleEl = Title(titleText + '\n');
+        console.log(titleEl);
+        root.appendChild(titleEl);
+        const subtitleEl = Subtitle(subtitleText);
+        root.appendChild(subtitleEl);
         const resultsHeader = document.createElement('div');
         resultsHeader.className = 'results-command-header';
         resultsHeader.innerText = 'result \u2022 ';
@@ -1197,7 +1198,7 @@ class DisplayBox {
                 const totalSpan = document.createElement('span');
                 totalSpan.innerText = roll;
                 totalSpan.className = 'roll-total-text';
-    
+
                 row.appendChild(totalSpan);
             }
             root.appendChild(row);
