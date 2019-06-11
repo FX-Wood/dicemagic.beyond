@@ -284,8 +284,8 @@ class MonsterStatBlockListener {
                 console.log(damageRolls.length);
                 acc.push(
                     {
-                        normalDamage: damageRolls.shift(),
-                        criticalDamage: damageRolls.shift(),
+                        normalDamage: damageRolls.shift().result,
+                        criticalDamage: damageRolls.shift().result,
                         damageModifier: damages[i].damageModifier,
                         damageType: damages[i].damageType
                     }
@@ -293,22 +293,22 @@ class MonsterStatBlockListener {
                 i += 1;
             }
             damageRolls = acc;
-            console.log({ damageRolls });
-            console.log({ hitAdvantage, hitDisadvantage, hitResult });
-            // const props = {
-            //     hitResult,
-            //     hitNormalVantage,
-            //     hitAdvantage,
-            //     hitDisadvantage,
-            //     hitModifier,
-            //     damageModifier,
-            //     damageType,
-            //     normalDamage,
-            //     criticalDamage,
-            //     advantageState
-            // };
-
-            // DISPLAY_BOX.renderAttack(props)
+            if (damageRolls.length === 1) {
+                const { normalDamage, criticalDamage, damageModifier, damageType } = damageRolls[0];
+                const props = {
+                    hitResult,
+                    hitNormalVantage,
+                    hitAdvantage,
+                    hitDisadvantage,
+                    hitModifier,
+                    normalDamage,
+                    criticalDamage,
+                    damageModifier,
+                    damageType,
+                    advantageState
+                };
+                DISPLAY_BOX.renderAttack(props);
+            }
         }
     }
 }
