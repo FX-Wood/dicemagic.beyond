@@ -18,22 +18,13 @@ function Col (className) {
 }
 
 function TabBtn (text, value) {
-    const outer = document.createElement('div');
-    outer.className = 'ct-tab-options--layout-pill ct-tab-options__header ';
-    outer.dataset.value = value;
-    const inner = document.createElement('div');
-    inner.className = 'ct-tab-options--layout-pill ct-tab-options__header-heading ';
-    inner.innerText = text;
-    outer.appendChild(inner);
-    outer.activate = () => {
-        outer.classList.add('ct-tab-options__header--active');
-        inner.classList.add('ct-tab-options__header-heading--active');
-    };
-    outer.deActivate = () => {
-        outer.classList.remove('ct-tab-options__header--active');
-        inner.classList.remove('ct-tab-options__header-heading--active');
-    };
-    return outer;
+    const el = document.createElement('div');
+    el.innerText = text;
+    el.dataset.value = value;
+    el.className = 'display-box-button';
+    el.activate = () => el.classList.add('active');
+    el.deActivate = () => el.classList.remove('active');
+    return el;
 }
 
 function FlexSpacer (className) {
@@ -208,7 +199,7 @@ class CharacterSheetWatcher {
     constructor(pollFrequency = 1000) {
         this.pollFrequency = pollFrequency;
         this.pollHandle = 0;
-        
+
         this.characterSheet = null;
         this.characterName = '';
         this.characterClasses = '';
@@ -224,6 +215,10 @@ class CharacterSheetWatcher {
         clearInterval(this.pollHandle);
     }
     poll() {
+        // TODO: implement checking for spell attack modifier onload (in case of sidebar spell attack)
+        // if (document.querySelector('.ct-combat-attack--spell .ct-combat-attack__tohit')) {
+        //     SPELL_ATTACK_MOD = document.querySelector('.ct-combat-attack--spell .ct-combat-attack__tohit').textContent;
+        // }
         if (!this.characterSheet) {
             this.characterSheet = document.getElementById('character-sheet-target');
         }
@@ -244,7 +239,7 @@ class AbilityListener {
     constructor (pollFrequency = 1000) {
         this.pollHandle = null;
         this.pollFrequency = pollFrequency;
-        this.clickableSkills = [];
+        this.clickableAbilities = [];
 
         this.start = this.start.bind(this);
         this.stop = this.stop.bind(this);
@@ -261,21 +256,23 @@ class AbilityListener {
         if (this.pollHandle) {
             clearInterval(this.pollHandle);
         }
-        this.abilitiesBox.forEach((target) => { return target.removeEventListener('click', this.roll); });
+        this.abilitiesBox.forEach((target) => target.removeEventListener('click', this.roll));
+        this.clickableAbilities = []
     }
     poll () {
+        // TODO: mobile screen width has a different selector: '.ct-main-mobile__abilities'
         const abilitiesBox = document.querySelector('.ct-quick-info__abilities');
-        if (abilitiesBox && !abilitiesBox.iAmListening) {
+        if (abilitiesBox && !abilitiesBox.dataset.iAmListening) {
             // remove old, detached event listeners
-            if (this.clickableSkills.length) {
-                console.log('found old, detached abilities', console.log(this.clickableSkills));
-                this.clickableSkills.forEach((target) => { return target.removeEventListener('click', this.roll); });
-                this.clickableSkills = [];
+            if (this.clickableAbilities.length) {
+                console.log('found old, detached abilities', this.clickableAbilities);
+                this.clickableAbilities.forEach((target) => target.removeEventListener('click', this.roll));
+                this.clickableAbilities = [];
             }
-            abilitiesBox.iAmListening = true;
+            abilitiesBox.dataset.iAmListening = true;
             const abilities = abilitiesBox.querySelectorAll('.ct-ability-summary');
             abilities.forEach((ability) => {
-                this.clickableSkills.push(ability);
+                this.clickableAbilities.push(ability);
                 ability.addEventListener('click', this.roll);
                 ability.classList.add('simple-mouseover');
             });
@@ -285,16 +282,18 @@ class AbilityListener {
         if (e.shiftKey) {
             e.preventDefault();
             e.stopPropagation();
-
-            let name = e.currentTarget.querySelector('.ct-ability-summary__label').innerText.toLowerCase();
-            name = name.charAt(0).toUpperCase() + name.slice(1) + ' check';
+            const creatureName = CHARACTER_SHEET_WATCHER.characterName;
+            const rollName = {
+                'str': 'Strength',
+                'dex': 'Dexterity',
+                'con': 'Constitution',
+                'int': 'Intelligence',
+                'wis': 'Wisdom',
+                'cha': 'Charisma'
+            }[e.currentTarget.innerText.slice(0, 3).toLowerCase()] + ' skill check';
             const modifier = e.currentTarget.querySelector('.ct-signed-number').textContent;
-
             const advantageState = determineAdvantage(e);
-
-            const roll = await dispatchToBackground({ type: 'SIMPLE_ROLL', data: null });
-
-            const { first, high, low } = roll;
+            const { first, high, low } = await dispatchToBackground({ type: 'SIMPLE_ROLL', data: null });
             let result = first;
             // handle advantage
             if (advantageState === 1) {
@@ -305,7 +304,8 @@ class AbilityListener {
                 result = low;
             }
             const props = {
-                name,
+                creatureName,
+                rollName,
                 result,
                 first,
                 high,
@@ -319,49 +319,80 @@ class AbilityListener {
 }
 
 // Saves
-function addOnClickToSaves () {
-    let saves = document.querySelector('.ct-saving-throws-summary');
-    if (saves && !saves.iAmListening) {
-        saves.iAmListening = true;
+class SavesListener {
+    constructor(pollFrequency = 1000) {
+        this.pollFrequency = pollFrequency;
+        this.pollHandle = null;
+        this.savesBox = null;
+        this.clickableSaves = [];
 
-        console.log('Adding listeners to saves');
-
-        saves = Array.from(document.querySelector('.ct-saving-throws-summary').children);
-        saves.forEach((save) => {
-            save.addEventListener('click', rollSavingThrow, true);
-            save.classList.add('saving-throw-mouseover');
-        });
+        this.poll = this.poll.bind(this);
+        this.start = this.start.bind(this);
+        this.stop = this.stop.bind(this);
+        this.roll = this.roll.bind(this);
     }
-}
-
-async function rollSavingThrow (event) {
-    if (event.shiftKey) {
-        event.preventDefault();
-        event.stopPropagation();
-        let name = event.currentTarget.querySelector('.ct-saving-throws-summary__ability-name').textContent;
-        name = name.charAt(0).toUpperCase() + name.slice(1) + ' saving throw';
-        const modifier = event.currentTarget.querySelector('.ct-saving-throws-summary__ability-modifier').textContent;
-        const advantageState = determineAdvantage(event);
-        const { first, high, low } = await dispatchToBackground({ type: 'SIMPLE_ROLL', data: null });
-        let result = first;
-        // handle advantage
-        if (advantageState === 1) {
-            result = high;
+    poll() {
+        const saves = document.querySelector('.ct-saving-throws-summary');
+        if (saves && !saves.dataset.iAmListening) {
+            saves.dataset.iAmListening = true;
+            Array.from(saves.children)
+                .forEach((save) => {
+                    save.addEventListener('click', this.roll);
+                    save.classList.add('saving-throw-mouseover');
+                    this.clickableSaves.push(save);
+                });
         }
-        // handle disadvantage
-        if (advantageState === 2) {
-            result = low;
+    }
+    start() {
+        if (this.pollHandle) {
+            clearInterval(this.pollHandle);
         }
-        const props = {
-            name,
-            result,
-            first,
-            high,
-            low,
-            modifier,
-            advantageState
-        };
-        DISPLAY_BOX.renderSimple(props);
+        this.pollHandle = setInterval(this.poll, this.pollFrequency);
+    }
+    stop() {
+        if (this.pollHandle) {
+            clearInterval(this.pollHandle);
+        }
+        this.clickableSaves.forEach((save) => save.removeEventListener('click', this.roll));
+        this.clickableSaves = [];
+    }
+    async roll(e) {
+        if (e.shiftKey) {
+            e.preventDefault();
+            e.stopPropagation(); // prevent sidebar from opening
+            const creatureName = CHARACTER_SHEET_WATCHER.characterName;
+            const rollName = {
+                'str': 'Strength',
+                'dex': 'Dexterity',
+                'con': 'Constitution',
+                'int': 'Intelligence',
+                'wis': 'Wisdom',
+                'cha': 'Charisma'
+            }[e.currentTarget.innerText.slice(0, 3).toLowerCase()] + ' saving throw';
+            const modifier = e.currentTarget.querySelector('.ct-saving-throws-summary__ability-modifier').textContent;
+            const advantageState = determineAdvantage(e);
+            const { first, high, low } = await dispatchToBackground({ type: 'SIMPLE_ROLL', data: null });
+            let result = first;
+            // handle advantage
+            if (advantageState === 1) {
+                result = high;
+            }
+            // handle disadvantage
+            if (advantageState === 2) {
+                result = low;
+            }
+            const props = {
+                creatureName,
+                rollName,
+                result,
+                first,
+                high,
+                low,
+                modifier,
+                advantageState
+            };
+            DISPLAY_BOX.renderSimple(props);
+        }
     }
 }
 
@@ -370,8 +401,7 @@ function addOnClickToSkills () {
     let skills = document.querySelector('.ct-skills__list');
     if (skills && !skills.iAmListening) {
         skills.iAmListening = true;
-
-        skills = document.querySelectorAll('.ct-skills__item');
+        skills = skills.querySelectorAll('.ct-skills__item');
         skills.forEach((skill) => {
             skill.addEventListener('click', rollSkillCheck, true);
             skill.classList.add('skills-pane-mouseover');
@@ -383,9 +413,9 @@ async function rollSkillCheck (e) {
     if (e.shiftKey) {
         e.preventDefault();
         e.stopPropagation();
-        const skillName = e.currentTarget.querySelector('.ct-skills__col--skill').innerText;
-        const stat = e.currentTarget.querySelector('.ct-skills__col--stat').innerText;
-        const name = `${skillName}(${stat})`;
+        const creatureName = CHARACTER_SHEET_WATCHER.characterName
+        const [abilityName, skillName] = e.currentTarget.innerText.split('\n');
+        const rollName = `${skillName}(${abilityName})`;
         const modifier = e.currentTarget.querySelector('.ct-signed-number').textContent;
         const advantageState = determineAdvantage(e);
         const { first, high, low } = await dispatchToBackground({ type: 'SIMPLE_ROLL', data: null });
@@ -399,8 +429,8 @@ async function rollSkillCheck (e) {
             result = low;
         }
         const props = {
-            name,
-            stat,
+            creatureName,
+            rollName,
             result,
             first,
             high,
@@ -419,8 +449,7 @@ async function attackAndDamageRoll (e, type) {
         console.log('Rolling attack', e, type);
 
         const advantageState = determineAdvantage(e);
-        let hitModifier; let damage; let
-            damageType;
+        let hitModifier, damage, damageType;
         // handle primary box attacks
         if (!type) {
             hitModifier = e.currentTarget.querySelector('.ct-combat-attack__tohit .ct-signed-number').textContent;
@@ -746,27 +775,31 @@ function renderSideBarSpell ({ spellName, effectDice, result, raw, damageType })
 }
 class ThemeWatcher {
     constructor (pollFrequency = 1000) {
-        this.styleSheet = document.head.appendChild(document.createElement('style')).sheet;
         this.pollFrequency = pollFrequency;
+        this.pollTarget = document.getElementsByClassName('ct-character-header-desktop__button');
+        this.pollFallbackTarget = document.getElementsByClassName('ct-status-summary-mobile__health');
+        this.styleSheet = document.head.appendChild(document.createElement('style')).sheet;
+        this.color = '';
+        this.darker = '';
         this.intervalHandle = null;
-        this.target = document.getElementsByClassName('ct-character-header-desktop__button');
-        this.fallback = document.getElementsByClassName('ct-status-summary-mobile__health');
-        // default color
-        this.color = 'rgb(197, 49, 49)';
-        this.themeWatcherDidConstruct();
 
+        this.setColor = this.setColor.bind(this);
         this.start = this.start.bind(this);
         this.stop = this.stop.bind(this);
         this.themeWatcherDidConstruct = this.themeWatcherDidConstruct.bind(this);
-        this.getThemeColor = this.getThemeColor.bind(this);
-        this.changeThemeColor = this.changeThemeColor.bind(this);
+        this.poll = this.poll.bind(this);
+        this.injectNewTheme = this.injectNewTheme.bind(this);
+
+        // default color
+        this.setColor('rgb(197,49,49)');
+        this.themeWatcherDidConstruct();
     }
 
     start () {
         if (this.intervalHandle) {
             clearInterval(this.intervalHandle);
         }
-        this.intervalHandle = setInterval(this.getThemeColor, this.pollFrequency);
+        this.intervalHandle = setInterval(this.poll, this.pollFrequency);
     }
 
     stop () {
@@ -777,45 +810,42 @@ class ThemeWatcher {
         console.log('Theme watcher constructed, checking theme');
         chrome.storage.sync.get(['themeColor'], (result) => {
             console.log('storage found', result);
-            if (result.themeColor) {
-                console.log(result.themeColor);
-                this.color = result.themeColor;
-                this.changeThemeColor(result.themeColor);
-            } else {
-                chrome.storage.sync.set({ themeColor: this.color });
-                this.getThemeColor();
+            if (result.themeColor && result.themeColor !== this.color) {
+                this.setColor(result.themeColor);
+                this.injectNewTheme(result.themeColor);
             }
         });
     }
 
-    getThemeColor () {
-        let nextColor;
-        // handle desktop version
-        if (this.target[0]) {
-            nextColor = window.getComputedStyle(this.target[0]).getPropertyValue('border-color');
+    setColor(color) {
+        this.color = color;
+        const [red, green, blue] = this.color.match(/\d+/g)
+        this.darker = `rgb(${parseInt(red * .8)},${parseInt(green * .8)},${parseInt(blue * .8)})`;
+    }
+
+    poll () {
+        let newColor;
+        // handle desktop layout
+        if (this.pollTarget[0]) {
+            newColor = window.getComputedStyle(this.pollTarget[0]).getPropertyValue('border-color').replace(/ /g, '');
         }
         // handle mobile
-        if (this.fallback[0]) {
-            nextColor = window.getComputedStyle(this.fallback[0]).getPropertyValue('border-color');
+        if (this.pollFallbackTarget[0]) {
+            newColor = window.getComputedStyle(this.pollFallbackTarget[0]).getPropertyValue('border-color').replace(/ /g, '');
         }
-        if (nextColor && this.color !== nextColor) {
-            console.log('old', this.color, 'new', nextColor);
-            console.log('theme change!', nextColor);
-            this.color = nextColor;
-            chrome.storage.sync.set({ themeColor: nextColor });
-            this.changeThemeColor(nextColor);
-            dispatchToBackground('THEME_CHANGE');
+        if (newColor && this.color !== newColor) {
+            this.setColor(newColor);
+            dispatchToBackground({ type: 'THEME_CHANGE', data: newColor });
+            this.injectNewTheme(newColor);
         }
     }
 
-    changeThemeColor (color) {
-        console.log('changing theme!', color);
+    injectNewTheme(color = this.color) {
         // clear old rules
         console.log('changing theme color to', color);
         while (this.styleSheet.cssRules.length) {
             this.styleSheet.deleteRule(0);
         }
-
         // initiative, ability checks
         // TODO: handle mobile
         this.styleSheet.insertRule(`.simple-mouseover:hover span { color: ${color}; }`);
@@ -823,9 +853,7 @@ class ThemeWatcher {
         // please note that the svgs have a dynamic fill color off the screen to your right
         const svg = `"data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%20116.1%2034'%3E%3Cpath%20fill%3D'${encodeURI(color)}'%20d%3D'M106.8%200h-22l-.3.2c-1.2.8-2.3%201.7-3.2%202.7H5.7l-.3.4c-.7%201.2-3%204.5-4.9%205.4l-.5.2V25l.5.2c1.8.9%204.1%204.2%204.9%205.4l.3.4h75.6c1%201%202.1%201.9%203.2%202.7l.3.2h21.9l.3-.2c5.6-3.8%209-10%209-16.8s-3.4-13-9-16.8l-.2-.1zm7.3%2017c0%205.8-2.9%2011.2-7.6%2014.5H96.2c-4.7-2.1-11.1-3.2-14.3-3.8-2.3-3-3.7-6.8-3.7-10.7%200-3.9%201.3-7.7%203.7-10.7%203.1-.6%209.5-1.7%2014.3-3.8h10.3c4.8%203.3%207.6%208.7%207.6%2014.5zM69.8%204.6c.8.7%202.5%201.8%205.7%202.1-.9%201.5-3%205.5-3%2010.3s2%208.8%203%2010.3c-3.2.3-4.9%201.4-5.7%202.1H14.4c-3.1-1.1-11.1-4.5-12.9-9.3v-6.2c1.9-4.8%209.9-8.1%2012.9-9.3h55.4zm6.8%202.2h2a20.4%2020.4%200%200%200-2.8%2010.3c0%203.7%201%207.2%202.9%2010.3-.7%200-1.3-.1-2%200-.6-1-3.1-5.2-3.1-10.2s2.4-9.4%203-10.4zm9.3%2024.7c-1.1-.8-2.1-1.7-3-2.6%202.4.5%205.1%201.3%208.3%202.6h-5.3zm-6.7-3.2l.8%201.1h-8.5c1.4-.7%203.8-1.5%207.7-1.1zM6.3%2029.4c-.7-1.1-2.8-4.1-4.9-5.4v-1.9c2.3%203.4%207.1%205.9%2010.4%207.3H6.3zM1.4%2010c2.1-1.3%204.2-4.3%204.9-5.4h5.5C8.5%206%203.8%208.5%201.4%2011.9V10zM80%204.6l-.8%201.1c-3.9.4-6.3-.4-7.7-1.1H80zm2.9.5c.9-1%201.9-1.9%203-2.6h5.3c-3.2%201.3-6%202.1-8.3%202.6z'%20%2F%3E%3C%2Fsvg%3E"`;
         const svgSmall = `"data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2088%2028'%3E%3Cpath%20fill%3D'${encodeURI(color)}'%20d%3D'M81.02%200H64.332l-.228.165a13.192%2013.192%200%200%200-2.427%202.23H4.324l-.227.33c-.531.992-2.276%203.717-3.718%204.46L0%207.352V20.65l.38.165c1.365.744%203.11%203.47%203.717%204.46l.227.33h57.352a20.967%2020.967%200%200%200%202.427%202.23l.228.166h16.614l.227-.165A17.166%2017.166%200%200%200%2088%2013.959%2017.166%2017.166%200%200%200%2081.172.083zm5.539%2014.041a15.101%2015.101%200%200%201-5.766%2011.977H72.98c-3.565-1.735-8.42-2.643-10.848-3.139a15.532%2015.532%200%200%201-2.807-8.838%2014.986%2014.986%200%200%201%202.807-8.837c2.352-.496%207.207-1.405%2010.848-3.14h7.814a14.88%2014.88%200%200%201%205.766%2011.977zM52.952%203.8a7.091%207.091%200%200%200%204.324%201.735A18.402%2018.402%200%200%200%2055%2014.04a17.505%2017.505%200%200%200%202.276%208.508%207.091%207.091%200%200%200-4.324%201.734H10.924c-2.352-.909-8.42-3.717-9.786-7.681V11.48c1.441-3.965%207.51-6.69%209.786-7.682h42.028zm5.158%201.817h1.518a18.006%2018.006%200%200%200-2.125%208.508%2017.221%2017.221%200%200%200%202.2%208.507%209.309%209.309%200%200%200-1.517%200%2018.184%2018.184%200%200%201-2.352-8.425%2019.362%2019.362%200%200%201%202.276-8.59zm7.056%2020.402a19.91%2019.91%200%200%201-2.276-2.148%2034.161%2034.161%200%200%201%206.296%202.148zm-5.083-2.643c.227.33.38.578.607.908h-6.45a9.567%209.567%200%200%201%205.842-.908zm-55.304.908a15.79%2015.79%200%200%200-3.717-4.46v-1.57c1.745%202.809%205.386%204.874%207.89%206.03H4.779zM1.062%208.26A15.789%2015.789%200%200%200%204.78%203.8h4.173c-2.504%201.156-6.07%203.22-7.89%206.029v-1.57zM60.69%203.8c-.228.33-.38.578-.607.908a9.566%209.566%200%200%201-5.842-.909zm2.2.412a11.529%2011.529%200%200%201%202.276-2.147h4.02a36.164%2036.164%200%200%201-6.296%202.147z'%2F%3E%3C%2Fsvg%3E"`;
-        console.log(`div.saving-throw-mouseover:hover { background: none; background-image: url(${svg}); }`);
-        this.styleSheet.insertRule('.saving-throw-mouseover:hover > div { background: none }');
-        this.styleSheet.insertRule(`@media (max-width: 1199px) and (min-width: 1024px) (max-width) { saving-throw-mouseover:hover { background-image: url${svgSmall}}}`);
+        this.styleSheet.insertRule(`@media (max-width: 1199px) and (min-width: 1024px) { div.saving-throw-mouseover:hover { background-image: url(${svgSmall}); } }`);
         this.styleSheet.insertRule(`.saving-throw-mouseover:hover { background-image: url(${svg})}`);
         this.styleSheet.insertRule(`.saving-throw-mouseover:hover .ct-no-proficiency-icon { border: .5px solid ${color}}`);
         // skills
@@ -834,9 +862,11 @@ class ThemeWatcher {
         this.styleSheet.insertRule(`.primary-box-mouseover:hover { color: ${color}; font-weight: bolder; }`);
         // sidebar damage
         this.styleSheet.insertRule(`.sidebar-damage-box:hover { color: ${color}; font-weight: bolder;}`);
-
         // encounter saves text
         this.styleSheet.insertRule(`.text-mouseover:hover { color: ${color}; font-weight: bolder; }`);
+        // display box buttons
+        this.styleSheet.insertRule(`.display-box-button.active { background-color: ${color}; }`)
+        this.styleSheet.insertRule(`.display-box-button.active:hover { background-color: ${this.darker}; }`)
     }
 }
 
@@ -1223,7 +1253,6 @@ function determineAdvantage (e) {
 }
 
 function refreshClicks () {
-    addOnClickToSaves();
     addOnClickToSkills();
     addOnclickToPrimaryBox();
     addOnClickToSidebarSpells();
@@ -1238,7 +1267,6 @@ let DISPLAY_BOX;
 let DISPLAY_BOX_CONTENT;
 let SPELL_ATTACK_MOD; // holds spell attack modifier in case users roll from their sidebar without the primary box spells tab open
 function onLoad (pollFrequency) {
-    console.log({ pollFrequency });
     CHARACTER_SHEET_WATCHER = new CharacterSheetWatcher(pollFrequency);
     CHARACTER_SHEET_WATCHER.start();
 
@@ -1258,12 +1286,11 @@ function onLoad (pollFrequency) {
     ABILITY_LISTENER = new AbilityListener(pollFrequency);
     ABILITY_LISTENER.start();
 
+    SAVES_LISTENER = new SavesListener(pollFrequency);
+    SAVES_LISTENER.start();
 
     setInterval(refreshClicks, pollFrequency);
-    // TODO: make sure this actually works
-    if (document.querySelector('.ct-combat-attack--spell .ct-combat-attack__tohit')) {
-        SPELL_ATTACK_MOD = document.querySelector('.ct-combat-attack--spell .ct-combat-attack__tohit').textContent;
-    }
+
 }
 if (typeof window !== 'undefined') {
     const pollFrequency = 1000; // ms
@@ -1280,8 +1307,7 @@ if (typeof window !== 'undefined') {
         AbilityListener,
 
         // saves
-        addOnClickToSaves,
-        rollSavingThrow,
+        SavesListener,
 
         // skill checks
         addOnClickToSkills,

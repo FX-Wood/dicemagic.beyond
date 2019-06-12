@@ -60,37 +60,51 @@
 
 }
 
-#display-box-button {
-    z-index: 30;
-    display: inline;
-    padding: auto;
-    margin-right: 6px;
-
-    background-color: #C53131;
-
-
-    border-color: transparent;
-    border-radius: 3px;
-
-    font-size: 8px;
-    color: #fff;
+.display-box-button {
+    display: inline-flex;
+    flex-wrap: wrap;
+    font-family: Roboto Condensed,Roboto,Helvetica,sans-serif;
     cursor: pointer;
-
-    font-family: "Roboto Condensed",Roboto,Helvetica,sans-serif;
-
-    -webkit-touch-callout: none;
-    -webkit-user-select: none;
-    -khtml-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
+    color: #838383;
+    line-height: 1;
+    font-weight: 700;
+    font-size: 12px;
+    text-transform: uppercase;
+    background-color: #f2f2f2;
+    margin: 3px 2px;
+    border-radius: 3px;
+    padding: 5px 7px;
+    white-space: nowrap;
+    width: auto;
 
 }
-
-#display-box-button:hover {
+.display-box-button:hover {
+    background-color: #838383;
     color: #fff;
-    background-color: #9c2727;
-    box-shadow: 0 0 10px 2px #731d1d inset;
+}
+/* green
+rgb(57,136,168)
+rgb(83,165,197)
+
+red
+rgb(197,49,49) // normal
+rgb(156,39,39) // hover */
+:root {
+    --red: 197;
+    --green: 49;
+    --blue: 49;
+}
+.display-box-button.active {
+    color: #fff;
+    background-color: #c53131;
+}
+
+.display-box-button.active:hover {
+    background-color: rgb(
+        calc(var(--red) * 1.2)
+        calc(var(--blue) * 1.2)
+        calc(var(--green) * 1.2)
+    )
 }
 
 /* Makes it so that shift doesn't highlight willy-nilly */

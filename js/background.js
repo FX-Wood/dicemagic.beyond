@@ -47,19 +47,8 @@ chrome.runtime.onMessage.addListener(
                 getRoll(data, sendResponse);
                 return true;
             case 'THEME_CHANGE' :
-                console.log('got a theme change', data);
-                // TODO: change popup styling
-                // TODO: save theme change to local storage
-                return;
-            case 'GET_THEME_STATE' :
-                // TODO: get theme color from local storage
-                return;
-        }
-
-        if (request.msg) {
-            getRoll(request.msg, sendResponse);
-            console.log(request.msg);
-            return true;
+                chrome.storage.sync.set({ themeColor: data }, sendResponse);
+                return true;
         }
     }
 );
