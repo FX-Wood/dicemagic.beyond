@@ -31,35 +31,6 @@
     font-size: 14px;
 }
 
-#display-box-input-wrapper {
-    position: relative;
-    display: flex;
-    align-items: center;
-
-    bottom: 12px;
-    width: auto;
-    height: 30px;
-    margin: 0 16px;
-
-    border: 1px solid #eaeaea;
-    border-radius: 3px;
-    
-    z-index: 20;
-    cursor: text;
-
-    font-family: "Roboto Condensed", Roboto, Helvetica, sans-serif;
-    line-height: 26px;
-}
-
-#display-box-input {
-    flex-grow: 2;
-    font-size: 16px;
-    padding-left: 3px;
-    border: none;
-    width: auto;
-
-}
-
 .display-box-button {
     display: inline-flex;
     flex-wrap: wrap;
@@ -82,13 +53,7 @@
     background-color: #838383;
     color: #fff;
 }
-/* green
-rgb(57,136,168)
-rgb(83,165,197)
 
-red
-rgb(197,49,49) // normal
-rgb(156,39,39) // hover */
 :root {
     --red: 197;
     --green: 49;
@@ -193,10 +158,6 @@ span.roll-result {
     width: 100px;
 }
 
-
-
-
-
 .dice-box {
     margin-top: 4px;
 }
@@ -217,7 +178,6 @@ span.roll-result {
     position: absolute;
     
 }
-
 /* bringing over results text */
 
 .results-command-header {

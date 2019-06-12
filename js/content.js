@@ -895,8 +895,8 @@ class DisplayBox {
     }
     makeDraggable () {
         const element = this.root;
-        let pos1 = 0; let pos2 = 0; let pos3 = 0; let
-            pos4 = 0;
+        let pos1, pos2, pos3, pos4;
+        pos1 = pos2 = pos3 = pos4 = 0;
         element.style.top = '100px';
         element.style.left = '100px';
         element.addEventListener('mousedown', startDrag);
@@ -906,7 +906,6 @@ class DisplayBox {
                 console.log('start');
                 pos3 = event.clientX;
                 pos4 = event.clientY;
-
                 document.addEventListener('mouseup', stopDragging);
                 document.addEventListener('mousemove', dragElement);
                 document.addEventListener('click', stopClick, true);
@@ -919,9 +918,8 @@ class DisplayBox {
             pos2 = pos4 - event.clientY;
             pos3 = event.clientX;
             pos4 = event.clientY;
-
-            element.style.top = (element.offsetTop - pos2) + 'px';
-            element.style.left = (element.offsetLeft - pos1) + 'px';
+            element.style.top = (element.offsetTop - pos2) >= 0 ? (element.offsetTop - pos2) + 'px' : 0 + 'px';
+            element.style.left = (element.offsetLeft - pos1) >= 0 ? (element.offsetLeft - pos1) + 'px' : 0 + 'px';
         }
 
         function stopDragging (event) {
@@ -1005,8 +1003,7 @@ class DisplayBox {
         btns.forEach((btn) => { return btn.addEventListener('mousedown', advantageToggle); });
 
         // order of elements in box
-        root.appendChild(title);
-        root.appendChild(subtitle);
+        root.append(title, subtitle);
         root.appendChild(buttonBox);
         root.appendChild(rollInfoRow);
 
@@ -1126,8 +1123,7 @@ class DisplayBox {
         // first render of text:
         renderText(hitResult, hitModifier, damageModifier);
         // order of elements in display.
-        root.appendChild(title);
-        root.appendChild(subTitle);
+        root.append(title, subTitle);
         root.appendChild(document.createElement('br'));
         root.appendChild(buttonBox);
         root.appendChild(rollBox);
@@ -1263,6 +1259,7 @@ let SPACEBAR_LISTENER;
 let SPACEPRESSED;
 let INITIATIVE_LISTENER;
 let ABILITY_LISTENER;
+let SAVES_LISTENER;
 let DISPLAY_BOX;
 let DISPLAY_BOX_CONTENT;
 let SPELL_ATTACK_MOD; // holds spell attack modifier in case users roll from their sidebar without the primary box spells tab open
