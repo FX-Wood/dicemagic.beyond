@@ -105,16 +105,35 @@
 
 
 /* roll display stuff */
-
+.headline {
+    font-size: 1.6em;
+    margin: 0;
+}
+.subhead {
+    margin: 0;
+    font-weight: 700;
+}
 .button-box {
     margin-top: 5px;
 }
 .roll-box {
     justify-content: space-between;
 }
-.roll-box > div > * {
+/* roll columns */
+.row {
+    display: flex
+}
+.col {
+    display: flex;
+    flex-direction: column;
+}
+.col > * {
     line-height: 1;
     padding: 4px
+}
+
+.roll-result-column {
+    padding-right: 12px;
 }
 
 .roll-label {
@@ -123,6 +142,30 @@
     font-family: "Roboto Condensed",Roboto,Helvetica,sans-serif;
     text-transform: uppercase;
 }
+
+span.roll-info {
+    line-height: 18px;
+    vertical-align: middle;
+}
+
+span.roll-result {
+    font-family: 'Cinzel Decorative';
+    font-size: 25px;
+    line-height: 18px;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.grow {
+    flex-grow: 1
+}
+.nowrap {
+    white-space: nowrap;
+}
+.text-left {
+    text-align: left;
+}
+
 
 .raw-roll-damage {
     text-align: center;
@@ -136,17 +179,9 @@
     width: 100px;
 }
 
-.row {
-    display: flex
-}
-.col {
-    display: flex;
-    flex-direction: column;
-}
 
-.headline {
-    font-size: 1.6em
-}
+
+
 
 .dice-box {
     margin-top: 4px;
@@ -156,15 +191,7 @@
     justify-content: space-between;
 }
 
-.grow {
-    flex-grow: 1
-}
-.nowrap {
-    white-space: nowrap;
-}
-.text-left {
-    text-align: left;
-}
+
 
 .roll-in-place {
     font-family: "Roboto Condensed",Roboto,Helvetica,sans-serif;

@@ -48,10 +48,10 @@ function FlexSpacer (className) {
 /**
  * makes a span with title styling
  * @param {String} text content
- * @returns {HTMLSpanElement} <span> [text] </span>
+ * @returns {HTMLParagraphElement} <span> [text] </span>
  */
 function Title (text) {
-    const el = document.createElement('span');
+    const el = document.createElement('p');
     el.className = 'headline';
     el.innerText = text;
     return el;
@@ -59,16 +59,23 @@ function Title (text) {
 /**
  * makes a span with subtitle styling
  * @param {String} text
- * @returns {HTMLSpanElement}
+ * @returns {HTMLParagraphElement}
  */
 function Subtitle (text) {
-    const el = document.createElement('span');
+    const el = document.createElement('p');
     el.className = 'subhead';
     el.innerText = text;
     return el;
 }
 
-function RollInfoLabel (text) {
+function RollResultContent(text) {
+    const el = document.createElement('span');
+    el.className = 'roll-result';
+    el.innerText = text;
+    return el;
+}
+
+function RollInfoLabel(text) {
     const el = document.createElement('span');
     el.className = 'roll-label nowrap';
     el.innerText = text;
@@ -82,7 +89,7 @@ function RollInfoContent (text) {
     return el;
 }
 
-function RollInfoInput (value) {
+function RollInfoInput(value) {
     const el = document.createElement('input');
     el.type = 'number';
     el.name = 'effectModifier';
@@ -91,12 +98,20 @@ function RollInfoInput (value) {
     return el;
 }
 
-function RollInfoColumn (labelText, valueText) {
+function RollResultColumn(labelText, valueText) {
+    const root = Col();
+    const label = RollInfoLabel(labelText);
+    const value = RollResultContent(valueText);
+    root.classList.add('roll-result-column');
+    root.append(label, value);
+    return { root, label, value };
+}
+
+function RollInfoColumn(labelText, valueText) {
     const root = Col();
     const label = RollInfoLabel(labelText);
     const value = RollInfoContent(valueText);
-    root.appendChild(label);
-    root.appendChild(value);
+    root.append(label, value);
     return { root, label, value };
 }
 
@@ -104,8 +119,7 @@ function RollInputColumn (labelText, valueText) {
     const root = Col();
     const label = RollInfoLabel(labelText);
     const value = RollInfoInput(valueText);
-    root.appendChild(label);
-    root.appendChild(value);
+    root.append(label, value);
     return { root, label, value };
 }
 
@@ -152,7 +166,9 @@ class InitiativeListener {
             e.preventDefault();
             e.stopPropagation();
 
-            const name = 'Your initiative';
+            const creatureName = CHARACTER_SHEET_WATCHER.characterName;
+            const rollName = 'Initiative Roll';
+
             const modifier = e.currentTarget.textContent;
             const advantageState = determineAdvantage(e);
 
@@ -169,7 +185,8 @@ class InitiativeListener {
                 result = low;
             }
             const props = {
-                name,
+                creatureName,
+                rollName,
                 result,
                 first,
                 high,
@@ -179,6 +196,46 @@ class InitiativeListener {
             };
             DISPLAY_BOX.renderSimple(props);
         }
+    }
+}
+/** CharacterSheetWatcher polls the DOM until it gathers
+ * a character's name and classes and then it stops. */
+class CharacterSheetWatcher {
+    /** Constructor
+     * @param {Integer} pollFrequency interval between polls in ms, defaults to 1000ms
+     * @return {CharacterSheetWatcher}
+      */
+    constructor(pollFrequency = 1000) {
+        this.pollFrequency = pollFrequency;
+        this.pollHandle = 0;
+        
+        this.characterSheet = null;
+        this.characterName = '';
+        this.characterClasses = '';
+
+        this.start = this.start.bind(this);
+        this.stop = this.stop.bind(this);
+        this.poll = this.poll.bind(this);
+    }
+    start() {
+        this.pollHandle = setInterval(this.poll, this.pollFrequency);
+    }
+    stop() {
+        clearInterval(this.pollHandle);
+    }
+    poll() {
+        if (!this.characterSheet) {
+            this.characterSheet = document.getElementById('character-sheet-target');
+        }
+        if (!this.characterName) {
+            const nameElement = this.characterSheet.querySelector('.ct-character-tidbits__name');
+            if (nameElement) { this.characterName = nameElement.innerText; }
+        }
+        if (!this.characterClasses) {
+            const classElement = this.characterSheet.querySelector('.ct-character-tidbits__classes');
+            if (classElement) { this.characterClasses = classElement.innerText.split('/'); }
+        }
+        if (this.characterSheet && this.characterName && this.characterClasses) { this.stop(); }
     }
 }
 
@@ -732,7 +789,6 @@ class ThemeWatcher {
     }
 
     getThemeColor () {
-        console.log('getting theme color from page');
         let nextColor;
         // handle desktop version
         if (this.target[0]) {
@@ -852,26 +908,29 @@ class DisplayBox {
         }
     }
     renderSimple (props) {
-        const { name, result, first, high, low, modifier, advantageState } = props;
+        const { creatureName, rollName, result, first, high, low, modifier, advantageState } = props;
         const root = document.createDocumentFragment();
 
         // string with rolling results
-        const title = Title('');
-        const subtitle = Subtitle('');
+        const title = Title(creatureName);
+        const subtitle = Subtitle(rollName);
 
         const rollInfoRow = Row('roll-box');
 
+        const rollResultColumn = RollResultColumn('result', result);
+        const rollResult = rollResultColumn.value;
+        rollInfoRow.append(rollResultColumn.root);
         // raw roll result
         const rawRollColumn = RollInfoColumn('raw', '');
         const raw = rawRollColumn.value;
-        rollInfoRow.appendChild(rawRollColumn.root);
+        rollInfoRow.append(rawRollColumn.root);
 
         // roll modifier w/input
         const modifierColumn = RollInputColumn('modifier', 0);
         const mod = modifierColumn.value;
-        rollInfoRow.appendChild(modifierColumn.root);
+        rollInfoRow.append(modifierColumn.root);
 
-        rollInfoRow.appendChild(FlexSpacer());
+        rollInfoRow.append(FlexSpacer());
 
         // advantage buttons
         // container for advantage buttons
@@ -880,7 +939,6 @@ class DisplayBox {
         // normal
         const norm = TabBtn('normal', first);
         buttonBox.appendChild(norm);
-        console.log(norm);
         // advantage
         const adv = TabBtn('advantage', high);
         buttonBox.appendChild(adv);
@@ -890,13 +948,11 @@ class DisplayBox {
         buttonBox.appendChild(dAdv);
 
         const btns = [norm, adv, dAdv];
-        console.log(advantageState);
         btns[advantageState].activate();
 
         function renderText (newRoll, newModifier) {
             console.log('rendering', newRoll, newModifier);
-            title.innerText = `${name}:  ${parseInt(newRoll, 10) + parseInt(newModifier, 10)}\n`;
-            subtitle.innerText = `You rolled ${newRoll} with a ${parseInt(newModifier, 10) >= 0 ? '+' + newModifier : '-' + newModifier} modifier`;
+            rollResult.innerText = parseInt(newRoll, 10) + parseInt(newModifier, 10);
             raw.innerText = newRoll;
             mod.value = parseInt(newModifier, 10);
         }
@@ -921,7 +977,6 @@ class DisplayBox {
         // order of elements in box
         root.appendChild(title);
         root.appendChild(subtitle);
-        root.appendChild(document.createElement('br'));
         root.appendChild(buttonBox);
         root.appendChild(rollInfoRow);
 
@@ -1168,13 +1223,12 @@ function determineAdvantage (e) {
 }
 
 function refreshClicks () {
-    console.log('refreshing clicks');
     addOnClickToSaves();
     addOnClickToSkills();
     addOnclickToPrimaryBox();
     addOnClickToSidebarSpells();
 }
-
+let CHARACTER_SHEET_WATCHER;
 let THEME_WATCHER;
 let SPACEBAR_LISTENER;
 let SPACEPRESSED;
@@ -1184,7 +1238,11 @@ let DISPLAY_BOX;
 let DISPLAY_BOX_CONTENT;
 let SPELL_ATTACK_MOD; // holds spell attack modifier in case users roll from their sidebar without the primary box spells tab open
 function onLoad (pollFrequency) {
-    SPACEBAR_LISTENER = new SpacebarListener();
+    console.log({ pollFrequency });
+    CHARACTER_SHEET_WATCHER = new CharacterSheetWatcher(pollFrequency);
+    CHARACTER_SHEET_WATCHER.start();
+
+    SPACEBAR_LISTENER = new SpacebarListener(pollFrequency);
     SPACEBAR_LISTENER.start();
 
     DISPLAY_BOX = new DisplayBox();
