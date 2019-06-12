@@ -19,7 +19,7 @@
             "https://www.dndbeyond.com/profile/*/characters/*"
         ],
         "run_at": "document_idle",
-        "css": ["css/displayboxstyle.css"],
+        "css": ["css/displayboxstyle.css", "css/fonts.css"],
         "js": ["js/content.js"]
     },
     {
@@ -27,7 +27,7 @@
             "https://www.dndbeyond.com/encounters/*"
         ],
         "run_at": "document_idle",
-        "css": ["css/displayboxstyle.css"],
+        "css": ["css/displayboxstyle.css", "css/fonts.css"],
         "js": ["js/content.js", "js/encounters.js"]
     }
     ],
@@ -55,5 +55,5 @@
         "16": "icon/roller_icon16.png"
     },
     "manifest_version": 2,
-    "web_accessible_resources": ["images/*","js/*","css/*","html/*"]
+    "web_accessible_resources": ["js/*","css/*","html/*", "fonts/*"]
 }
