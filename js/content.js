@@ -127,7 +127,18 @@ function RollInputColumn(labelText, valueText) {
     root.append(label, value);
     return { root, label, value };
 }
+/**
+ * @typedef {Object} ResultsHeader
+ * @property {HTMLDivElement} root container div
+ * @property {HTMLSpanElement} text span containing main text
+ * @property {HTMLSpanElement} subtext span containing secondary text
+ */
 
+/** ResultsHeader
+ * @param {String} text main text. Usually the dice that were rolled, e.g, "2d6 + 4"
+ * @param {String} subtext secondary text. Usually the type of damage or effect, e.g., "poison damage"
+ * @return {ResultsHeader} 
+ */
 function ResultsHeader(text, subtext) {
     const root = document.createElement('div');
     root.className = 'results-header';
@@ -478,7 +489,6 @@ async function attackAndDamageRoll(e, type = 'primary-box-attack') {
         const target = e.currentTarget;
         e.preventDefault();
         e.stopPropagation();
-        console.log('Rolling attack', e, type);
 
         const creatureName = CHARACTER_SHEET_WATCHER.characterName;
         let rollName, rollMeta;
@@ -500,10 +510,14 @@ async function attackAndDamageRoll(e, type = 'primary-box-attack') {
             rollMeta = nameBox.children[1].innerText.replace('\n', '\u2022'); // replace newline with bullet character
             hitModifier = target.querySelector('.ct-spells-spell__tohit').textContent;
             damage = target.querySelector('.ct-damage__value').textContent;
-            damageType = target.querySelector('.ct-damage__icon .ct-tooltip').title.toLowerCase();
+            damageType = target.querySelector('.ct-damage__icon .ct-tooltip').dataset.originalTitle;
         }
         // handle spell attacks from sidebar
         if (type === 'sidebar-spell') {
+            const nameBox = target.parentElement.parentElement.parentElement.parentElement.querySelector('.ct-sidebar__header');
+            rollName = nameBox.children[1].innerText;
+            rollMeta = nameBox.children[0].innerText + ' Spell';
+
             hitModifier = SPELL_ATTACK_MOD;
             damage = target.querySelector('.ct-spell-caster__modifier-amount').textContent;
             damageType = target.querySelector('.ct-tooltip[data-original-title]').dataset.originalTitle.toLowerCase();
@@ -573,7 +587,6 @@ async function attackAndDamageRoll(e, type = 'primary-box-attack') {
     }
 }
 
-
 // Primary Box
 function addOnclickToPrimaryBox () {
     // checks if the actions tab of the primary box is active
@@ -595,11 +608,11 @@ function addOnclickToPrimaryBox () {
 
         spells.forEach((spell) => {
             // checks if each spell has a to-Hit roll or a damage roll
-            if (spell.querySelector('ct-spells-spell__tohit') || spell.querySelector('.ct-damage__value')) {
+            if (spell.querySelector('.ct-spells-spell__tohit') || spell.querySelector('.ct-damage__value')) {
                 // checks if the spell has a listener yet
                 if (!spell.iAmListening) {
                     spell.iAmListening = true;
-                    spell.addEventListener('click', rollSpellPrimaryBox, true);
+                    spell.addEventListener('click', rollSpellPrimaryBox);
                     spell.classList.add('primary-box-mouseover');
                 }
             }
@@ -611,35 +624,40 @@ async function rollSpellPrimaryBox(e) {
     if (e.shiftKey) {
         e.preventDefault();
         e.stopPropagation();
+        const target = e.currentTarget;
         // if it's a spell attack, use attack renderer
-        if (e.currentTarget.querySelector('.ct-spells-spell__tohit')) {
+        if (target.querySelector('.ct-spells-spell__tohit')) {
             return attackAndDamageRoll(e, 'primary-box-spell');
         }
-        const spellName = e.currentTarget.querySelector('.ct-spell-name').textContent;
-        let saveDC = e.currentTarget.querySelector('.ct-spells-spell__save-value');
+        const creatureName = CHARACTER_SHEET_WATCHER.characterName;
+        const [spellName, spellClass] = target.querySelector('.ct-spells-spell__name').innerText.split('\n');
+        const spellLevel = target.parentElement.parentElement.parentElement.parentElement.children[0].innerText.toLowerCase().split('\n')[0];
+        const rollName = spellName;
+        const rollMeta = `${spellLevel === 'cantrip' ? 'Cantrip' : spellLevel + ' spell'} \u2022 ${spellClass}`;
+        let saveDC = target.querySelector('.ct-spells-spell__save-value');
         let saveLabel;
         if (saveDC) {
             saveDC = saveDC.textContent;
-            saveLabel = e.currentTarget.querySelector('.ct-spells-spell__save-label').textContent;
+            saveLabel = target.querySelector('.ct-spells-spell__save-label').textContent;
         }
         // get damage or healing
-        let effect = e.currentTarget.querySelector('.ct-damage__value');
+        let effect = target.querySelector('.ct-damage__value');
         let effectType;
         let isHeal = false;
         if (effect) {
             // damage
             effect = effect.innerText;
-            effectType = e.currentTarget.querySelector('.ct-spell-damage-effect__damages .ct-tooltip').dataset.originalTitle;
+            effectType = target.querySelector('.ct-spell-damage-effect__damages .ct-tooltip').dataset.originalTitle;
         } else {
             // healing
-            effect = e.currentTarget.querySelector('.ct-spell-damage-effect__healing').innerText;
+            effect = target.querySelector('.ct-spell-damage-effect__healing').innerText;
             effectType = 'healing';
             isHeal = true;
         }
         // handle magic missile
         let magicMissileCount = 3;
-        if (spellName === 'Magic Missile') {
-            const additionalMissiles = e.currentTarget.querySelector('.ct-note-components__component--is-scaled');
+        if (rollName === 'Magic Missile') {
+            const additionalMissiles = target.querySelector('.ct-note-components__component--is-scaled');
             if (additionalMissiles) {
                 magicMissileCount += parseInt(additionalMissiles.textContent.split('+')[1], 10);
             }
@@ -649,8 +667,10 @@ async function rollSpellPrimaryBox(e) {
         const numEffectDice = parseInt(effectDice.split('d')[0], 10);
         const effectResult = roll.result.match(/\d+(?=\*)/g)[0];
         const rawEffect = roll.result.match(/[\d, ]+(?=\()/g)[0];
-        const spellInfo = {
-            spellName,
+        const props = {
+            creatureName,
+            rollName,
+            rollMeta,
             saveDC,
             saveLabel,
             effect,
@@ -664,55 +684,8 @@ async function rollSpellPrimaryBox(e) {
             magicMissileCount
         };
 
-        renderPrimaryBoxSpells(spellInfo);
+        DISPLAY_BOX.renderPrimaryBoxSpell(props);
     }
-}
-
-
-function renderPrimaryBoxSpells(spellInfo) {
-    console.log('rendering primary box spells');
-    const {
-        spellName,
-        saveDC,
-        saveLabel,
-        effectType,
-        effectResult,
-        effectDice,
-        effectModifier,
-        rawEffect,
-        isHeal
-    } = spellInfo;
-    const root = document.createDocumentFragment();
-    const headlineTemplate = () => `${spellName} ${isHeal ? 'heals for' : 'does'} ${effectResult} ${isHeal ? '' : effectType + ' damage'}\n`;
-    const subHeadTemplate = () => `Targets must make a DC${saveDC} ${saveLabel} save`;
-
-    // string with rolling results
-    const title = Title(headlineTemplate(), 'headline-small');
-    const subTitle = saveDC ? Subtitle(subHeadTemplate()) : null;
-
-    // flex row for roll info and labels
-    const rollBox = Row('roll-box');
-
-    // column for the spell effect dice, e.g., '2d6'
-    const effectCol = RollInfoColumn(isHeal ? 'healing' : 'damage', effectDice).root;
-    rollBox.appendChild(effectCol);
-
-    // damage rolls
-    const effRawCol = RollInfoColumn('roll results', rawEffect).root;
-    rollBox.appendChild(effRawCol);
-    if (effectModifier) {
-        const effectModifierCol = RollInputColumn('modifier', effectModifier).root;
-        rollBox.appendChild(effectModifierCol);
-    }
-    rollBox.appendChild(FlexSpacer());
-
-    // order of elements in box
-    root.appendChild(title);
-    root.appendChild(subTitle);
-    root.appendChild(document.createElement('br'));
-    root.appendChild(rollBox);
-    DISPLAY_BOX_CONTENT.innerHTML = '';
-    DISPLAY_BOX_CONTENT.appendChild(root);
 }
 
 // Sidebar
@@ -915,6 +888,7 @@ class DisplayBox {
         this.renderSimple = this.renderSimple.bind(this);
         this.renderAttack = this.renderAttack.bind(this);
         this.renderCustomRoll = this.renderCustomRoll.bind(this);
+        this.renderPrimaryBoxSpell = this.renderPrimaryBoxSpell.bind(this);
     }
     start () {
         this.makeDraggable();
@@ -1076,7 +1050,7 @@ class DisplayBox {
         const dmgHeader = ResultsHeader('', `${damageType} damage`);
         // flex row for roll info and labels
         const dmgRow = Row('roll-box');
-        
+
         const dmgColumn = RollResultColumn('damage', 0);
         const dmgResultValue = dmgColumn.value;
         dmgRow.append(dmgColumn.root);
@@ -1170,6 +1144,66 @@ class DisplayBox {
         // browser rerenders once
         this.contentBox.innerHTML = '';
         this.contentBox.appendChild(root);
+    }
+
+    renderPrimaryBoxSpell(props) {
+        const {
+            creatureName,
+            rollName,
+            rollMeta,
+            saveDC,
+            saveLabel,
+            effectType,
+            effectResult,
+            effectDice,
+            effectModifier,
+            rawEffect,
+            isHeal
+        } = props;
+        const root = document.createDocumentFragment();
+
+        // string with rolling results
+        const title = Title(creatureName);
+        const subtitle = AttackTitle(rollName);
+        const meta = AttackMeta(rollMeta);
+        const header = ResultsHeader('', '');
+
+        const effectRow = Row('roll-box');
+        // result
+        const effectMagnitudeColumn = RollResultColumn(isHeal ? 'healing' : 'damage', 0);
+        effectRow.append(effectMagnitudeColumn.root);
+        // raw roll
+        const rawEffectColumn = RollInfoColumn('raw', rawEffect);
+        effectRow.append(rawEffectColumn.root);
+        // modifier
+        const effectModifierColumn = RollInputColumn('modifier', 0);
+        effectRow.append(effectModifierColumn.root);
+        // save
+        const effectSaveColumn = RollInfoColumn('save DC', '');
+        if (saveDC) {
+            effectSaveColumn.value.innerText = `${saveLabel.toUpperCase()} ${saveDC}`;
+            effectSaveColumn.root.style.marginLeft = '10px';
+            effectRow.append(effectSaveColumn.root);
+        }
+        effectRow.append(FlexSpacer());
+
+        const renderText = (newModifier) => {
+            header.text.innerText = `${effectDice} ${parseInt(newModifier) <= 0 ? '' : '+ ' + parseInt(newModifier)}`;
+            header.subtext.innerText = effectType.toLowerCase() + ' damage';
+            effectModifierColumn.value.innerText = parseInt(newModifier);
+            effectMagnitudeColumn.value.innerText = parseInt(effectResult) + parseInt(newModifier);
+        };
+        // initial render of text
+        renderText(effectModifier || 0);
+        
+        // allow changing modifier
+        effectModifierColumn.value.addEventListener('change', (e) => renderText(e.target.value));
+        
+        // order of elements in box
+        root.append(title, subtitle, meta);
+        root.append(header.root, effectRow);
+        this.contentBox.innerHTML = '';
+        this.contentBox.append(root);
     }
 
     renderCustomRoll (roll, optionsObject = {}) {
@@ -1345,7 +1379,6 @@ if (typeof window !== 'undefined') {
         attackAndDamageRoll,
 
         rollSpellPrimaryBox,
-        renderPrimaryBoxSpells,
 
         // sidebar
         addOnClickToSidebarSpells,
