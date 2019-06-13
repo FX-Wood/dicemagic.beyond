@@ -36,6 +36,20 @@ function FlexSpacer (className) {
     return div;
 }
 
+function AttackTitle(text) {
+    const el = document.createElement('p');
+    el.className = 'subhead--attack';
+    el.innerText = text;
+    return el
+}
+
+function AttackMeta(text) {
+    const el = document.createElement('p');
+    el.className = 'subhead--meta';
+    el.innerText = text;
+    return el;
+}
+
 /**
  * makes a span with title styling
  * @param {String} text content
@@ -113,6 +127,23 @@ function RollInputColumn (labelText, valueText) {
     root.append(label, value);
     return { root, label, value };
 }
+
+function ResultsHeader(text, subtext) {
+    const root = document.createElement('div');
+    root.className = 'results-header';
+    const span1 = document.createElement('span');
+    span1.className = 'results-header__text';
+    span1.innerText = text;
+    const divider = document.createElement('span');
+    divider.className = 'results-header__text';
+    divider.innerText = ' \u2022 ';
+    const span2 = document.createElement('span');
+    span2.className = 'results-header__subtext';
+    span2.innerText = subtext;
+    root.append(span1, divider, span2);
+    return { root, text: span1, subtext: span2 };
+}
+
 
 // get rolls from background script
 function dispatchToBackground ({ type, data }) {
@@ -257,7 +288,7 @@ class AbilityListener {
             clearInterval(this.pollHandle);
         }
         this.abilitiesBox.forEach((target) => target.removeEventListener('click', this.roll));
-        this.clickableAbilities = []
+        this.clickableAbilities = [];
     }
     poll () {
         // TODO: mobile screen width has a different selector: '.ct-main-mobile__abilities'
@@ -442,31 +473,40 @@ async function rollSkillCheck (e) {
     }
 }
 
-async function attackAndDamageRoll (e, type) {
+async function attackAndDamageRoll (e, type = 'primary-box-attack') {
     if (e.shiftKey) {
+        const target = e.currentTarget;
         e.preventDefault();
         e.stopPropagation();
         console.log('Rolling attack', e, type);
 
+        const creatureName = CHARACTER_SHEET_WATCHER.characterName;
+        let rollName, rollMeta;
         const advantageState = determineAdvantage(e);
         let hitModifier, damage, damageType;
         // handle primary box attacks
-        if (!type) {
-            hitModifier = e.currentTarget.querySelector('.ct-combat-attack__tohit .ct-signed-number').textContent;
-            damage = e.currentTarget.querySelector('.ct-damage__value').textContent;
-            damageType = e.currentTarget.querySelector('.ct-tooltip[data-original-title]').dataset.originalTitle.toLowerCase();
+        if (type === 'primary-box-attack') {
+            const nameBox = target.querySelector('.ct-combat-attack__name');
+            rollName = nameBox.children[0].innerText.replace('Weapon', 'Weapon Attack');
+            rollMeta = nameBox.children[1].innerText.replace('\n', ' \u2022 '); // replace newline with bullet character
+            hitModifier = target.querySelector('.ct-combat-attack__tohit .ct-signed-number').textContent;
+            damage = target.querySelector('.ct-damage__value').textContent;
+            damageType = target.querySelector('.ct-tooltip[data-original-title]').dataset.originalTitle.toLowerCase();
         }
         // handle spell attacks from primary box spell tab
         if (type === 'primary-box-spell') {
-            hitModifier = e.currentTarget.querySelector('.ct-spells-spell__tohit').textContent;
-            damage = e.currentTarget.querySelector('.ct-damage__value').textContent;
-            damageType = e.currentTarget.querySelector('.ct-damage__icon .ct-tooltip').title.toLowerCase();
+            const nameBox = target.querySelector('.ct-spells-spell__name');
+            rollName = nameBox.children[0].innerText;
+            rollMeta = nameBox.children[1].innerText.replace('\n', '\u2022'); // replace newline with bullet character
+            hitModifier = target.querySelector('.ct-spells-spell__tohit').textContent;
+            damage = target.querySelector('.ct-damage__value').textContent;
+            damageType = target.querySelector('.ct-damage__icon .ct-tooltip').title.toLowerCase();
         }
         // handle spell attacks from sidebar
         if (type === 'sidebar-spell') {
             hitModifier = SPELL_ATTACK_MOD;
-            damage = e.currentTarget.querySelector('.ct-spell-caster__modifier-amount').textContent;
-            damageType = e.currentTarget.querySelector('.ct-tooltip[data-original-title]').dataset.originalTitle.toLowerCase();
+            damage = target.querySelector('.ct-spell-caster__modifier-amount').textContent;
+            damageType = target.querySelector('.ct-tooltip[data-original-title]').dataset.originalTitle.toLowerCase();
         }
         // handle custom weapons
         if (damageType === 'item is customized') {
@@ -480,15 +520,15 @@ async function attackAndDamageRoll (e, type) {
         // parse damage dice into number and type of dice
         const [numDamageDice, numDamageFaces] = damageDice.split('d');
         // determine the roll for advantage
-        let damageDiceAdvantage;
+        let criticalDice;
         if (numDamageFaces) { // check for attacks with flat damage (like unarmed attack in some cases)
-            damageDiceAdvantage = parseInt(numDamageDice, 10) * 2 + 'd' + numDamageFaces;
+            criticalDice = parseInt(numDamageDice, 10) * 2 + 'd' + numDamageFaces;
         } else {
             // handle attacks with flat damage (like unarmed attack in some cases)
             console.log('flat damage');
-            damageDiceAdvantage = numDamageDice;
+            criticalDice = numDamageDice;
         }
-        const cmdString = `1d20,1d20,${damageDice},${damageDiceAdvantage}`;
+        const cmdString = `1d20,1d20,${damageDice},${criticalDice}`;
         let rolls = await dispatchToBackground({ type: 'SPECIAL_ROLL', data: cmdString });
         let damageRolls = rolls.result.match(/[\d, ]+(?=\()/g);
         damageRolls = damageRolls[damageRolls.length - 1];
@@ -496,7 +536,7 @@ async function attackAndDamageRoll (e, type) {
         // handle to hit
         const hitNormalVantage = rolls[0];
         let hitResult = rolls[0];
-        const [hitDisadvantage, hitAdvantage] = rolls.slice(0, 2).sort((a, b) => { return parseInt(a, 10) - parseInt(b, 10); });
+        const [hitDisadvantage, hitAdvantage] = rolls.slice(0, 2).sort((a, b) => parseInt(a) - parseInt(b));
 
         // handle advantage
         if (advantageState === 1) {
@@ -515,6 +555,9 @@ async function attackAndDamageRoll (e, type) {
         const [normalDamage, criticalDamage] = rolls.slice(2);
 
         const output = {
+            creatureName,
+            rollName,
+            rollMeta,
             hitResult,
             hitNormalVantage,
             hitAdvantage,
@@ -523,7 +566,7 @@ async function attackAndDamageRoll (e, type) {
             damageDice,
             numDamageDice,
             damageRolls,
-            damageDiceAdvantage,
+            criticalDice,
             damageModifier,
             damageType,
             normalDamage,
@@ -652,8 +695,8 @@ function renderPrimaryBoxSpells (spellInfo) {
         isHeal
     } = spellInfo;
     const root = document.createDocumentFragment();
-    const headlineTemplate = () => { return `${spellName} ${isHeal ? 'heals for' : 'does'} ${effectResult} ${isHeal ? '' : effectType + ' damage'}\n`; };
-    const subHeadTemplate = () => { return `Targets must make a DC${saveDC} ${saveLabel} save`; };
+    const headlineTemplate = () => `${spellName} ${isHeal ? 'heals for' : 'does'} ${effectResult} ${isHeal ? '' : effectType + ' damage'}\n`;
+    const subHeadTemplate = () => `Targets must make a DC${saveDC} ${saveLabel} save`;
 
     // string with rolling results
     const title = Title(headlineTemplate(), 'headline-small');
@@ -791,7 +834,6 @@ class ThemeWatcher {
         this.injectNewTheme = this.injectNewTheme.bind(this);
 
         // default color
-        this.setColor('rgb(197,49,49)');
         this.themeWatcherDidConstruct();
     }
 
@@ -812,15 +854,17 @@ class ThemeWatcher {
             console.log('storage found', result);
             if (result.themeColor && result.themeColor !== this.color) {
                 this.setColor(result.themeColor);
-                this.injectNewTheme(result.themeColor);
             }
         });
     }
 
     setColor(color) {
+        console.log('setcolor', color)
         this.color = color;
         const [red, green, blue] = this.color.match(/\d+/g)
         this.darker = `rgb(${parseInt(red * .8)},${parseInt(green * .8)},${parseInt(blue * .8)})`;
+        dispatchToBackground({ type: 'THEME_CHANGE', data: color });
+        this.injectNewTheme(color);
     }
 
     poll () {
@@ -835,8 +879,6 @@ class ThemeWatcher {
         }
         if (newColor && this.color !== newColor) {
             this.setColor(newColor);
-            dispatchToBackground({ type: 'THEME_CHANGE', data: newColor });
-            this.injectNewTheme(newColor);
         }
     }
 
@@ -865,8 +907,11 @@ class ThemeWatcher {
         // encounter saves text
         this.styleSheet.insertRule(`.text-mouseover:hover { color: ${color}; font-weight: bolder; }`);
         // display box buttons
-        this.styleSheet.insertRule(`.display-box-button.active { background-color: ${color}; }`)
-        this.styleSheet.insertRule(`.display-box-button.active:hover { background-color: ${this.darker}; }`)
+        this.styleSheet.insertRule(`.display-box-button.active { background-color: ${color}; }`);
+        this.styleSheet.insertRule(`.display-box-button.active:hover { background-color: ${this.darker}; }`);
+        // display box results-header
+        this.styleSheet.insertRule(`.results-header__text { color: ${color}; } `);
+
     }
 }
 
@@ -956,9 +1001,7 @@ class DisplayBox {
         // roll modifier w/input
         const modifierColumn = RollInputColumn('modifier', 0);
         const mod = modifierColumn.value;
-        rollInfoRow.append(modifierColumn.root);
-
-        rollInfoRow.append(FlexSpacer());
+        rollInfoRow.append(modifierColumn.root, FlexSpacer());
 
         // advantage buttons
         // container for advantage buttons
@@ -988,7 +1031,7 @@ class DisplayBox {
         // function to toggle advantage buttons
         function advantageToggle (e) {
             if (e.button === 0) {
-                btns.forEach((btn) => { return btn.deActivate(); });
+                btns.forEach((btn) => btn.deActivate());
                 e.currentTarget.activate();
                 console.log({ 'roll': e.currentTarget.dataset.value, 'mod': mod.value });
                 renderText(e.currentTarget.dataset.value, mod.value);
@@ -998,9 +1041,9 @@ class DisplayBox {
         renderText(result, modifier);
 
         // handle new modifier input
-        mod.addEventListener('change', (e) => { return renderText(parseInt(raw.innerText, 10), e.target.value); });
+        mod.addEventListener('change', (e) => renderText(parseInt(raw.innerText, 10), e.target.value));
         // handle changes in advantage
-        btns.forEach((btn) => { return btn.addEventListener('mousedown', advantageToggle); });
+        btns.forEach((btn) => btn.addEventListener('mousedown', advantageToggle));
 
         // order of elements in box
         root.append(title, subtitle);
@@ -1010,9 +1053,13 @@ class DisplayBox {
         this.contentBox.innerHTML = '';
         this.contentBox.appendChild(root);
     }
+
     renderAttack (props) {
         console.log('rendering attack');
         const {
+            creatureName,
+            rollName,
+            rollMeta,
             hitResult,
             hitNormalVantage,
             hitAdvantage,
@@ -1022,35 +1069,49 @@ class DisplayBox {
             damageType,
             normalDamage,
             criticalDamage,
-            advantageState
+            advantageState,
+            damageDice,
+            criticalDice
         } = props;
         const root = document.createDocumentFragment();
 
-        const title = Title('');
-        const subTitle = Subtitle('');
+        const title = Title(creatureName);
+        const subtitle = AttackTitle(rollName);
+        const meta = AttackMeta(rollMeta);
 
-        // flex row for roll info and labels
-        const rollBox = Row('roll-box');
+        const hitRow = Row('roll-box');
+
+        const hitColumn = RollResultColumn('hit', hitResult);
+        const hitResultValue = hitColumn.value;
+        hitRow.append(hitColumn.root);
 
         // raw hit
-        const rawHitColumn = RollInfoColumn('hit', '');
+        const rawHitColumn = RollInfoColumn('raw', '');
         const rawHit = rawHitColumn.value;
-        rollBox.appendChild(rawHitColumn.root);
+        hitRow.appendChild(rawHitColumn.root);
 
         // hit modifier number input
         const hitModColumn = RollInputColumn('modifier', 0);
         const hitMod = hitModColumn.value;
-        rollBox.appendChild(hitModColumn.root);
+        hitRow.append(hitModColumn.root, FlexSpacer());
+
+        const dmgHeader = ResultsHeader('', `${damageType} damage`);
+        // flex row for roll info and labels
+        const dmgRow = Row('roll-box');
+        
+        const dmgColumn = RollResultColumn('damage', 0);
+        const dmgResultValue = dmgColumn.value;
+        dmgRow.append(dmgColumn.root);
 
         // raw damage
-        const rawDmgColumn = RollInfoColumn('damage', '');
+        const rawDmgColumn = RollInfoColumn('raw', '');
         const dmg = rawDmgColumn.value;
-        rollBox.appendChild(rawDmgColumn.root);
+        dmgRow.append(rawDmgColumn.root);
 
         // damage modifier number input
         const dmgModColumn = RollInputColumn('modifier', 0);
         const dmgMod = dmgModColumn.value;
-        rollBox.appendChild(dmgModColumn.root);
+        dmgRow.append(dmgModColumn.root, FlexSpacer());
 
         // advantage buttons
         // container for advantage buttons
@@ -1072,7 +1133,7 @@ class DisplayBox {
         // function to toggle advantage buttons
         function advantageToggle (e) {
             if (e.button === 0) {
-                btns.forEach((btn) => { return btn.deActivate(); });
+                btns.forEach((btn) => btn.deActivate());
                 e.currentTarget.activate();
                 const i = e.currentTarget.dataset.value;
                 const rawOptions = [hitNormalVantage, hitAdvantage, hitDisadvantage];
@@ -1091,42 +1152,43 @@ class DisplayBox {
             renderText(parseInt(rawHit.innerText, 10), hitMod.value, e.target.value);
         });
         // handle changes in advantage
-        btns.forEach((btn) => { return btn.addEventListener('mousedown', advantageToggle); });
+        btns.forEach((btn) => btn.addEventListener('mousedown', advantageToggle));
         // function to update roll
         // encloses all of the above elements
         const renderText = (newHit, newHitModifier, newDamageModifier) => {
             // handle critical hit
-            if (parseInt(newHit, 10) === 20) {
-                title.innerText = 'Critical hit!\n';
-                subTitle.innerText = `If you strike true: ${parseInt(criticalDamage, 10) + parseInt(newDamageModifier, 10)} ${damageType} damage!`;
+            if (parseInt(newHit) === 20) {
+                hitResultValue.innerText = 'Crit';
+                dmgResultValue.innerText = parseInt(criticalDamage) + parseInt(newDamageModifier);
+                dmgHeader.text.innerText = `${criticalDice} ${parseInt(newDamageModifier) < 0 ? '-' : '+'} ${parseInt(newDamageModifier)}`;
                 dmg.innerText = criticalDamage;
 
             // handle critical miss
-            } else if (parseInt(newHit, 10) === 1) {
-                title.innerText = 'Critical miss...\n';
-                subTitle.innerText = 'Better Luck next time';
+            } else if (parseInt(newHit) === 1) {
+                hitResultValue.innerText = 'Miss';
+                dmgResultValue.innerText = parseInt(normalDamage) + parseInt(newDamageModifier);
+                dmgHeader.text.innerText = `${damageDice} ${parseInt(newDamageModifier) < 0 ? '-' : '+'} ${parseInt(newDamageModifier)}`;
                 dmg.innerText = normalDamage;
 
             // handle normal hits
             } else {
-                // title / subtitle
-                title.innerText = `You rolled ${parseInt(newHit, 10) + parseInt(newHitModifier, 10)} to hit.\n`;
-                subTitle.innerText = `If you strike true: ${parseInt(normalDamage, 10) + parseInt(newDamageModifier, 10)} ${damageType} damage!`;
+                hitResultValue.innerText = parseInt(newHit) + parseInt(newHitModifier);
+                dmgResultValue.innerText = parseInt(normalDamage) + parseInt(newDamageModifier);
+                dmgHeader.text.innerText = `${damageDice} ${parseInt(newDamageModifier) < 0 ? '-' : '+'} ${parseInt(newDamageModifier)}`;
                 dmg.innerText = normalDamage;
             }
             // hit
-            rawHit.innerText = newHit;
-            hitMod.value = parseInt(newHitModifier, 10);
+            rawHit.innerText = parseInt(newHit);
+            hitMod.value = parseInt(newHitModifier);
             // damage
-            dmgMod.value = parseInt(newDamageModifier, 10);
+            dmgMod.value = parseInt(newDamageModifier);
         };
         // first render of text:
         renderText(hitResult, hitModifier, damageModifier);
         // order of elements in display.
-        root.append(title, subTitle);
-        root.appendChild(document.createElement('br'));
-        root.appendChild(buttonBox);
-        root.appendChild(rollBox);
+        root.append(title, subtitle, meta);
+        root.append(buttonBox, hitRow);
+        root.append(dmgHeader.root, dmgRow);
         // browser rerenders once
         this.contentBox.innerHTML = '';
         this.contentBox.appendChild(root);
@@ -1149,15 +1211,8 @@ class DisplayBox {
         root.appendChild(titleEl);
         const subtitleEl = Subtitle(subtitleText);
         root.appendChild(subtitleEl);
-        const resultsHeader = document.createElement('div');
-        resultsHeader.className = 'results-command-header';
-        resultsHeader.innerText = 'result \u2022 ';
-        resultsHeader.style.color = THEME_WATCHER.color;
-        const command = document.createElement('span');
-        command.className = 'results-command';
-        command.innerText = cmd;
-        resultsHeader.appendChild(command);
-        root.appendChild(resultsHeader);
+        const header = ResultsHeader('result \u2022 ', cmd);
+        root.appendChild(header.root);
         // render roll(s)
         const resultCharWidth = rolls.reduce((max, next) => {
             let [raw, result] = next.split(' = '); // eslint-disable-line
