@@ -10,7 +10,7 @@
     height: 200px;
     width : 281px;
     
-    padding: 10px 20px 0 20px;
+    padding: 0 0 0 20px;
     box-sizing: border-box;
 
     cursor: grab;
@@ -88,7 +88,7 @@
 /* roll display stuff */
 .headline {
     font-size: 1.6em;
-    margin: 0;
+    margin: 10px 0 0 0;
 }
 .subhead {
     margin: 0;

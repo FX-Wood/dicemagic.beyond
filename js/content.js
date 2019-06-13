@@ -1,5 +1,5 @@
 // components for renderers
-function Row (className) {
+function Row(className) {
     const r = document.createElement('div');
     r.className = 'row';
     if (className) {
@@ -8,7 +8,7 @@ function Row (className) {
     return r;
 }
 
-function Col (className) {
+function Col(className) {
     const c = document.createElement('div');
     c.className = 'col';
     if (className) {
@@ -17,7 +17,7 @@ function Col (className) {
     return c;
 }
 
-function TabBtn (text, value) {
+function TabBtn(text, value) {
     const el = document.createElement('div');
     el.innerText = text;
     el.dataset.value = value;
@@ -27,7 +27,7 @@ function TabBtn (text, value) {
     return el;
 }
 
-function FlexSpacer (className) {
+function FlexSpacer(className) {
     const div = document.createElement('div');
     div.className = 'grow';
     if (className) {
@@ -40,7 +40,7 @@ function AttackTitle(text) {
     const el = document.createElement('p');
     el.className = 'subhead--attack';
     el.innerText = text;
-    return el
+    return el;
 }
 
 function AttackMeta(text) {
@@ -55,7 +55,7 @@ function AttackMeta(text) {
  * @param {String} text content
  * @returns {HTMLParagraphElement} <span> [text] </span>
  */
-function Title (text) {
+function Title(text) {
     const el = document.createElement('p');
     el.className = 'headline';
     el.innerText = text;
@@ -66,7 +66,7 @@ function Title (text) {
  * @param {String} text
  * @returns {HTMLParagraphElement}
  */
-function Subtitle (text) {
+function Subtitle(text) {
     const el = document.createElement('p');
     el.className = 'subhead';
     el.innerText = text;
@@ -87,7 +87,7 @@ function RollInfoLabel(text) {
     return el;
 }
 
-function RollInfoContent (text) {
+function RollInfoContent(text) {
     const el = document.createElement('span');
     el.className = 'roll-info nowrap';
     el.innerText = text;
@@ -120,7 +120,7 @@ function RollInfoColumn(labelText, valueText) {
     return { root, label, value };
 }
 
-function RollInputColumn (labelText, valueText) {
+function RollInputColumn(labelText, valueText) {
     const root = Col();
     const label = RollInfoLabel(labelText);
     const value = RollInfoInput(valueText);
@@ -146,7 +146,7 @@ function ResultsHeader(text, subtext) {
 
 
 // get rolls from background script
-function dispatchToBackground ({ type, data }) {
+function dispatchToBackground({ type, data }) {
     console.log('dispatching', { type, data });
     return new Promise((resolve) => {
         chrome.runtime.sendMessage({ type, data }, (response) => {
@@ -164,18 +164,18 @@ class InitiativeListener {
         this.poll = this.poll.bind(this);
         this.roll = this.roll.bind(this);
     }
-    start () {
+    start() {
         if (this.pollHandle) {
             clearInterval(this.pollHandle);
         }
         this.pollHandle = setInterval(this.poll.bind(this), this.pollFrequency);
     }
-    stop () {
+    stop() {
         if (this.pollHandle) {
             clearInterval(this.listenerHandle);
         }
     }
-    poll () {
+    poll() {
         const initiative = document.querySelector('.ct-initiative-box');
         if (initiative && !initiative.iAmListening) {
             initiative.iAmListening = true;
@@ -183,7 +183,7 @@ class InitiativeListener {
             this.listenerHandle = initiative.addEventListener('click', this.roll, true);
         }
     }
-    async roll (e) {
+    async roll(e) {
         if (e.shiftKey) {
             e.preventDefault();
             e.stopPropagation();
@@ -253,11 +253,11 @@ class CharacterSheetWatcher {
         if (!this.characterSheet) {
             this.characterSheet = document.getElementById('character-sheet-target');
         }
-        if (!this.characterName) {
+        if (!this.characterName && this.characterSheet) {
             const nameElement = this.characterSheet.querySelector('.ct-character-tidbits__name');
             if (nameElement) { this.characterName = nameElement.innerText; }
         }
-        if (!this.characterClasses) {
+        if (!this.characterClasses && this.characterSheet) {
             const classElement = this.characterSheet.querySelector('.ct-character-tidbits__classes');
             if (classElement) { this.characterClasses = classElement.innerText.split('/'); }
         }
@@ -277,20 +277,20 @@ class AbilityListener {
         this.poll = this.poll.bind(this);
         this.roll = this.roll.bind(this);
     }
-    start () {
+    start() {
         if (this.pollHandle) {
             clearInterval(this.pollHandle);
         }
         this.pollHandle = setInterval(this.poll);
     }
-    stop () {
+    stop() {
         if (this.pollHandle) {
             clearInterval(this.pollHandle);
         }
         this.abilitiesBox.forEach((target) => target.removeEventListener('click', this.roll));
         this.clickableAbilities = [];
     }
-    poll () {
+    poll() {
         // TODO: mobile screen width has a different selector: '.ct-main-mobile__abilities'
         const abilitiesBox = document.querySelector('.ct-quick-info__abilities');
         if (abilitiesBox && !abilitiesBox.dataset.iAmListening) {
@@ -309,7 +309,7 @@ class AbilityListener {
             });
         }
     }
-    async roll (e) {
+    async roll(e) {
         if (e.shiftKey) {
             e.preventDefault();
             e.stopPropagation();
@@ -321,7 +321,7 @@ class AbilityListener {
                 'int': 'Intelligence',
                 'wis': 'Wisdom',
                 'cha': 'Charisma'
-            }[e.currentTarget.innerText.slice(0, 3).toLowerCase()] + ' skill check';
+            }[e.currentTarget.innerText.slice(0, 3).toLowerCase()] + ' ability check';
             const modifier = e.currentTarget.querySelector('.ct-signed-number').textContent;
             const advantageState = determineAdvantage(e);
             const { first, high, low } = await dispatchToBackground({ type: 'SIMPLE_ROLL', data: null });
@@ -428,7 +428,7 @@ class SavesListener {
 }
 
 // Skills
-function addOnClickToSkills () {
+function addOnClickToSkills() {
     let skills = document.querySelector('.ct-skills__list');
     if (skills && !skills.iAmListening) {
         skills.iAmListening = true;
@@ -440,7 +440,7 @@ function addOnClickToSkills () {
     }
 }
 
-async function rollSkillCheck (e) {
+async function rollSkillCheck(e) {
     if (e.shiftKey) {
         e.preventDefault();
         e.stopPropagation();
@@ -473,7 +473,7 @@ async function rollSkillCheck (e) {
     }
 }
 
-async function attackAndDamageRoll (e, type = 'primary-box-attack') {
+async function attackAndDamageRoll(e, type = 'primary-box-attack') {
     if (e.shiftKey) {
         const target = e.currentTarget;
         e.preventDefault();
@@ -487,11 +487,11 @@ async function attackAndDamageRoll (e, type = 'primary-box-attack') {
         // handle primary box attacks
         if (type === 'primary-box-attack') {
             const nameBox = target.querySelector('.ct-combat-attack__name');
-            rollName = nameBox.children[0].innerText.replace('Weapon', 'Weapon Attack');
-            rollMeta = nameBox.children[1].innerText.replace('\n', ' \u2022 '); // replace newline with bullet character
+            rollName = nameBox.children[0].innerText;
+            rollMeta = nameBox.children[1].innerText.replace('Weapon', 'Weapon Attack').replace('\n', ' \u2022 '); // replace newline with bullet character
             hitModifier = target.querySelector('.ct-combat-attack__tohit .ct-signed-number').textContent;
             damage = target.querySelector('.ct-damage__value').textContent;
-            damageType = target.querySelector('.ct-tooltip[data-original-title]').dataset.originalTitle.toLowerCase();
+            damageType = target.querySelector('.ct-combat-attack__damage .ct-tooltip[data-original-title]').dataset.originalTitle.toLowerCase();
         }
         // handle spell attacks from primary box spell tab
         if (type === 'primary-box-spell') {
@@ -508,10 +508,6 @@ async function attackAndDamageRoll (e, type = 'primary-box-attack') {
             damage = target.querySelector('.ct-spell-caster__modifier-amount').textContent;
             damageType = target.querySelector('.ct-tooltip[data-original-title]').dataset.originalTitle.toLowerCase();
         }
-        // handle custom weapons
-        if (damageType === 'item is customized') {
-            damageType = 'non-mundane';
-        }
         // parse damage roll into dice and modifier
         damage = damage.split(/(?=[+-])/);
         const damageDice = damage[0];
@@ -525,7 +521,6 @@ async function attackAndDamageRoll (e, type = 'primary-box-attack') {
             criticalDice = parseInt(numDamageDice, 10) * 2 + 'd' + numDamageFaces;
         } else {
             // handle attacks with flat damage (like unarmed attack in some cases)
-            console.log('flat damage');
             criticalDice = numDamageDice;
         }
         const cmdString = `1d20,1d20,${damageDice},${criticalDice}`;
@@ -554,7 +549,7 @@ async function attackAndDamageRoll (e, type = 'primary-box-attack') {
         // damage
         const [normalDamage, criticalDamage] = rolls.slice(2);
 
-        const output = {
+        const props = {
             creatureName,
             rollName,
             rollMeta,
@@ -574,8 +569,7 @@ async function attackAndDamageRoll (e, type = 'primary-box-attack') {
             advantageState,
             criticalState
         };
-        console.log('output', output);
-        DISPLAY_BOX.renderAttack(output);
+        DISPLAY_BOX.renderAttack(props);
     }
 }
 
@@ -592,7 +586,6 @@ function addOnclickToPrimaryBox () {
             if (!attack.iAmListening) {
                 attack.addEventListener('click', attackAndDamageRoll, true);
                 attack.iAmListening = true;
-                console.log('Adding listeners to attack table');
                 attack.classList.add('primary-box-mouseover');
             }
         });
@@ -607,7 +600,6 @@ function addOnclickToPrimaryBox () {
                 if (!spell.iAmListening) {
                     spell.iAmListening = true;
                     spell.addEventListener('click', rollSpellPrimaryBox, true);
-                    console.log('adding listeners to spells');
                     spell.classList.add('primary-box-mouseover');
                 }
             }
@@ -615,7 +607,7 @@ function addOnclickToPrimaryBox () {
     }
 }
 
-async function rollSpellPrimaryBox (e) {
+async function rollSpellPrimaryBox(e) {
     if (e.shiftKey) {
         e.preventDefault();
         e.stopPropagation();
@@ -653,13 +645,9 @@ async function rollSpellPrimaryBox (e) {
             }
         }
         const roll = await dispatchToBackground({ type: 'SPECIAL_ROLL', data: effect });
-        console.log(roll);
         const [effectDice, effectModifier] = effect.split(/(?=[+-])/);
-        console.log({ effectDice, effectModifier });
         const numEffectDice = parseInt(effectDice.split('d')[0], 10);
-        console.log({ numEffectDice });
         const effectResult = roll.result.match(/\d+(?=\*)/g)[0];
-        console.log({ effectResult });
         const rawEffect = roll.result.match(/[\d, ]+(?=\()/g)[0];
         const spellInfo = {
             spellName,
@@ -675,13 +663,13 @@ async function rollSpellPrimaryBox (e) {
             isHeal,
             magicMissileCount
         };
-        console.log(spellInfo);
+
         renderPrimaryBoxSpells(spellInfo);
     }
 }
 
 
-function renderPrimaryBoxSpells (spellInfo) {
+function renderPrimaryBoxSpells(spellInfo) {
     console.log('rendering primary box spells');
     const {
         spellName,
@@ -728,12 +716,11 @@ function renderPrimaryBoxSpells (spellInfo) {
 }
 
 // Sidebar
-function addOnClickToSidebarSpells () {
+function addOnClickToSidebarSpells() {
     const primaryBoxSpellAttackElement = document.querySelectorAll('.ct-spells-level-casting__info-item')[1];
     // grabs spell attack mod from primary content box
     if (primaryBoxSpellAttackElement && (SPELL_ATTACK_MOD === undefined)) {
         SPELL_ATTACK_MOD = primaryBoxSpellAttackElement.textContent;
-        console.log('got spell attack to hit in loop: ' + SPELL_ATTACK_MOD);
     }
     // check if sidebar exists
     const sidebarSpell = document.querySelector('.ct-sidebar__portal .ct-spell-caster__modifiers--damages');
@@ -750,7 +737,6 @@ function addOnClickToSidebarSpells () {
                 item.classList.add('sidebar-damage-box');
                 item.addEventListener('click', rollSpellSideBar);
             });
-            console.log('adding event listener to sidebar damage box');
         }
     }
 }
@@ -766,22 +752,14 @@ async function rollSpellSideBar (e) {
         const effectDice = target.children[0].textContent;
         const damageType = target.querySelector('.ct-tooltip').dataset.originalTitle.toLowerCase();
         const restriction = target.children[2];
-        console.log({ spellName });
-        console.log({ effectDice });
-        console.log({ damageType });
-        console.log({ restriction });
 
         // if effect is a spell attack, roll spell attack
         if (restriction && restriction.innerText.toLowerCase().includes('on hit')) {
-            console.log('found spell attack', e);
             return attackAndDamageRoll(e, 'sidebar-spell');
         }
 
         // checks if spell has a save, and if so adds it to the spell object
-
         const roll = await dispatchToBackground({ type: 'SPECIAL_ROLL', data: effectDice });
-        console.log(roll.result);
-        console.log(roll.result.match(/\d+(?=\*)/g));
         const result = roll.result.match(/\d+(?=\*)/g)[0];
         const raw = roll.result.match(/[\d, ]+(?=\()/g);
 
@@ -859,7 +837,6 @@ class ThemeWatcher {
     }
 
     setColor(color) {
-        console.log('setcolor', color)
         this.color = color;
         const [red, green, blue] = this.color.match(/\d+/g)
         this.darker = `rgb(${parseInt(red * .8)},${parseInt(green * .8)},${parseInt(blue * .8)})`;
@@ -884,7 +861,6 @@ class ThemeWatcher {
 
     injectNewTheme(color = this.color) {
         // clear old rules
-        console.log('changing theme color to', color);
         while (this.styleSheet.cssRules.length) {
             this.styleSheet.deleteRule(0);
         }
@@ -924,10 +900,15 @@ class DisplayBox {
 
         this.contentBox = document.createElement('div');
         this.contentBox.id = 'display-box-content';
-        this.contentBox.innerText = 'Welcome to Dicemagic.Beyond! \nRoll: shift-click \nAdvantage: shift-space-click \nDisadvantage: shift-alt-click';
-        this.root.appendChild(this.contentBox);
+        this.contentBox.append(
+            Title('Dicemagic.Beyond'),
+            Subtitle('Roll: shift-click'),
+            Subtitle('Advantage: shift-space-click'),
+            Subtitle('Disadvantage: alt-space-click'),
+        );
+        this.root.append(this.contentBox);
 
-        document.body.appendChild(this.root);
+        document.body.append(this.root);
 
         this.start = this.start.bind(this);
         this.makeDraggable = this.makeDraggable.bind(this);
@@ -1022,7 +1003,6 @@ class DisplayBox {
         btns[advantageState].activate();
 
         function renderText (newRoll, newModifier) {
-            console.log('rendering', newRoll, newModifier);
             rollResult.innerText = parseInt(newRoll, 10) + parseInt(newModifier, 10);
             raw.innerText = newRoll;
             mod.value = parseInt(newModifier, 10);
@@ -1033,7 +1013,6 @@ class DisplayBox {
             if (e.button === 0) {
                 btns.forEach((btn) => btn.deActivate());
                 e.currentTarget.activate();
-                console.log({ 'roll': e.currentTarget.dataset.value, 'mod': mod.value });
                 renderText(e.currentTarget.dataset.value, mod.value);
             }
         }
@@ -1055,7 +1034,6 @@ class DisplayBox {
     }
 
     renderAttack (props) {
-        console.log('rendering attack');
         const {
             creatureName,
             rollName,
@@ -1202,12 +1180,10 @@ class DisplayBox {
             subtitleText: 'fingers crossed...'
         };
         const { titleText, subtitleText } = Object.assign(defaultOptions, optionsObject);
-        console.log(titleText);
         const rolls = result.split('\n');
         const root = document.createDocumentFragment();
         // render header
         const titleEl = Title(titleText + '\n');
-        console.log(titleEl);
         root.appendChild(titleEl);
         const subtitleEl = Subtitle(subtitleText);
         root.appendChild(subtitleEl);
@@ -1263,7 +1239,7 @@ class SpacebarListener {
         this.start = this.start.bind(this);
         this.stop = this.stop.bind(this);
     }
-    start () {
+    start() {
         if (this.keydown) {
             clearInterval(this.keydown);
         }
@@ -1283,7 +1259,7 @@ class SpacebarListener {
             }
         });
     }
-    stop () {
+    stop() {
         clearInterval(this.keyup);
         clearInterval(this.keydown);
         SPACEPRESSED = false;
@@ -1292,11 +1268,9 @@ class SpacebarListener {
 function determineAdvantage (e) {
     // advantage
     if (SPACEPRESSED) {
-        console.log('Advantage!');
         return 1;
     // disadvantage
     } else if (e.altKey) {
-        console.log('Disadvantage!');
         return 2;
     }
     // normal

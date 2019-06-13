@@ -57,7 +57,7 @@ class MonsterStatBlockListener {
                         .split(',')
                         .map((skill) => {
                             const span = document.createElement('span');
-                            span.innerHTML = skill;
+                            span.innerHTML = skill + ',';
                             span.className = 'text-mouseover';
                             span.addEventListener('click', this.rollSkill);
                             return span;
@@ -75,15 +75,13 @@ class MonsterStatBlockListener {
         this.descriptionBlocks = Array.from(target.children[5].children);
         this.descriptionBlocks.forEach((block) => {
             // add to first, unnamed description block
-            console.log('block', block);
-            console.log('length', block.children.length);
             if (block.children.length === 2) {
                 // add to actions
                 console.log(block.children[0].innerText.toLowerCase());
                 if (block.children[0].innerText.toLowerCase() === 'actions') {
                     const actions = Array.from(block.children[1].children);
                     actions.forEach((action) => {
-                        if (action.innerText.includes('Melee Weapon Attack')) {
+                        if (action.innerText.includes('Melee Weapon Attack') || action.innerText.includes('Ranged Weapon Attack')) {
                             action.classList.add('text-mouseover');
                             action.addEventListener('click', this.rollAttack);
                         }
@@ -101,17 +99,22 @@ class MonsterStatBlockListener {
     async rollHitPoints(e) {
         if (e.shiftKey) {
             const cmd = e.currentTarget.innerText.split('(')[1].replace(')', '');
-            console.log('hit points cmd', cmd);
             const roll = await dispatchToBackground({ type: 'SPECIAL_ROLL', data: cmd });
-            console.log(this.monsterName);
             DISPLAY_BOX.renderCustomRoll(roll, { titleText: this.monsterName, subtitleText: 'Hit Points' });
         }
     }
     async rollAbilityCheck(e) {
         if (e.shiftKey) {
-            const abilityName = e.currentTarget.children[0].innerText.toUpperCase();
-            const name = this.monsterName + ` (${abilityName})`;
-            const modifier = parseInt(e.currentTarget.children[1].children[1].innerText.replace(/\(|\)/g, ''), 10);
+            const creatureName = this.monsterName;
+            const rollName = {
+                'str': 'Strength',
+                'dex': 'Dexterity',
+                'con': 'Constitution',
+                'int': 'Intelligence',
+                'wis': 'Wisdom',
+                'cha': 'Charisma'
+            }[e.currentTarget.innerText.slice(0, 3).toLowerCase()] + ' Ability Check';
+            const modifier = parseInt(e.currentTarget.innerText.match(/\d+(?=\))/)[0]);
             const advantageState = determineAdvantage(e);
             const { first, low, high } = await dispatchToBackground({ type: 'SIMPLE_ROLL', data: null });
             // handle advantage
@@ -126,7 +129,8 @@ class MonsterStatBlockListener {
             }
 
             const props = {
-                name,
+                creatureName,
+                rollName,
                 result,
                 first,
                 low,
@@ -141,9 +145,16 @@ class MonsterStatBlockListener {
 
     async rollSave(e) {
         if (e.shiftKey) {
-            const saveName = e.currentTarget.innerText.slice(0, 3);
-            const name = this.monsterName + ` (${saveName} save)`;
-            const modifier = parseInt(e.currentTarget.innerText.slice(3), 10);
+            const creatureName = this.monsterName;
+            const rollName = {
+                'str': 'Strength',
+                'dex': 'Dexterity',
+                'con': 'Constitution',
+                'int': 'Intelligence',
+                'wis': 'Wisdom',
+                'cha': 'Charisma'
+            }[e.currentTarget.innerText.trim().slice(0, 3).toLowerCase()] + ' Saving Throw';
+            const modifier = parseInt(e.currentTarget.innerText.trim().slice(3).replace(/,/g, ''));
             const advantageState = determineAdvantage(e);
             const { first, low, high } = await dispatchToBackground({ type: 'SIMPLE_ROLL', data: null });
             // handle advantage
@@ -157,7 +168,8 @@ class MonsterStatBlockListener {
                 result = low;
             }
             const props = {
-                name,
+                creatureName,
+                rollName,
                 result,
                 first,
                 low,
@@ -172,14 +184,10 @@ class MonsterStatBlockListener {
 
     async rollSkill(e) {
         if (e.shiftKey) {
-            console.log(e.currentTarget);
-            console.log(e.currentTarget.innerText);
             e.preventDefault();
             e.stopPropagation();
-            const skillName = e.currentTarget.children[0].innerText;
-            const name = this.monsterName + `(${skillName} check)`;
-            console.log('textnode', e.currentTarget.childNodes);
-            const modifier = parseInt(e.currentTarget.childNodes[e.currentTarget.childNodes.length - 1].textContent.replace(/ /g, ''), 10);
+            const creatureName = this.monsterName;
+            const [rollName, modifier] = e.currentTarget.innerText.trim().split(' ');
             const advantageState = determineAdvantage(e);
             const { first, high, low } = await dispatchToBackground({ type: 'SIMPLE_ROLL', data: null });
             // handle advantage
@@ -193,7 +201,8 @@ class MonsterStatBlockListener {
                 result = low;
             }
             const props = {
-                name,
+                creatureName,
+                rollName,
                 result,
                 first,
                 low,
@@ -201,21 +210,23 @@ class MonsterStatBlockListener {
                 modifier,
                 advantageState
             };
-            console.log('props', props);
             DISPLAY_BOX.renderSimple(props);
         }
     }
 
     async rollAttack(e) {
         if (e.shiftKey) {
-            const monsterName = this.monsterName;
-            const advantageState = determineAdvantage(e);
-            const attackName = e.currentTarget.childNodes[0].textContent.replace('.', '');
-            console.log({ attackName });
-            console.log('rolled action', e);
             const text = e.currentTarget.innerText;
-            const hitModifier = parseInt(text.slice(text.indexOf('Melee Weapon Attack: ') + 21, text.indexOf(' to hit')), 10);
-            console.log({ hitModifier });
+            
+            const creatureName = this.monsterName;
+            const rollName = text.match(/.*?(?=[.])/)[0];
+            let rollMeta = '';
+            if (text.includes('Melee Weapon Attack')) {
+                rollMeta = 'Melee Weapon Attack';
+            }
+
+            const advantageState = determineAdvantage(e);
+            const hitModifier = parseInt(text.slice(text.indexOf('Weapon Attack:') + 15, text.indexOf(' to hit')));
             const damages = Array.from(text.matchAll(/\((.*?)\) (.*?) /g))
                 .map(([match, dmg, damageType]) => {
                     let [damageDice, damageModifier] = dmg.split(/(?=[+-])/);
@@ -238,13 +249,10 @@ class MonsterStatBlockListener {
                         damageType
                     };
                 });
-            console.log({ damages });
             let [toHitRolls, damageRolls] = await Promise.all([
                 dispatchToBackground({ type: 'SIMPLE_ROLL', data: null }),
                 dispatchToBackground({ type: 'SPECIAL_ROLL', data: damages.map((damage) => damage.damageDice + ',' + damage.criticalDice).reduce((acc, next) => acc + next + ',', '') })
             ]);
-            console.log({ toHitRolls });
-            console.log({ damageRolls });
 
             // get toHit rolls out of response
             const { first, high, low } = toHitRolls;
@@ -272,8 +280,6 @@ class MonsterStatBlockListener {
                             raw: roll.match(/[\d, ]+(?=\))/g)[0],
                             result: roll.match(/\d+(?=\*)/)[0]
                         };
-                        console.log(roll);
-                        console.log(a);
                         return a;
                     }
                 })
@@ -281,7 +287,6 @@ class MonsterStatBlockListener {
             const acc = [];
             let i = 0;
             while (damageRolls.length) {
-                console.log(damageRolls.length);
                 acc.push(
                     {
                         normalDamage: damageRolls.shift().result,
@@ -296,6 +301,9 @@ class MonsterStatBlockListener {
             if (damageRolls.length === 1) {
                 const { normalDamage, criticalDamage, damageModifier, damageType } = damageRolls[0];
                 const props = {
+                    creatureName,
+                    rollName,
+                    rollMeta,
                     hitResult,
                     hitNormalVantage,
                     hitAdvantage,
@@ -305,7 +313,10 @@ class MonsterStatBlockListener {
                     criticalDamage,
                     damageModifier,
                     damageType,
-                    advantageState
+                    advantageState,
+                    damageDice: damages[0].damageDice,
+                    critcalDice: damages[0].criticalDice
+
                 };
                 DISPLAY_BOX.renderAttack(props);
             }
@@ -325,12 +336,10 @@ class EncounterListener {
 
     handleMutation(mutations, observer) {
         mutations.forEach((mutation) => {
-            console.log(mutation);
             // check to see if nodes were added
-            if (mutation.addedNodes.length > 0) {
+            if (mutation.addedNodes.length > 0 && mutation.addedNodes[0].querySelector) {
                 // check to see if the added nodes are monster stat blocks
                 const block = mutation.addedNodes[0].querySelector('.mon-stat-block');
-                console.log('block', block);
                 if (block) {
                     this.monsters.push(new MonsterStatBlockListener(block));
                 }
