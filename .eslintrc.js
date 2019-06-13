@@ -16,7 +16,6 @@ module.exports = {
   rules: {
     'accessor-pairs': 'error',
     'array-bracket-spacing': ['error', 'never'],
-    'arrow-body-style': ['error', 'always'],
     'arrow-parens': ['error', 'always'],
     'arrow-spacing': ['error', { 'before': true, 'after': true }],
     'block-spacing': ['error', 'always'],
@@ -124,7 +123,6 @@ module.exports = {
     'no-with': 'error',
     'object-curly-spacing': ['error', 'always'],
     'object-property-newline': ['error', { 'allowMultiplePropertiesPerLine': true }],
-    'one-var': ['error', 'never'],
     'one-var-declaration-per-line': ['error', 'always'],
     'operator-linebreak': ['error', 'after'],
     'padded-blocks': ['error', 'never'],
@@ -133,7 +131,6 @@ module.exports = {
     'prefer-rest-params': 'error',
     'prefer-spread': 'error',
     'quotes': ['error', 'single', 'avoid-escape'],
-    'radix': 'error',
     'require-atomic-updates': 'error',
     'require-await': 'error',
     'rest-spread-spacing': ['error', 'never'],
