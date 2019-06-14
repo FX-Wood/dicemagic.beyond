@@ -238,7 +238,7 @@ class MonsterStatBlockListener {
                     const [numDamageDice, numDamageFaces] = damageDice.split('d');
                     let criticalDice;
                     if (numDamageFaces) {
-                        criticalDice = parseInt(numDamageDice, 10) * 2 + 'd' + numDamageFaces;
+                        criticalDice = parseInt(numDamageDice) * 2 + 'd' + numDamageFaces;
                     } else {
                         criticalDice = numDamageDice;
                     }
@@ -315,7 +315,7 @@ class MonsterStatBlockListener {
                     damageType,
                     advantageState,
                     damageDice: damages[0].damageDice,
-                    critcalDice: damages[0].criticalDice
+                    criticalDice: damages[0].criticalDice
 
                 };
                 DISPLAY_BOX.renderAttack(props);
