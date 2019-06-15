@@ -8,7 +8,8 @@
   },
   "scripts": {
     "test": "npm run lint & mocha --file ./test/setup.js",
-    "lint": "eslint js/*.js test/*.js"
+    "lint": "eslint js/*.js test/*.js",
+    "build": "cp -R icon build/icon && cp -R fonts build/fonts && cp -R html build/html && cp -R css build/css && cp manifest.json build/manifest.json && webpack --watch"
   },
   "eslintConfig": {
     "env": {
@@ -19,6 +20,7 @@
       "ecmaVersion": 8
     }
   },
+  "eslintIgnore": ["build/*"],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/FX-Wood/dicemagic.beyond.git"
@@ -30,7 +32,10 @@
   },
   "homepage": "https://github.com/FX-Wood/dicemagic.beyond#readme",
   "devDependencies": {
+    "babel-minify-webpack-plugin": "^0.3.1",
     "chai": "^4.2.0",
+    "css-loader": "^3.0.0",
+    "file-loader": "^4.0.0",
     "jsdom": "^15.1.1",
     "jsdom-global": "^3.0.2",
     "mocha": "^6.1.4",

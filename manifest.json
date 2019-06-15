@@ -25,7 +25,7 @@
         ],
         "run_at": "document_idle",
         "css": ["css/displayboxstyle.css", "css/fonts.css"],
-        "js": ["js/content.js"]
+        "js": ["character.bundle.js"]
     },
     {
         "matches": [
@@ -33,11 +33,11 @@
         ],
         "run_at": "document_idle",
         "css": ["css/displayboxstyle.css", "css/fonts.css"],
-        "js": ["js/content.js", "js/encounters.js"]
+        "js": ["character.bundle.js", "encounters.bundle.js"]
     }
     ],
     "background": {
-        "scripts": ["js/background.js"]
+        "scripts": ["background.bundle.js"]
     },
     "browser_action": {
         "default_popup": "html/popup.html",
