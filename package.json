@@ -9,7 +9,7 @@
   "scripts": {
     "test": "npm run lint & mocha --file ./test/setup.js",
     "lint": "eslint js/*.js test/*.js",
-    "build": "cp -R icon build/icon && cp -R fonts build/fonts && cp -R html build/html && cp -R css build/css && cp manifest.json build/manifest.json && webpack --watch"
+    "build": "sh build.sh && webpack --watch"
   },
   "eslintConfig": {
     "env": {
