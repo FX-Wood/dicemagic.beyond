@@ -35,6 +35,7 @@ class InitiativeListener {
         if (e.shiftKey) {
             e.preventDefault();
             e.stopPropagation();
+            document.getSelection().removeAllRanges() // unselect text
 
             const creatureName = CHARACTER_SHEET_WATCHER.characterName;
             const rollName = 'Initiative Roll';
@@ -82,6 +83,7 @@ class CharacterSheetWatcher {
         this.characterSheet = null;
         this.characterName = '';
         this.characterClasses = '';
+        this.spellAttackModifier = 0; // handled in the primary box poll
 
         this.start = this.start.bind(this);
         this.stop = this.stop.bind(this);
@@ -94,10 +96,6 @@ class CharacterSheetWatcher {
         clearInterval(this.pollHandle);
     }
     poll() {
-        // TODO: implement checking for spell attack modifier onload (in case of sidebar spell attack)
-        // if (document.querySelector('.ct-combat-attack--spell .ct-combat-attack__tohit')) {
-        //     SPELL_ATTACK_MOD = document.querySelector('.ct-combat-attack--spell .ct-combat-attack__tohit').textContent;
-        // }
         if (!this.characterSheet) {
             this.characterSheet = document.getElementById('character-sheet-target');
         }
@@ -109,7 +107,8 @@ class CharacterSheetWatcher {
             const classElement = this.characterSheet.querySelector('.ct-character-tidbits__classes');
             if (classElement) { this.characterClasses = classElement.innerText.split('/'); }
         }
-        if (this.characterSheet && this.characterName && this.characterClasses) { this.stop(); }
+
+        if (this.characterSheet && this.characterName && this.characterClasses && this.spellAttackModifier) { this.stop(); }
     }
 }
 
@@ -161,6 +160,7 @@ class AbilityListener {
         if (e.shiftKey) {
             e.preventDefault();
             e.stopPropagation();
+            document.getSelection().removeAllRanges() // unselect text
             const creatureName = CHARACTER_SHEET_WATCHER.characterName;
             const rollName = {
                 'str': 'Strength',
@@ -239,6 +239,7 @@ class SavesListener {
         if (e.shiftKey) {
             e.preventDefault();
             e.stopPropagation(); // prevent sidebar from opening
+            document.getSelection().removeAllRanges() // unselect text
             const creatureName = CHARACTER_SHEET_WATCHER.characterName;
             const rollName = {
                 'str': 'Strength',
@@ -292,6 +293,7 @@ async function rollSkillCheck(e) {
     if (e.shiftKey) {
         e.preventDefault();
         e.stopPropagation();
+        document.getSelection().removeAllRanges() // unselect text
         const creatureName = CHARACTER_SHEET_WATCHER.characterName
         const [abilityName, skillName] = e.currentTarget.innerText.split('\n');
         const rollName = `${skillName}(${abilityName})`;
@@ -326,6 +328,7 @@ async function attackAndDamageRoll(e, type = 'primary-box-attack') {
         const target = e.currentTarget;
         e.preventDefault();
         e.stopPropagation();
+        document.getSelection().removeAllRanges() // unselect text
 
         const creatureName = CHARACTER_SHEET_WATCHER.characterName;
         let rollName, rollMeta;
@@ -358,7 +361,7 @@ async function attackAndDamageRoll(e, type = 'primary-box-attack') {
             rollName = nameBox.children[1].innerText;
             rollMeta = nameBox.children[0].innerText + ' Spell';
 
-            hitModifier = SPELL_ATTACK_MOD;
+            hitModifier = CHARACTER_SHEET_WATCHER.spellAttackModifier;
             damage = target.querySelector('.ct-spell-caster__modifier-amount').textContent;
             damageType = target.querySelector('.ct-tooltip[data-original-title]').dataset.originalTitle.toLowerCase();
         }
@@ -464,6 +467,7 @@ async function rollSpellPrimaryBox(e) {
     if (e.shiftKey) {
         e.preventDefault();
         e.stopPropagation();
+        document.getSelection().empty() // unselect text
         const target = e.currentTarget;
         // if it's a spell attack, use attack renderer
         if (target.querySelector('.ct-spells-spell__tohit')) {
@@ -506,7 +510,7 @@ async function rollSpellPrimaryBox(e) {
         const [effectDice, effectModifier] = effect.split(/(?=[+-])/);
         const numEffectDice = parseInt(effectDice.split('d')[0], 10);
         const effectResult = roll.result.match(/\d+(?=\*)/g)[0];
-        const rawEffect = roll.result.match(/[\d, ]+(?=\()/g)[0];
+        const effectRaw = roll.result.match(/[\d, ]+(?=\()/g)[0];
         const props = {
             creatureName,
             rollName,
@@ -519,12 +523,12 @@ async function rollSpellPrimaryBox(e) {
             effectDice,
             effectModifier,
             numEffectDice,
-            rawEffect,
+            effectRaw,
             isHeal,
             magicMissileCount
         };
-
-        DISPLAY_BOX.renderPrimaryBoxSpell(props);
+        console.log(props)
+        DISPLAY_BOX.renderSpell(props);
     }
 }
 
@@ -532,8 +536,8 @@ async function rollSpellPrimaryBox(e) {
 function addOnClickToSidebarSpells() {
     const primaryBoxSpellAttackElement = document.querySelectorAll('.ct-spells-level-casting__info-item')[1];
     // grabs spell attack mod from primary content box
-    if (primaryBoxSpellAttackElement && (SPELL_ATTACK_MOD === undefined)) {
-        SPELL_ATTACK_MOD = primaryBoxSpellAttackElement.textContent;
+    if (primaryBoxSpellAttackElement && (!CHARACTER_SHEET_WATCHER.spellAttackModifier)) {
+        CHARACTER_SHEET_WATCHER.spellAttackModifier = parseInt(primaryBoxSpellAttackElement.textContent)
     }
     // check if sidebar exists
     const sidebarSpell = document.querySelector('.ct-sidebar__portal .ct-spell-caster__modifiers--damages');
@@ -559,53 +563,58 @@ async function rollSpellSideBar (e) {
     if (e.shiftKey) {
         e.preventDefault();
         e.stopPropagation();
-        console.log('rolling from sidebar');
+        document.getSelection().removeAllRanges() // unselect text
         const target = e.currentTarget;
-        const spellName = document.querySelector('.ct-sidebar__heading').textContent;
+        // gather gray text below spell effect
+        let additionalMeta = target.children[2];
+        if (additionalMeta) {
+            additionalMeta = additionalMeta.textContent 
+            // handle spell attacks (e.g., ice knife)
+            if (additionalMeta.toLowerCase().includes('on hit')) {
+                return attackAndDamageRoll(e, 'sidebar-spell');
+            }
+        } 
+        // if effect is a spell attack, (e.g., Ice Knife) roll spell attack
+
+        const creatureName = CHARACTER_SHEET_WATCHER.characterName
+        const nameBox = target.parentElement.parentElement.parentElement.parentElement.querySelector('.ct-sidebar__header');
+        const rollName = nameBox.children[1].innerText;
+        const rollMeta = `${nameBox.children[0].innerText} Spell ${additionalMeta ? ' \u2022 ' + additionalMeta : '' } `;
+        // const damage = target.querySelector('.ct-spell-caster__modifier-amount').textContent;
+        // const damageType = target.querySelector('.ct-tooltip[data-original-title]').dataset.originalTitle.toLowerCase();
         const effectDice = target.children[0].textContent;
-        const damageType = target.querySelector('.ct-tooltip').dataset.originalTitle.toLowerCase();
-        const restriction = target.children[2];
+        const effectModifier = (effectDice.split(/(?=[+-])/)[1] || 0)
+        console.log({ effectModifier })
+        const effectType = target.querySelector('.ct-tooltip').dataset.originalTitle.toLowerCase();
 
-        // if effect is a spell attack, roll spell attack
-        if (restriction && restriction.innerText.toLowerCase().includes('on hit')) {
-            return attackAndDamageRoll(e, 'sidebar-spell');
+        const spellPropertiesBox = target.parentElement.parentElement.parentElement.querySelector('.ct-property-list.ct-spell-detail__properties');
+        let saveDC, saveType
+        if (spellPropertiesBox.innerText.includes('Attack/Save')) {
+            const spellProperties = spellPropertiesBox.innerText.split('\n');
+            ([saveDC, saveType] = spellProperties[spellProperties.indexOf('Attack/Save:') + 1].split(' '))
+            console.log(saveDC, saveType)
         }
+        const isHeal = false;
 
-        // checks if spell has a save, and if so adds it to the spell object
         const roll = await dispatchToBackground({ type: 'SPECIAL_ROLL', data: effectDice });
-        const result = roll.result.match(/\d+(?=\*)/g)[0];
-        const raw = roll.result.match(/[\d, ]+(?=\()/g);
-
-        return renderSideBarSpell({ spellName, effectDice, result, raw, damageType }, 'sidebar-spell-effect');
+        const effectResult = roll.result.match(/\d+(?=\*)/g)[0];
+        const effectRaw = roll.result.match(/[\d, ]+(?=\()/g);
+        const props = {
+            creatureName,
+            rollName,
+            rollMeta,
+            saveDC,
+            saveType,
+            effectType,
+            effectResult,
+            effectDice,
+            effectModifier,
+            effectRaw,
+            isHeal
+        }
+        console.log(props)
+        DISPLAY_BOX.renderSpell(props);
     }
-}
-
-
-function renderSideBarSpell ({ spellName, effectDice, result, raw, damageType }) {
-    // then add other things
-    const root = document.createDocumentFragment();
-    const title = Title(`${spellName}:\n`);
-    const subTitle = Subtitle(`${result} ${damageType} damage`);
-    root.appendChild(title);
-    root.appendChild(subTitle);
-    root.appendChild(document.createElement('br'));
-
-    const rollBox = Row('roll-box');
-    // show dice to be rolled
-    const effDiceCol = RollInfoColumn('dice', effectDice).root;
-    // show result
-    const resultCol = RollInfoColumn('result', result).root;
-    // show raw
-    const rawCol = RollInfoColumn('raw', raw).root;
-
-    rollBox.appendChild(effDiceCol);
-    rollBox.appendChild(resultCol);
-    rollBox.appendChild(rawCol);
-    rollBox.appendChild(FlexSpacer());
-    root.appendChild(rollBox);
-
-    DISPLAY_BOX_CONTENT.innerHTML = '';
-    DISPLAY_BOX_CONTENT.appendChild(root);
 }
 
 class ThemeWatcher {

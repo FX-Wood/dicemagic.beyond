@@ -170,7 +170,7 @@ export default class DisplayBox {
         this.renderSimple = this.renderSimple.bind(this);
         this.renderAttack = this.renderAttack.bind(this);
         this.renderCustomRoll = this.renderCustomRoll.bind(this);
-        this.renderPrimaryBoxSpell = this.renderPrimaryBoxSpell.bind(this);
+        this.renderSpell = this.renderSpell.bind(this);
     }
     start () {
         this.makeDraggable();
@@ -430,19 +430,20 @@ export default class DisplayBox {
         this.contentBox.innerHTML = '';
         this.contentBox.appendChild(root);
     }
-
-    renderPrimaryBoxSpell(props) {
+    
+    renderSpell(props) {
+        console.log('renderSpell', props);
         const {
             creatureName,
             rollName,
             rollMeta,
             saveDC,
-            saveLabel,
+            saveType,
             effectType,
             effectResult,
             effectDice,
             effectModifier,
-            rawEffect,
+            effectRaw,
             isHeal
         } = props;
         const root = document.createDocumentFragment();
@@ -458,7 +459,7 @@ export default class DisplayBox {
         const effectMagnitudeColumn = RollResultColumn(isHeal ? 'healing' : 'damage', 0);
         effectRow.append(effectMagnitudeColumn.root);
         // raw roll
-        const rawEffectColumn = RollInfoColumn('raw', rawEffect);
+        const rawEffectColumn = RollInfoColumn('raw', effectRaw);
         effectRow.append(rawEffectColumn.root);
         // modifier
         const effectModifierColumn = RollInputColumn('modifier', 0);
@@ -466,7 +467,7 @@ export default class DisplayBox {
         // save
         const effectSaveColumn = RollInfoColumn('save DC', '');
         if (saveDC) {
-            effectSaveColumn.value.innerText = `${saveLabel.toUpperCase()} ${saveDC}`;
+            effectSaveColumn.value.innerText = `${saveType.toUpperCase()} ${saveDC}`;
             effectSaveColumn.root.style.marginLeft = '10px';
             effectRow.append(effectSaveColumn.root);
         }
