@@ -33,7 +33,7 @@
         ],
         "run_at": "document_idle",
         "css": ["css/displayboxstyle.css", "css/fonts.css"],
-        "js": ["character.bundle.js", "encounters.bundle.js"]
+        "js": ["encounters.bundle.js"]
     }
     ],
     "background": {
@@ -60,6 +60,6 @@
         "16": "icon/roller_icon16.png"
     },
     "manifest_version": 2,
-    "web_accessible_resources": ["js/*","css/*","html/*", "fonts/*"],
+    "web_accessible_resources": ["*.js","css/*","html/*", "fonts/*"],
     "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAiEO99nYeW+slXRK+vi9iVQUzxi4pgmg6qUpNi3zAf3KaFri133S6Bqn9enMNmntGfrLymrQvkCK0W4UtB3AR6C2KI7HHM7AA1I6skPel94WfYtGz2SUJLtaJdAS2f5jtU3RoB1NxkHpveMmKFAq1CsQFu/qVxv8FigSZDZCM7OYhepWvvsDzKaOQ/k5Tmsl91MV3IMsHAyT3PocyuXJ2hx0h34x2sxQPzmcM0NiPXdciS0fg/+p0yMTeOL6bB6VNjnLgC+0SYJouRW9Q/YgTuPG19E160TleVDEfgMTDdaXDDzlKlHFa+CCc059sChMdS0f4aulw5PuJuaLhfChQTQIDAQAB"
 }

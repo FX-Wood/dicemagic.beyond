@@ -1,170 +1,7 @@
-// components for renderers
-function Row(className) {
-    const r = document.createElement('div');
-    r.className = 'row';
-    if (className) {
-        r.classList.add(className);
-    }
-    return r;
-}
+import AdvantageListener from './advantage_listener';
+import DisplayBox from './display_box';
+import dispatchToBackground from './dispatch';
 
-function Col(className) {
-    const c = document.createElement('div');
-    c.className = 'col';
-    if (className) {
-        c.classList.add(className);
-    }
-    return c;
-}
-
-function TabBtn(text, value) {
-    const el = document.createElement('div');
-    el.innerText = text;
-    el.dataset.value = value;
-    el.className = 'display-box-button';
-    el.activate = () => el.classList.add('active');
-    el.deActivate = () => el.classList.remove('active');
-    return el;
-}
-
-function FlexSpacer(className) {
-    const div = document.createElement('div');
-    div.className = 'grow';
-    if (className) {
-        div.classList.add(className);
-    }
-    return div;
-}
-
-function AttackTitle(text) {
-    const el = document.createElement('p');
-    el.className = 'subhead--attack';
-    el.innerText = text;
-    return el;
-}
-
-function AttackMeta(text) {
-    const el = document.createElement('p');
-    el.className = 'subhead--meta';
-    el.innerText = text;
-    return el;
-}
-
-/**
- * makes a span with title styling
- * @param {String} text content
- * @returns {HTMLParagraphElement} <span> [text] </span>
- */
-function Title(text) {
-    const el = document.createElement('p');
-    el.className = 'headline';
-    el.innerText = text;
-    return el;
-}
-/**
- * makes a span with subtitle styling
- * @param {String} text
- * @returns {HTMLParagraphElement}
- */
-function Subtitle(text) {
-    const el = document.createElement('p');
-    el.className = 'subhead';
-    el.innerText = text;
-    return el;
-}
-
-function RollResultContent(text) {
-    const el = document.createElement('span');
-    el.className = 'roll-result';
-    el.innerText = text;
-    return el;
-}
-
-function RollInfoLabel(text) {
-    const el = document.createElement('span');
-    el.className = 'roll-label nowrap';
-    el.innerText = text;
-    return el;
-}
-
-function RollInfoContent(text) {
-    const el = document.createElement('span');
-    el.className = 'roll-info nowrap';
-    el.innerText = text;
-    return el;
-}
-
-function RollInfoInput(value) {
-    const el = document.createElement('input');
-    el.type = 'number';
-    el.name = 'effectModifier';
-    el.className = 'ct-health-summary__adjuster-field-input modifier-input';
-    el.value = parseInt(value, 10);
-    return el;
-}
-
-function RollResultColumn(labelText, valueText) {
-    const root = Col();
-    const label = RollInfoLabel(labelText);
-    const value = RollResultContent(valueText);
-    root.classList.add('roll-result-column');
-    root.append(label, value);
-    return { root, label, value };
-}
-
-function RollInfoColumn(labelText, valueText) {
-    const root = Col();
-    const label = RollInfoLabel(labelText);
-    const value = RollInfoContent(valueText);
-    root.append(label, value);
-    return { root, label, value };
-}
-
-function RollInputColumn(labelText, valueText) {
-    const root = Col();
-    const label = RollInfoLabel(labelText);
-    const value = RollInfoInput(valueText);
-    root.append(label, value);
-    return { root, label, value };
-}
-/**
- * @typedef {Object} ResultsHeader
- * @property {HTMLDivElement} root container div
- * @property {HTMLSpanElement} text span containing main text
- * @property {HTMLSpanElement} subtext span containing secondary text
- */
-
-/** ResultsHeader
- * @param {String} text main text. Usually the dice that were rolled, e.g, "2d6 + 4"
- * @param {String} subtext secondary text. Usually the type of damage or effect, e.g., "poison damage"
- * @return {ResultsHeader} 
- */
-function ResultsHeader(text, subtext) {
-    const root = document.createElement('div');
-    root.className = 'results-header';
-    const span1 = document.createElement('span');
-    span1.className = 'results-header__text';
-    span1.innerText = text;
-    const divider = document.createElement('span');
-    divider.className = 'results-header__text';
-    divider.innerText = ' \u2022 ';
-    const span2 = document.createElement('span');
-    span2.className = 'results-header__subtext';
-    span2.innerText = subtext;
-    root.append(span1, divider, span2);
-    return { root, text: span1, subtext: span2 };
-}
-
-
-// get rolls from background script
-function dispatchToBackground({ type, data }) {
-    console.log('dispatching', { type, data });
-    return new Promise((resolve) => {
-        chrome.runtime.sendMessage({ type, data }, (response) => {
-            resolve(response);
-        });
-    });
-}
 class InitiativeListener {
     constructor (pollFrequency = 1000) {
         this.pollHandle = null;
@@ -203,7 +40,7 @@ class InitiativeListener {
             const rollName = 'Initiative Roll';
 
             const modifier = e.currentTarget.textContent;
-            const advantageState = determineAdvantage(e);
+            const advantageState = ADVANTAGE_LISTENER.determineAdvantage(e);
 
             const roll = await dispatchToBackground({ type: 'SIMPLE_ROLL', data: null });
 
@@ -334,7 +171,7 @@ class AbilityListener {
                 'cha': 'Charisma'
             }[e.currentTarget.innerText.slice(0, 3).toLowerCase()] + ' ability check';
             const modifier = e.currentTarget.querySelector('.ct-signed-number').textContent;
-            const advantageState = determineAdvantage(e);
+            const advantageState = ADVANTAGE_LISTENER.determineAdvantage(e);
             const { first, high, low } = await dispatchToBackground({ type: 'SIMPLE_ROLL', data: null });
             let result = first;
             // handle advantage
@@ -412,7 +249,7 @@ class SavesListener {
                 'cha': 'Charisma'
             }[e.currentTarget.innerText.slice(0, 3).toLowerCase()] + ' saving throw';
             const modifier = e.currentTarget.querySelector('.ct-saving-throws-summary__ability-modifier').textContent;
-            const advantageState = determineAdvantage(e);
+            const advantageState = ADVANTAGE_LISTENER.determineAdvantage(e);
             const { first, high, low } = await dispatchToBackground({ type: 'SIMPLE_ROLL', data: null });
             let result = first;
             // handle advantage
@@ -459,7 +296,7 @@ async function rollSkillCheck(e) {
         const [abilityName, skillName] = e.currentTarget.innerText.split('\n');
         const rollName = `${skillName}(${abilityName})`;
         const modifier = e.currentTarget.querySelector('.ct-signed-number').textContent;
-        const advantageState = determineAdvantage(e);
+        const advantageState = ADVANTAGE_LISTENER.determineAdvantage(e);
         const { first, high, low } = await dispatchToBackground({ type: 'SIMPLE_ROLL', data: null });
         let result = first;
         // handle advantage
@@ -492,7 +329,7 @@ async function attackAndDamageRoll(e, type = 'primary-box-attack') {
 
         const creatureName = CHARACTER_SHEET_WATCHER.characterName;
         let rollName, rollMeta;
-        const advantageState = determineAdvantage(e);
+        const advantageState = ADVANTAGE_LISTENER.determineAdvantage(e);
         let hitModifier, damage, damageType;
         // handle primary box attacks
         if (type === 'primary-box-attack') {
@@ -769,9 +606,6 @@ function renderSideBarSpell ({ spellName, effectDice, result, raw, damageType })
 }
 class ThemeWatcher {
     constructor (pollFrequency = 1000) {
-        console.log('constructor');
-        console.log(ThemeWatcher.SavesSVG);
-        console.log(this.constructor.SavesSVG);
         this.pollFrequency = pollFrequency;
         this.pollTarget = document.getElementsByClassName('ct-character-header-desktop__button');
         this.pollFallbackTarget = document.getElementsByClassName('ct-status-summary-mobile__health');
@@ -802,9 +636,7 @@ class ThemeWatcher {
     }
 
     themeWatcherDidConstruct () {
-        console.log('Theme watcher constructed, checking theme');
         chrome.storage.sync.get(['themeColor'], (result) => {
-            console.log('storage found', result);
             if (result.themeColor && result.themeColor !== this.color) {
                 this.setColor(result.themeColor);
             }
@@ -839,9 +671,6 @@ class ThemeWatcher {
     static smallSavesSVG(color) { return `"data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2088%2028'%3E%3Cpath%20fill%3D'${encodeURI(color)}'%20d%3D'M81.02%200H64.332l-.228.165a13.192%2013.192%200%200%200-2.427%202.23H4.324l-.227.33c-.531.992-2.276%203.717-3.718%204.46L0%207.352V20.65l.38.165c1.365.744%203.11%203.47%203.717%204.46l.227.33h57.352a20.967%2020.967%200%200%200%202.427%202.23l.228.166h16.614l.227-.165A17.166%2017.166%200%200%200%2088%2013.959%2017.166%2017.166%200%200%200%2081.172.083zm5.539%2014.041a15.101%2015.101%200%200%201-5.766%2011.977H72.98c-3.565-1.735-8.42-2.643-10.848-3.139a15.532%2015.532%200%200%201-2.807-8.838%2014.986%2014.986%200%200%201%202.807-8.837c2.352-.496%207.207-1.405%2010.848-3.14h7.814a14.88%2014.88%200%200%201%205.766%2011.977zM52.952%203.8a7.091%207.091%200%200%200%204.324%201.735A18.402%2018.402%200%200%200%2055%2014.04a17.505%2017.505%200%200%200%202.276%208.508%207.091%207.091%200%200%200-4.324%201.734H10.924c-2.352-.909-8.42-3.717-9.786-7.681V11.48c1.441-3.965%207.51-6.69%209.786-7.682h42.028zm5.158%201.817h1.518a18.006%2018.006%200%200%200-2.125%208.508%2017.221%2017.221%200%200%200%202.2%208.507%209.309%209.309%200%200%200-1.517%200%2018.184%2018.184%200%200%201-2.352-8.425%2019.362%2019.362%200%200%201%202.276-8.59zm7.056%2020.402a19.91%2019.91%200%200%201-2.276-2.148%2034.161%2034.161%200%200%201%206.296%202.148zm-5.083-2.643c.227.33.38.578.607.908h-6.45a9.567%209.567%200%200%201%205.842-.908zm-55.304.908a15.79%2015.79%200%200%200-3.717-4.46v-1.57c1.745%202.809%205.386%204.874%207.89%206.03H4.779zM1.062%208.26A15.789%2015.789%200%200%200%204.78%203.8h4.173c-2.504%201.156-6.07%203.22-7.89%206.029v-1.57zM60.69%203.8c-.228.33-.38.578-.607.908a9.566%209.566%200%200%201-5.842-.909zm2.2.412a11.529%2011.529%200%200%201%202.276-2.147h4.02a36.164%2036.164%200%200%201-6.296%202.147z'%2F%3E%3C%2Fsvg%3E"`; }
 
     injectNewTheme(color = this.color) {
-        console.log('constructor');
-        console.log(ThemeWatcher.SavesSVG);
-        console.log(this.constructor.SavesSVG);
         // clear old rules
         while (this.styleSheet.cssRules.length) {
             this.styleSheet.deleteRule(0);
@@ -876,534 +705,33 @@ class ThemeWatcher {
 }
 
 // makes a display box
-class DisplayBox {
-    constructor () {
-        this.root = document.createElement('div');
-        this.root.id = 'display-box';
 
-        this.contentBox = document.createElement('div');
-        this.contentBox.id = 'display-box-content';
-        this.contentBox.append(
-            Title('Dicemagic.Beyond'),
-            Subtitle('Roll: shift-click'),
-            Subtitle('Advantage: shift-space-click'),
-            Subtitle('Disadvantage: alt-space-click'),
-        );
-        this.root.append(this.contentBox);
-
-        document.body.append(this.root);
-
-        this.start = this.start.bind(this);
-        this.makeDraggable = this.makeDraggable.bind(this);
-        this.renderSimple = this.renderSimple.bind(this);
-        this.renderAttack = this.renderAttack.bind(this);
-        this.renderCustomRoll = this.renderCustomRoll.bind(this);
-        this.renderPrimaryBoxSpell = this.renderPrimaryBoxSpell.bind(this);
-    }
-    start () {
-        this.makeDraggable();
-    }
-    makeDraggable () {
-        const element = this.root;
-        let pos1, pos2, pos3, pos4;
-        pos1 = pos2 = pos3 = pos4 = 0;
-        element.style.top = '100px';
-        element.style.left = '100px';
-        element.addEventListener('mousedown', startDrag);
-
-        function startDrag (event) {
-            if (event.button === 0 && event.currentTarget.id === 'display-box') {
-                console.log('start');
-                pos3 = event.clientX;
-                pos4 = event.clientY;
-                document.addEventListener('mouseup', stopDragging);
-                document.addEventListener('mousemove', dragElement);
-                document.addEventListener('click', stopClick, true);
-            }
-        }
-
-        function dragElement (event) {
-            console.log('moving');
-            pos1 = pos3 - event.clientX;
-            pos2 = pos4 - event.clientY;
-            pos3 = event.clientX;
-            pos4 = event.clientY;
-            element.style.top = (element.offsetTop - pos2) >= 0 ? (element.offsetTop - pos2) + 'px' : 0 + 'px';
-            element.style.left = (element.offsetLeft - pos1) >= 0 ? (element.offsetLeft - pos1) + 'px' : 0 + 'px';
-        }
-
-        function stopDragging (event) {
-            console.log('stop');
-            document.removeEventListener('mouseup', stopDragging);
-            document.removeEventListener('mousemove', dragElement);
-        }
-
-        function stopClick (event) {
-            console.log('stopclick');
-            event.preventDefault();
-            event.stopPropagation();
-            document.removeEventListener('click', stopClick, true);
-        }
-    }
-    renderSimple (props) {
-        const { creatureName, rollName, result, first, high, low, modifier, advantageState } = props;
-        const root = document.createDocumentFragment();
-
-        // string with rolling results
-        const title = Title(creatureName);
-        const subtitle = Subtitle(rollName);
-
-        const rollInfoRow = Row('roll-box');
-
-        const rollResultColumn = RollResultColumn('result', result);
-        const rollResult = rollResultColumn.value;
-        rollInfoRow.append(rollResultColumn.root);
-        // raw roll result
-        const rawRollColumn = RollInfoColumn('raw', '');
-        const raw = rawRollColumn.value;
-        rollInfoRow.append(rawRollColumn.root);
-
-        // roll modifier w/input
-        const modifierColumn = RollInputColumn('modifier', 0);
-        const mod = modifierColumn.value;
-        rollInfoRow.append(modifierColumn.root, FlexSpacer());
-
-        // advantage buttons
-        // container for advantage buttons
-        const buttonBox = Row('button-box');
-
-        // normal
-        const norm = TabBtn('normal', first);
-        buttonBox.appendChild(norm);
-        // advantage
-        const adv = TabBtn('advantage', high);
-        buttonBox.appendChild(adv);
-
-        // disadvantage
-        const dAdv = TabBtn('disadvantage', low);
-        buttonBox.appendChild(dAdv);
-
-        const btns = [norm, adv, dAdv];
-        btns[advantageState].activate();
-
-        function renderText (newRoll, newModifier) {
-            rollResult.innerText = parseInt(newRoll, 10) + parseInt(newModifier, 10);
-            raw.innerText = newRoll;
-            mod.value = parseInt(newModifier, 10);
-        }
-
-        // function to toggle advantage buttons
-        function advantageToggle (e) {
-            if (e.button === 0) {
-                btns.forEach((btn) => btn.deActivate());
-                e.currentTarget.activate();
-                renderText(e.currentTarget.dataset.value, mod.value);
-            }
-        }
-        // first render
-        renderText(result, modifier);
-
-        // handle new modifier input
-        mod.addEventListener('change', (e) => renderText(parseInt(raw.innerText, 10), e.target.value));
-        // handle changes in advantage
-        btns.forEach((btn) => btn.addEventListener('mousedown', advantageToggle));
-
-        // order of elements in box
-        root.append(title, subtitle);
-        root.appendChild(buttonBox);
-        root.appendChild(rollInfoRow);
-
-        this.contentBox.innerHTML = '';
-        this.contentBox.appendChild(root);
-    }
-
-    renderAttack (props) {
-        console.log('renderAttack', props)
-        const {
-            creatureName,
-            rollName,
-            rollMeta,
-            hitResult,
-            hitNormalVantage,
-            hitAdvantage,
-            hitDisadvantage,
-            hitModifier,
-            damageModifier,
-            damageType,
-            normalDamage,
-            criticalDamage,
-            advantageState,
-            damageDice,
-            criticalDice
-        } = props;
-        const root = document.createDocumentFragment();
-
-        const title = Title(creatureName);
-        const subtitle = AttackTitle(rollName);
-        const meta = AttackMeta(rollMeta);
-
-        const hitRow = Row('roll-box');
-
-        const hitColumn = RollResultColumn('hit', hitResult);
-        const hitResultValue = hitColumn.value;
-        hitRow.append(hitColumn.root);
-
-        // raw hit
-        const rawHitColumn = RollInfoColumn('raw', '');
-        const rawHit = rawHitColumn.value;
-        hitRow.appendChild(rawHitColumn.root);
-
-        // hit modifier number input
-        const hitModColumn = RollInputColumn('modifier', 0);
-        const hitMod = hitModColumn.value;
-        hitRow.append(hitModColumn.root, FlexSpacer());
-
-        const dmgHeader = ResultsHeader('', `${damageType} damage`);
-        // flex row for roll info and labels
-        const dmgRow = Row('roll-box');
-
-        const dmgColumn = RollResultColumn('damage', 0);
-        const dmgResultValue = dmgColumn.value;
-        dmgRow.append(dmgColumn.root);
-
-        // raw damage
-        const rawDmgColumn = RollInfoColumn('raw', '');
-        const dmg = rawDmgColumn.value;
-        dmgRow.append(rawDmgColumn.root);
-
-        // damage modifier number input
-        const dmgModColumn = RollInputColumn('modifier', 0);
-        const dmgMod = dmgModColumn.value;
-        dmgRow.append(dmgModColumn.root, FlexSpacer());
-
-        // advantage buttons
-        // container for advantage buttons
-        const buttonBox = Row('button-box');
-        // normal
-        const norm = TabBtn('normal', 0);
-        buttonBox.appendChild(norm);
-        // advantage
-        const adv = TabBtn('advantage', 1);
-        buttonBox.appendChild(adv);
-
-        // disadvantage
-        const dAdv = TabBtn('disadvantage', 2);
-        buttonBox.appendChild(dAdv);
-
-        const btns = [norm, adv, dAdv];
-        btns[advantageState].activate();
-
-        // function to toggle advantage buttons
-        function advantageToggle (e) {
-            if (e.button === 0) {
-                btns.forEach((btn) => btn.deActivate());
-                e.currentTarget.activate();
-                const i = e.currentTarget.dataset.value;
-                const rawOptions = [hitNormalVantage, hitAdvantage, hitDisadvantage];
-                // hit, mod, damage, criticalDamage
-                console.log('advantageToggle', { newHit: rawOptions[i], newHitMod: hitMod.value, newDmg: dmgMod.value });
-                renderText(rawOptions[i], hitMod.value, dmgMod.value);
-            }
-        }
-        // handle new modifier input
-        hitMod.addEventListener('change', (e) => {
-            console.log({ newHit: rawHit.innerText, newHitMod: e.target.value, newDmg: dmgMod.value });
-            renderText(parseInt(rawHit.innerText, 10), e.target.value, dmgMod.value);
-        });
-        dmgMod.addEventListener('change', (e) => {
-            console.log({ newHit: rawHit.innerText, newHitMod: hitMod.value, newDmg: e.target.value });
-            renderText(parseInt(rawHit.innerText, 10), hitMod.value, e.target.value);
-        });
-        // handle changes in advantage
-        btns.forEach((btn) => btn.addEventListener('mousedown', advantageToggle));
-        // function to update roll
-        // encloses all of the above elements
-        const renderText = (newHit, newHitModifier, newDamageModifier) => {
-            // handle critical hit
-            if (parseInt(newHit) === 20) {
-                hitResultValue.innerText = 'Crit';
-                dmgResultValue.innerText = parseInt(criticalDamage) + parseInt(newDamageModifier);
-                dmgHeader.text.innerText = `${criticalDice} ${parseInt(newDamageModifier) < 0 ? '-' : '+'} ${parseInt(newDamageModifier)}`;
-                dmg.innerText = criticalDamage;
-
-            // handle critical miss
-            } else if (parseInt(newHit) === 1) {
-                hitResultValue.innerText = 'Miss';
-                dmgResultValue.innerText = parseInt(normalDamage) + parseInt(newDamageModifier);
-                dmgHeader.text.innerText = `${damageDice} ${parseInt(newDamageModifier) < 0 ? '-' : '+'} ${parseInt(newDamageModifier)}`;
-                dmg.innerText = normalDamage;
-
-            // handle normal hits
-            } else {
-                hitResultValue.innerText = parseInt(newHit) + parseInt(newHitModifier);
-                dmgResultValue.innerText = parseInt(normalDamage) + parseInt(newDamageModifier);
-                dmgHeader.text.innerText = `${damageDice} ${parseInt(newDamageModifier) < 0 ? '-' : '+'} ${parseInt(newDamageModifier)}`;
-                dmg.innerText = normalDamage;
-            }
-            // hit
-            rawHit.innerText = parseInt(newHit);
-            hitMod.value = parseInt(newHitModifier);
-            // damage
-            dmgMod.value = parseInt(newDamageModifier);
-        };
-        // first render of text:
-        renderText(hitResult, hitModifier, damageModifier);
-        // order of elements in display.
-        root.append(title, subtitle, meta);
-        root.append(buttonBox, hitRow);
-        root.append(dmgHeader.root, dmgRow);
-        // browser rerenders once
-        this.contentBox.innerHTML = '';
-        this.contentBox.appendChild(root);
-    }
-
-    renderPrimaryBoxSpell(props) {
-        const {
-            creatureName,
-            rollName,
-            rollMeta,
-            saveDC,
-            saveLabel,
-            effectType,
-            effectResult,
-            effectDice,
-            effectModifier,
-            rawEffect,
-            isHeal
-        } = props;
-        const root = document.createDocumentFragment();
-
-        // string with rolling results
-        const title = Title(creatureName);
-        const subtitle = AttackTitle(rollName);
-        const meta = AttackMeta(rollMeta);
-        const header = ResultsHeader('', '');
-
-        const effectRow = Row('roll-box');
-        // result
-        const effectMagnitudeColumn = RollResultColumn(isHeal ? 'healing' : 'damage', 0);
-        effectRow.append(effectMagnitudeColumn.root);
-        // raw roll
-        const rawEffectColumn = RollInfoColumn('raw', rawEffect);
-        effectRow.append(rawEffectColumn.root);
-        // modifier
-        const effectModifierColumn = RollInputColumn('modifier', 0);
-        effectRow.append(effectModifierColumn.root);
-        // save
-        const effectSaveColumn = RollInfoColumn('save DC', '');
-        if (saveDC) {
-            effectSaveColumn.value.innerText = `${saveLabel.toUpperCase()} ${saveDC}`;
-            effectSaveColumn.root.style.marginLeft = '10px';
-            effectRow.append(effectSaveColumn.root);
-        }
-        effectRow.append(FlexSpacer());
-
-        const renderText = (newModifier) => {
-            header.text.innerText = `${effectDice} ${parseInt(newModifier) <= 0 ? '' : '+ ' + parseInt(newModifier)}`;
-            header.subtext.innerText = effectType.toLowerCase() + ' damage';
-            effectModifierColumn.value.innerText = parseInt(newModifier);
-            effectMagnitudeColumn.value.innerText = parseInt(effectResult) + parseInt(newModifier);
-        };
-        // initial render of text
-        renderText(effectModifier || 0);
-        
-        // allow changing modifier
-        effectModifierColumn.value.addEventListener('change', (e) => renderText(e.target.value));
-        
-        // order of elements in box
-        root.append(title, subtitle, meta);
-        root.append(header.root, effectRow);
-        this.contentBox.innerHTML = '';
-        this.contentBox.append(root);
-    }
-
-    renderCustomRoll (roll, optionsObject = {}) {
-        const { cmd, result } = roll;
-
-        const defaultOptions = {
-            titleText: 'Custom Roll',
-            subtitleText: 'fingers crossed...'
-        };
-        const { titleText, subtitleText } = Object.assign(defaultOptions, optionsObject);
-        const rolls = result.split('\n');
-        const root = document.createDocumentFragment();
-        // render header
-        const titleEl = Title(titleText + '\n');
-        root.appendChild(titleEl);
-        const subtitleEl = Subtitle(subtitleText);
-        root.appendChild(subtitleEl);
-        const header = ResultsHeader('result \u2022 ', cmd);
-        root.appendChild(header.root);
-        // render roll(s)
-        const resultCharWidth = rolls.reduce((max, next) => {
-            let [raw, result] = next.split(' = '); // eslint-disable-line
-            if (result) {
-                result = result.replace(/\*/g, '');
-                if (result.length > max) {
-                    max = result.length;
-                    return max;
-                }
-            }
-            return max;
-        }, 0);
-        rolls.forEach((roll) => {
-            const [raw, result] = roll.split(' = ');
-            const row = document.createElement('div');
-            if (result) {
-                const resultSpan = document.createElement('span');
-                resultSpan.className = 'roll-result-text';
-                resultSpan.style.color = THEME_WATCHER.color;
-                resultSpan.innerText = result.replace(/\*/g, '').padStart(resultCharWidth, '\xa0');
-                const rawSpan = document.createElement('span');
-                rawSpan.className = 'roll-raw-text';
-                rawSpan.innerText = raw;
-                row.appendChild(resultSpan);
-                row.appendChild(rawSpan);
-            } else {
-                // handle "total: xx" at the end
-                const totalSpan = document.createElement('span');
-                totalSpan.innerText = roll;
-                totalSpan.className = 'roll-total-text';
-
-                row.appendChild(totalSpan);
-            }
-            root.appendChild(row);
-        });
-        this.contentBox.innerHTML = '';
-        this.contentBox.appendChild(root);
-    }
-}
 
 // advantage/disadvantage logic
-class SpacebarListener {
-    constructor () {
-        SPACEPRESSED = false;
-        this.keydown = null;
-        this.keyup = null;
-
-        this.start = this.start.bind(this);
-        this.stop = this.stop.bind(this);
-    }
-    start() {
-        if (this.keydown) {
-            clearInterval(this.keydown);
-        }
-        if (this.keyup) {
-            clearInterval(this.keyup);
-        }
-        SPACEPRESSED = false;
-        this.keydown = window.addEventListener('keydown', function (e) {
-            if (SPACEPRESSED === false && e.key === ' ' && e.shiftKey) {
-                e.preventDefault();
-                SPACEPRESSED = true;
-            }
-        });
-        this.keyup = window.addEventListener('keyup', function (e) {
-            if (e.key === ' ') {
-                SPACEPRESSED = false;
-            }
-        });
-    }
-    stop() {
-        clearInterval(this.keyup);
-        clearInterval(this.keydown);
-        SPACEPRESSED = false;
-    }
-}
-function determineAdvantage (e) {
-    // advantage
-    if (SPACEPRESSED) {
-        return 1;
-    // disadvantage
-    } else if (e.altKey) {
-        return 2;
-    }
-    // normal
-    return 0;
-}
+const pollFrequency = 1000 // ms
 
 function refreshClicks () {
     addOnClickToSkills();
     addOnclickToPrimaryBox();
     addOnClickToSidebarSpells();
 }
-let CHARACTER_SHEET_WATCHER;
-let THEME_WATCHER;
-let SPACEBAR_LISTENER;
-let SPACEPRESSED;
-let INITIATIVE_LISTENER;
-let ABILITY_LISTENER;
-let SAVES_LISTENER;
-let DISPLAY_BOX;
-let DISPLAY_BOX_CONTENT;
+const CHARACTER_SHEET_WATCHER = new CharacterSheetWatcher(pollFrequency);
+const THEME_WATCHER = new ThemeWatcher(pollFrequency);
+const ADVANTAGE_LISTENER = new AdvantageListener(pollFrequency);
+const INITIATIVE_LISTENER = new InitiativeListener(pollFrequency);
+const ABILITY_LISTENER = new AbilityListener(pollFrequency);
+const SAVES_LISTENER = new SavesListener(pollFrequency);;
+const DISPLAY_BOX = new DisplayBox();
 let SPELL_ATTACK_MOD; // holds spell attack modifier in case users roll from their sidebar without the primary box spells tab open
 function onLoad (pollFrequency) {
-    CHARACTER_SHEET_WATCHER = new CharacterSheetWatcher(pollFrequency);
     CHARACTER_SHEET_WATCHER.start();
-
-    SPACEBAR_LISTENER = new SpacebarListener(pollFrequency);
-    SPACEBAR_LISTENER.start();
-
-    DISPLAY_BOX = new DisplayBox();
-    DISPLAY_BOX_CONTENT = DISPLAY_BOX.contentBox;
+    ADVANTAGE_LISTENER.start();
     DISPLAY_BOX.start();
-
-    THEME_WATCHER = new ThemeWatcher(pollFrequency);
     THEME_WATCHER.start();
-
-    INITIATIVE_LISTENER = new InitiativeListener(pollFrequency);
     INITIATIVE_LISTENER.start();
-
-    ABILITY_LISTENER = new AbilityListener(pollFrequency);
     ABILITY_LISTENER.start();
-
-    SAVES_LISTENER = new SavesListener(pollFrequency);
     SAVES_LISTENER.start();
-
     setInterval(refreshClicks, pollFrequency);
-
-}
-if (typeof window !== 'undefined') {
-    const pollFrequency = 1000; // ms
-    onLoad(pollFrequency);
-} else {
-    module.exports = {
-        // chrome messaging
-        dispatchToBackground,
-
-        // initiative
-        InitiativeListener,
-
-        // ability checks
-        AbilityListener,
-
-        // saves
-        SavesListener,
-
-        // skill checks
-        addOnClickToSkills,
-        rollSkillCheck,
-
-        // primary box
-        addOnclickToPrimaryBox,
-
-        attackAndDamageRoll,
-
-        rollSpellPrimaryBox,
-
-        // sidebar
-        addOnClickToSidebarSpells,
-        rollSpellSideBar,
-        renderSideBarSpell,
-
-        // classes
-        ThemeWatcher,
-        DisplayBox,
-        SpacebarListener,
-
-        // helper functions
-        determineAdvantage,
-        refreshClicks
-    };
 }
 
+document.addEventListener('DOMContentLoaded', (e) => onLoad(pollFrequency));

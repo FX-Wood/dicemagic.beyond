@@ -1,4 +1,23 @@
+function handleMessage(request, sender, sendResponse) {
+    console.log('received request', { request, sender });
+    const { type, data } = request;
+    console.log(sender.tab ?
+        'from a content script ' + sender.tab.url :
+        'from the extension');
 
+    switch (type) {
+        case 'SIMPLE_ROLL' :
+            getSimpleRoll(sendResponse);
+            return true;
+        case 'SPECIAL_ROLL' :
+            getRoll(data, sendResponse);
+            return true;
+        case 'THEME_CHANGE' :
+            chrome.storage.sync.set({ themeColor: data }, sendResponse);
+            return true;
+    }
+}
+chrome.runtime.onMessage.addListener(handleMessage);
 
 function getSimpleRoll (sendResponse) {
     const roll = new XMLHttpRequest();
@@ -33,27 +52,8 @@ function getRoll (diceCmd, sendResponse) {
     };
 }
 
-chrome.runtime.onMessage.addListener(
-    function (request, sender, sendResponse) {
-        console.log('received request', { request, sender });
-        const { type, data } = request;
-        console.log(sender.tab ?
-            'from a content script ' + sender.tab.url :
-            'from the extension');
-
-        switch (type) {
-            case 'SIMPLE_ROLL' :
-                getSimpleRoll(sendResponse);
-                return true;
-            case 'SPECIAL_ROLL' :
-                getRoll(data, sendResponse);
-                return true;
-            case 'THEME_CHANGE' :
-                chrome.storage.sync.set({ themeColor: data }, sendResponse);
-                return true;
-        }
-    }
-);
+const [clientId, clientSecret, scope] = require('../config.js');
+console.log([clientId, clientSecret, scope]);
 
 function hitSlack(text) {
     const req = new XMLHttpRequest();
@@ -73,11 +73,10 @@ function hitSlack(text) {
 // state - unique string to be passed back upon completion (optional)
 // team - Slack team ID of a workspace to attempt to restrict to (optional)
 // authorization request
-import clientId, clientSecret, scope from '../config';
-const redirectUri = chrome.identity.getRedirectURL()
-console.log({ clientId, scope, clientSecret });
+
 
 function getSlackAuthorization() {
+    const redirectUri = chrome.identity.getRedirectURL();
     const query = new URLSearchParams();
     query.append('client_id', clientId);
     query.append('redirect_uri', redirectUri);
@@ -92,7 +91,6 @@ function getSlackAuthorization() {
 // token request
 function getSlackToken(AuthResponseURL) {
     console.log(AuthResponseURL)
-    console.log(REDIRECT_URI())
 }
 
 // resource request

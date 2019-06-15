@@ -1,3 +1,7 @@
+'use strict'
+import AdvantageListener from './advantage_listener';
+import DisplayBox from './display_box';
+import dispatchToBackground from './dispatch';
 // add event listener
 
 // click handler
@@ -353,5 +357,15 @@ class EncounterListener {
     }
 }
 
-var ENCOUNTER_LISTENER = new EncounterListener();
-ENCOUNTER_LISTENER.start();
+function __init__() {
+    window.DISPLAY_BOX = new DisplayBox();
+    window.ENCOUNTER_LISTENER = new EncounterListener();
+    window.ADVANTAGE_LISTENER = new AdvantageListener();
+    DISPLAY_BOX.start()
+    ENCOUNTER_LISTENER.start();
+    ADVANTAGE_LISTENER.start();
+}
+
+if (window) {
+    __init__()
+}

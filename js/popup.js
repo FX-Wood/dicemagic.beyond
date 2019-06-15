@@ -43,11 +43,11 @@ function renderRoll (data) {
     // render header
     const resultsHeader = document.createElement('div');
     resultsHeader.className = 'results-command-header';
-    resultsHeader.innerText = 'result \u2022 ';
+    resultsHeader.textContent = 'result \u2022 ';
     resultsHeader.style.color = popupThemeColor;
     const command = document.createElement('span');
     command.className = 'results-command';
-    command.innerText = cmd;
+    command.textContent = cmd;
     resultsHeader.appendChild(command);
     root.appendChild(resultsHeader);
     // render roll(s)
