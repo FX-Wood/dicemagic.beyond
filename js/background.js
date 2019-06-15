@@ -1,3 +1,5 @@
+
+
 function getSimpleRoll (sendResponse) {
     const roll = new XMLHttpRequest();
     roll.open('POST', 'https://api.dicemagic.io/roll');
@@ -53,3 +55,44 @@ chrome.runtime.onMessage.addListener(
     }
 );
 
+function hitSlack(text) {
+    const req = new XMLHttpRequest();
+    req.open('POST', 'https://hooks.slack.com/services/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');
+    req.setRequestHeader('Content-Type', 'application/json');
+    req.send(`{"text":"${text}"}`);
+    req.onload = function() {
+        if (req.readyState === 4) {
+            console.log('done', req);
+            console.log(req.responseText);
+        }
+    };
+}
+// client_id - issued when you created your app (required)
+// scope - permissions to request (see below) (required)
+// redirect_uri - URL to redirect back to (see below) (optional)
+// state - unique string to be passed back upon completion (optional)
+// team - Slack team ID of a workspace to attempt to restrict to (optional)
+// authorization request
+import clientId, clientSecret, scope from '../config';
+const redirectUri = chrome.identity.getRedirectURL()
+console.log({ clientId, scope, clientSecret });
+
+function getSlackAuthorization() {
+    const query = new URLSearchParams();
+    query.append('client_id', clientId);
+    query.append('redirect_uri', redirectUri);
+    query.append('scope', scope);
+    const config = {
+        url: 'https://slack.com/api/oauth.access/' + query.toString(),
+        interactive: true
+    };
+    chrome.identity.launchWebAuthFlow(config, getSlackToken);
+}
+
+// token request
+function getSlackToken(AuthResponseURL) {
+    console.log(AuthResponseURL)
+    console.log(REDIRECT_URI())
+}
+
+// resource request
