@@ -336,9 +336,12 @@ async function attackAndDamageRoll(e, type = 'primary-box-attack') {
             const nameBox = target.querySelector('.ct-combat-attack__name');
             rollName = nameBox.children[0].innerText;
             rollMeta = nameBox.children[1].innerText.replace('Weapon', 'Weapon Attack').replace('\n', ' \u2022 '); // replace newline with bullet character
-            hitModifier = target.querySelector('.ct-combat-attack__tohit .ct-signed-number').textContent;
-            damage = target.querySelector('.ct-damage__value').textContent;
-            damageType = target.querySelector('.ct-combat-attack__damage .ct-tooltip[data-original-title]').dataset.originalTitle.toLowerCase();
+            hitModifier = target.querySelector('.ct-combat-attack__tohit .ct-signed-number')
+            if (hitModifier) { hitModifier = hitModifier.textContent } else { hitModifier = '+0' };
+            damage = target.querySelector('.ct-damage__value')
+            if (damage) { damage = damage.textContent } else { damage = '0d4 + 0' }
+            damageType = target.querySelector('.ct-combat-attack__damage .ct-tooltip[data-original-title]');
+            if (damageType) { damageType = damageType.dataset.originalTitle.toLowerCase() } else { damageType = 'unspecified' }
         }
         // handle spell attacks from primary box spell tab
         if (type === 'primary-box-spell') {
@@ -604,6 +607,7 @@ function renderSideBarSpell ({ spellName, effectDice, result, raw, damageType })
     DISPLAY_BOX_CONTENT.innerHTML = '';
     DISPLAY_BOX_CONTENT.appendChild(root);
 }
+
 class ThemeWatcher {
     constructor (pollFrequency = 1000) {
         this.pollFrequency = pollFrequency;
@@ -704,34 +708,32 @@ class ThemeWatcher {
     }
 }
 
-// makes a display box
-
-
-// advantage/disadvantage logic
-const pollFrequency = 1000 // ms
-
 function refreshClicks () {
     addOnClickToSkills();
     addOnclickToPrimaryBox();
     addOnClickToSidebarSpells();
 }
-const CHARACTER_SHEET_WATCHER = new CharacterSheetWatcher(pollFrequency);
-const THEME_WATCHER = new ThemeWatcher(pollFrequency);
-const ADVANTAGE_LISTENER = new AdvantageListener(pollFrequency);
-const INITIATIVE_LISTENER = new InitiativeListener(pollFrequency);
-const ABILITY_LISTENER = new AbilityListener(pollFrequency);
-const SAVES_LISTENER = new SavesListener(pollFrequency);;
-const DISPLAY_BOX = new DisplayBox();
 let SPELL_ATTACK_MOD; // holds spell attack modifier in case users roll from their sidebar without the primary box spells tab open
-function onLoad (pollFrequency) {
-    CHARACTER_SHEET_WATCHER.start();
-    ADVANTAGE_LISTENER.start();
-    DISPLAY_BOX.start();
-    THEME_WATCHER.start();
-    INITIATIVE_LISTENER.start();
-    ABILITY_LISTENER.start();
-    SAVES_LISTENER.start();
+function __init__(pollFrequency) {
+    window.CHARACTER_SHEET_WATCHER = new CharacterSheetWatcher(pollFrequency);
+    window.THEME_WATCHER = new ThemeWatcher(pollFrequency);
+    window.ADVANTAGE_LISTENER = new AdvantageListener(pollFrequency);
+    window.INITIATIVE_LISTENER = new InitiativeListener(pollFrequency);
+    window.ABILITY_LISTENER = new AbilityListener(pollFrequency);
+    window.SAVES_LISTENER = new SavesListener(pollFrequency);;
+    window.DISPLAY_BOX = new DisplayBox();
+
+    window.CHARACTER_SHEET_WATCHER.start();
+    window.ADVANTAGE_LISTENER.start();
+    window.DISPLAY_BOX.start();
+    window.THEME_WATCHER.start();
+    window.INITIATIVE_LISTENER.start();
+    window.ABILITY_LISTENER.start();
+    window.SAVES_LISTENER.start();
     setInterval(refreshClicks, pollFrequency);
 }
 
-document.addEventListener('DOMContentLoaded', (e) => onLoad(pollFrequency));
+if (window) {
+    const pollFrequency = 1000 // ms
+    __init__(pollFrequency)
+}
