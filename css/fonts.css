@@ -1,8 +1,0 @@
-/* cinzel-decorative-regular - latin */
-@font-face {
-    font-family: 'Cinzel Decorative';
-    font-style: normal;
-    font-weight: 400;
-    src: local('Cinzel Decorative Regular'), local('CinzelDecorative-Regular'),
-         url('chrome-extension://__MSG_@@extension_id__/cinzel-decorative-v7-latin-regular.woff2') format('woff2'), /* Chrome 26+, Opera 23+, Firefox 39+ */
-  }

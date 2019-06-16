@@ -24,7 +24,7 @@
             "https://www.dndbeyond.com/profile/*/characters/*"
         ],
         "run_at": "document_idle",
-        "css": ["css/displayboxstyle.css", "css/fonts.css"],
+        "css": ["css/displayboxstyle.css"],
         "js": ["character.bundle.js"]
     },
     {
@@ -32,7 +32,7 @@
             "https://www.dndbeyond.com/encounters/*"
         ],
         "run_at": "document_idle",
-        "css": ["css/displayboxstyle.css", "css/fonts.css"],
+        "css": ["css/displayboxstyle.css"],
         "js": ["encounters.bundle.js"]
     }
     ],
@@ -60,6 +60,6 @@
         "16": "icon/roller_icon16.png"
     },
     "manifest_version": 2,
-    "web_accessible_resources": ["*.js","css/*","html/*", "fonts/*"],
+    "web_accessible_resources": ["*.js","css/*","html/*", "fonts/*", "icon/*"],
     "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAiEO99nYeW+slXRK+vi9iVQUzxi4pgmg6qUpNi3zAf3KaFri133S6Bqn9enMNmntGfrLymrQvkCK0W4UtB3AR6C2KI7HHM7AA1I6skPel94WfYtGz2SUJLtaJdAS2f5jtU3RoB1NxkHpveMmKFAq1CsQFu/qVxv8FigSZDZCM7OYhepWvvsDzKaOQ/k5Tmsl91MV3IMsHAyT3PocyuXJ2hx0h34x2sxQPzmcM0NiPXdciS0fg/+p0yMTeOL6bB6VNjnLgC+0SYJouRW9Q/YgTuPG19E160TleVDEfgMTDdaXDDzlKlHFa+CCc059sChMdS0f4aulw5PuJuaLhfChQTQIDAQAB"
 }
