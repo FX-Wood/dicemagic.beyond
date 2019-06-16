@@ -2,6 +2,7 @@
 import AdvantageListener from './advantage_listener';
 import DisplayBox from './display_box';
 import dispatchToBackground from './dispatch';
+import ThemeWatcher from './theme_watcher';
 // add event listener
 
 // click handler
@@ -119,7 +120,7 @@ class MonsterStatBlockListener {
                 'cha': 'Charisma'
             }[e.currentTarget.innerText.slice(0, 3).toLowerCase()] + ' Ability Check';
             const modifier = parseInt(e.currentTarget.innerText.match(/\d+(?=\))/)[0]);
-            const advantageState = determineAdvantage(e);
+            const advantageState = ADVANTAGE_LISTENER.determineAdvantage(e);
             const { first, low, high } = await dispatchToBackground({ type: 'SIMPLE_ROLL', data: null });
             // handle advantage
             let result = first;
@@ -159,7 +160,7 @@ class MonsterStatBlockListener {
                 'cha': 'Charisma'
             }[e.currentTarget.innerText.trim().slice(0, 3).toLowerCase()] + ' Saving Throw';
             const modifier = parseInt(e.currentTarget.innerText.trim().slice(3).replace(/,/g, ''));
-            const advantageState = determineAdvantage(e);
+            const advantageState = ADVANTAGE_LISTENER.determineAdvantage(e);
             const { first, low, high } = await dispatchToBackground({ type: 'SIMPLE_ROLL', data: null });
             // handle advantage
             let result = first;
@@ -192,7 +193,7 @@ class MonsterStatBlockListener {
             e.stopPropagation();
             const creatureName = this.monsterName;
             const [rollName, modifier] = e.currentTarget.innerText.trim().split(' ');
-            const advantageState = determineAdvantage(e);
+            const advantageState = ADVANTAGE_LISTENER.determineAdvantage(e);
             const { first, high, low } = await dispatchToBackground({ type: 'SIMPLE_ROLL', data: null });
             // handle advantage
             let result = first;
@@ -229,7 +230,7 @@ class MonsterStatBlockListener {
                 rollMeta = 'Melee Weapon Attack';
             }
 
-            const advantageState = determineAdvantage(e);
+            const advantageState = ADVANTAGE_LISTENER.determineAdvantage(e);
             const hitModifier = parseInt(text.slice(text.indexOf('Weapon Attack:') + 15, text.indexOf(' to hit')));
             const damages = Array.from(text.matchAll(/\((.*?)\) (.*?) /g))
                 .map(([match, dmg, damageType]) => {
@@ -361,6 +362,7 @@ function __init__() {
     window.DISPLAY_BOX = new DisplayBox();
     window.ENCOUNTER_LISTENER = new EncounterListener();
     window.ADVANTAGE_LISTENER = new AdvantageListener();
+    window.THEME_WATCHER = new ThemeWatcher();
     DISPLAY_BOX.start()
     ENCOUNTER_LISTENER.start();
     ADVANTAGE_LISTENER.start();
