@@ -165,7 +165,7 @@ function FancyBox() {
 
 export default class DisplayBox {
     constructor (pollFrequency) {
-        this.pollFrequency
+        this.pollFrequency = pollFrequency
         this.pollHandle = 0;
         this.left = 100
         this.top = 100
@@ -173,8 +173,8 @@ export default class DisplayBox {
         const box = FancyBox()
         this.root = box.root
         this.contentBox = box.contentBox
-        this.desktopMini = ToolbarButton('dicemagic')
-        this.mobileMini = FloatingActionButton()
+        this.toolbarButton = ToolbarButton('dicemagic')
+        this.floatingActionButton = FloatingActionButton()
 
         this.start = this.start.bind(this);
         this.poll = this.poll.bind(this);
@@ -207,8 +207,8 @@ export default class DisplayBox {
         this.root.style.display = 'none'
         document.body.append(this.root)
         // listen for button clicks
-        this.desktopMini.root.addEventListener('click', this.toggleDisplay)
-        this.mobileMini.root.addEventListener('click', this.toggleDisplay)
+        this.toolbarButton.addEventListener('click', this.toggleDisplay)
+        this.floatingActionButton.addEventListener('click', this.toggleDisplay)
         
         // get the position of their window
         chrome.storage.local.get(['displayBoxPosition', 'hideDisplayKey'], (result) => {
@@ -219,7 +219,7 @@ export default class DisplayBox {
                 this.root.style.top = this.top + 'px'
             }
         })
-        this.pollHandle = setInterval(this.poll, 1000)
+        this.pollHandle = setInterval(this.poll, this.pollFrequency)
     }
 
     poll() {
@@ -227,15 +227,35 @@ export default class DisplayBox {
         const screenWidth = window.innerWidth
         let target;
         if ( screenWidth >= 1024 ) {
+            console.log('screenwidth greater than 1023')
             target = document.querySelector('.ct-character-header-desktop__group.ct-character-header-desktop__group--gap')
+            if (target && !target.dataset.iAmListening) {
+                target.dataset.iAmListening = true
+                target.insertAdjacentElement('afterend', this.toolbarButton)
+                if (this.floatingActionButton.parentElement) {
+                    this.floatingActionButton.parentElement.removeChild(this.floatingActionButton) // remove floating action button
+                }
+            }
         } else if ( 768 <= screenWidth && screenWidth <= 1023) {
-            target = document.querySelector('.ct-character-header-tablet__group.ct-character-header-tablet__group--gap')
+            console.log('screenwidth between 768 and 1023')
+            target = document.querySelector('.ct-quick-nav__footer')
+            if (target && !target.dataset.iAmListening) {
+                target.dataset.iAmListening = true
+                target.prepend(this.floatingActionButton)
+                if (this.toolbarButton.parentElement) {
+                    this.toolbarButton.parentElement.removeChild(this.toolbarButton) // remove toolbar button
+                }
+            }
         } else if ( screenWidth < 767 ) {
-            target = document.body
-        }
-        if (target && !target.dataset.iAmListening) {
-            target.dataset.iAmListening = true
-            target.insertAdjacentElement('afterend', this.desktopMini.root)
+            console.log('screenwidth less than 767')
+            target = document.querySelector('.ct-quick-nav__footer')
+            if (target && !target.dataset.iAmListening) {
+                target.dataset.iAmListening = true
+                target.prepend(this.floatingActionButton)
+                if (this.toolbarButton.parentElement) {
+                    this.toolbarButton.parentElement.removeChild(this.toolbarButton) // remove toolbar button
+                }
+            }
         }
     }
 
@@ -249,9 +269,13 @@ export default class DisplayBox {
         }
     }
     displayOn() {
-        this.root.style.display = 'block'
-        this.root.style.left = this.left + 'px'
-        this.root.style.top = this.top + 'px'
+        if (this.root.style.display !== 'block') { // does the layout reflow for reassigning inline styles?
+            this.root.style.display = 'block'
+        }
+        if (this.root.style.left !== this.left + 'px') { // does the layout reflow for reassigning inline styles?
+            this.root.style.left = this.left + 'px'
+            this.root.style.top = this.top + 'px'
+        }
     }
 
     beginDrag(e) {
@@ -428,9 +452,9 @@ export default class DisplayBox {
         root.append(title, subtitle);
         root.appendChild(buttonBox);
         root.appendChild(rollInfoRow);
-        this.displayOn()
         this.contentBox.innerHTML = '';
         this.contentBox.appendChild(root);
+        this.displayOn() // put this last so content is rendered before reflow/repaint
     }
 
     renderAttack (props) {
@@ -573,7 +597,7 @@ export default class DisplayBox {
         // browser rerenders once
         this.contentBox.innerHTML = '';
         this.contentBox.appendChild(root);
-        this.displayOn()
+        this.displayOn() // put this last so content is rendered before reflow/repaint
     }
     
     renderSpell(props) {
@@ -633,9 +657,9 @@ export default class DisplayBox {
         // order of elements in box
         root.append(title, subtitle, meta);
         root.append(header.root, effectRow);
-        this.displayOn()
         this.contentBox.innerHTML = '';
         this.contentBox.append(root);
+        this.displayOn() // put this last so content is rendered before reflow/repaint
     }
 
     renderCustomRoll (roll, optionsObject = {}) {
@@ -690,8 +714,8 @@ export default class DisplayBox {
             }
             root.appendChild(row);
         });
-        this.displayOn()
         this.contentBox.innerHTML = '';
         this.contentBox.appendChild(root);
+        this.displayOn() // put this last so content is rendered before reflow/repaint
     }
 }

@@ -1,10 +1,9 @@
 
 /** 
  * @typedef ToolbarButton
- * @type {Object}
- * @property {HTMLDivElement} root container element
- * @property {HTMLElement} icon
- * @property {HTMLSpanElement} span button text
+ * @type {HTMLDivElement}
+ * @property {HTMLElement} children[0] <i> containing icon
+ * @property {HTMLSpanElement} children[1] button text
  */
 
 /**
@@ -19,9 +18,10 @@ function ToolbarButton(text) {
     span.className = 'toolbar-button__text'
     span.textContent = text
     const icon = document.createElement('i')
-    icon.style.backgroundImage = `url("${chrome.runtime.getURL('icon/roller_icon16.png')}")`
+    icon.className = 'toolbar-button__icon'
+    icon.style.backgroundImage = `url(${chrome.runtime.getURL('icon/roller_icon16.png')})`
     root.append(icon, span)
-    return { root, icon, span }
+    return root
 }
 
 export default ToolbarButton

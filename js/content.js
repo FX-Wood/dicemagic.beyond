@@ -631,7 +631,7 @@ function __init__(pollFrequency) {
     window.INITIATIVE_LISTENER = new InitiativeListener(pollFrequency);
     window.ABILITY_LISTENER = new AbilityListener(pollFrequency);
     window.SAVES_LISTENER = new SavesListener(pollFrequency);;
-    window.DISPLAY_BOX = new DisplayBox();
+    window.DISPLAY_BOX = new DisplayBox(pollFrequency);
 
     window.CHARACTER_SHEET_WATCHER.start();
     window.ADVANTAGE_LISTENER.start();

@@ -73,7 +73,9 @@ class ThemeWatcher {
         // TODO: handle mobile
 
         // GLOBAL STYLE
+        this.styleSheet.insertRule(`.floating-action-button { background-color: ${color}}`)
         this.styleSheet.insertRule(`.toolbar-button { border-color: ${color}}`)
+        // decorative font for dice results
         this.styleSheet.insertRule(
         `@font-face {
             font-family: 'Cinzel Decorative';
@@ -83,7 +85,7 @@ class ThemeWatcher {
         }
         `
         )
-
+        
         // MOUSEOVER STYLES
         // simple
         this.styleSheet.insertRule(`.simple-mouseover:hover span { color: ${color}; }`);
