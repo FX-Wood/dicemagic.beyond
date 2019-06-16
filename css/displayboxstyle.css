@@ -10,7 +10,7 @@
     height: 200px;
     width : 281px;
     
-    padding: 0 0 0 20px;
+    padding: 10px 20px 0 20px;
     box-sizing: border-box;
 
     cursor: grab;
@@ -20,7 +20,7 @@
 #display-box-content {
     all:initial;
 
-    height: 95%;
+    max-height: 95%;
     overflow: scroll;
 
     position: relative;
@@ -32,6 +32,10 @@
     font-family: "Roboto Condensed", Roboto, Helvetica, sans-serif;
     font-size: 14px;
 }
+/* remove scrollbars from display window */
+/* #display-box-content::-webkit-scrollbar { width: 0 !important } */
+/* firefox */
+/* #display-box-content { overflow: -moz-scrollbars-none; } */
 
 .display-box-button {
     display: inline-flex;
@@ -88,7 +92,7 @@
 /* roll display stuff */
 .headline {
     font-size: 1.6em;
-    margin: 10px 0 0 0;
+    margin: 0 0 0 0;
 }
 .subhead {
     margin: 0;
@@ -173,7 +177,6 @@ span.roll-result {
     line-height: 18.2px;
     font-weight: 700;
     border-bottom: 1px solid #efefef;
-    text-transform: uppercase;
     margin-top: 5px;
     margin-bottom: -5px;
 }

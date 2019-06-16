@@ -133,7 +133,7 @@ function ResultsHeader(text, subtext) {
     root.className = 'results-header';
     const span1 = document.createElement('span');
     span1.className = 'results-header__text';
-    span1.innerText = text;
+    span1.innerText = text.toUpperCase().replace(/d\d+/, 'd'); // make the d in 1D10 lowercase
     const divider = document.createElement('span');
     divider.className = 'results-header__text';
     divider.innerText = ' \u2022 ';
@@ -143,10 +143,6 @@ function ResultsHeader(text, subtext) {
     root.append(span1, divider, span2);
     return { root, text: span1, subtext: span2 };
 }
-
-
-
-
 
 export default class DisplayBox {
     constructor () {
@@ -162,63 +158,131 @@ export default class DisplayBox {
             Subtitle('Disadvantage: alt-space-click'),
         );
         this.root.append(this.contentBox);
-
         document.body.append(this.root);
 
         this.start = this.start.bind(this);
-        this.makeDraggable = this.makeDraggable.bind(this);
         this.renderSimple = this.renderSimple.bind(this);
         this.renderAttack = this.renderAttack.bind(this);
         this.renderCustomRoll = this.renderCustomRoll.bind(this);
         this.renderSpell = this.renderSpell.bind(this);
-    }
-    start () {
-        this.makeDraggable();
-    }
-    makeDraggable () {
-        console.log('makeDraggable')
-        const element = this.root;
-        let pos1, pos2, pos3, pos4;
-        pos1 = pos2 = pos3 = pos4 = 0;
-        element.style.top = '100px';
-        element.style.left = '100px';
         
-        function dragElement(event) {
-            console.log('drag')
-            pos1 = pos3 - event.clientX;
-            pos2 = pos4 - event.clientY;
-            pos3 = event.clientX;
-            pos4 = event.clientY;
-            element.style.top = (element.offsetTop - pos2) >= 0 ? (element.offsetTop - pos2) + 'px' : 0 + 'px';
-            element.style.left = (element.offsetLeft - pos1) >= 0 ? (element.offsetLeft - pos1) + 'px' : 0 + 'px';
-        }
+        // handle dragging of content box
+        this.beginDrag = this.beginDrag.bind(this);
+        this.renderDragFrame = this.renderDragFrame.bind(this);
+        this.updateTouchPosition = this.updateTouchPosition.bind(this);
+        this.updateMousePosition = this.updateMousePosition.bind(this);
+        this.stopDragging = this.stopDragging.bind(this);
+        this.preventClick = this.preventClick.bind(this);
 
-        function stopDragging(event) {
-            console.log('stopdrag')
-            document.removeEventListener('mouseup', stopDragging);
-            document.removeEventListener('mousemove', dragElement);
-        }
+        // handle minimizing the display
+        this.hideKey = 'Escape'
+    }
+    start() {
+        this.root.style.top = '100px';
+        this.root.style.left = '100px';
+        // initialize dragging variables
+        this.initialX = 0;
+        this.initialY = 0;
+        this.currentX = 0
+        this.currentY = 0
+        this.root.addEventListener('touchstart', this.beginDrag)
+        this.root.addEventListener('mousedown', this.beginDrag)
 
-        function stopClick(event) {
-            console.log('stopclick')
-            event.preventDefault();
-            event.stopPropagation();
-            document.removeEventListener('click', stopClick);
-        }
+        // const log = (e) => console.log('log', e.constructor.name, e.type, e)
 
-        function startDrag(event) {
-            console.log('startdrag')
-            if (event.button === 0 && event.currentTarget.id === 'display-box') {
-                pos3 = event.clientX;
-                pos4 = event.clientY;
-                document.addEventListener('mouseup', stopDragging);
-                document.addEventListener('mousemove', dragElement);
-                document.addEventListener('click', stopClick);
+        // this.root.addEventListener('mousedown', log)
+        // this.root.addEventListener('mouseup', log)
+        // this.root.addEventListener('mousemove', log)
+
+        // this.root.addEventListener('click', log)
+
+        // this.root.addEventListener('touchstart', log)
+        // this.root.addEventListener('touchend', log)
+        // this.root.addEventListener('touchmove', log)
+        
+    }
+
+    beginDrag(e) {
+        if (e.button === 0 || e.constructor.name === 'TouchEvent') {
+            // handle mouse or touch events
+            const clientX = (e.clientX || e.touches[0].clientX)
+            const clientY = (e.clientY || e.touches[0].clientY)
+            this.initialX = this.currentX = clientX
+            this.initialY = this.currentY = clientY
+
+            // check to see if pointer was near edge of box
+            const edgeWidth = 20 //px
+            const left = [this.root.offsetLeft, this.root.offsetLeft + edgeWidth]
+            const right = [this.root.offsetLeft + this.root.offsetWidth - edgeWidth, this.root.offsetLeft + this.root.offsetWidth]
+            const top = [this.root.offsetTop, this.root.offsetTop + edgeWidth]
+            const bottom = [this.root.offsetTop + this.root.offsetHeight - edgeWidth, this.root.offsetTop + this.root.offsetHeight]
+            
+            if (    
+                left[0]   <= clientX && clientX <= left[1]  ||
+                right[0]  <= clientX && clientX <= right[1] ||
+                top[0]    <= clientY && clientY <= top[1]   ||
+                bottom[0] <= clientY && clientY <= bottom[1]
+            ) {
+                
+                // only set 
+                if (e.constructor.name === 'TouchEvent') {
+                    document.addEventListener('touchmove', this.updateTouchPosition)
+                    document.addEventListener('touchend', this.stopDragging)
+                } else {
+                    document.addEventListener('mousemove', this.updateMousePosition)
+                    document.addEventListener('mouseup', this.stopDragging)
+                    document.addEventListener('click', this.preventClick)
+                }
+                this.dragging = true // flag to stop rendering
+                this.renderDragFrame(performance.now())
             }
         }
-
-        element.addEventListener('mousedown', startDrag);
     }
+
+    renderDragFrame(timestamp) {
+        const leftDifference = this.initialX - this.currentX
+        const topDifference = this.initialY - this.currentY
+        this.root.style.left = parseInt(this.root.offsetLeft - leftDifference) + 'px'
+        this.root.style.top = parseInt(this.root.offsetTop - topDifference) + 'px'
+        this.initialX = this.currentX
+        this.initialY = this.currentY
+        if (this.dragging) {
+            requestAnimationFrame(this.renderDragFrame)
+        }
+    }
+    updateTouchPosition(e) {
+        this.currentX = e.touches[0].clientX
+        this.currentY = e.touches[0].clientY
+    }
+
+    updateMousePosition(e) {
+        this.currentX = e.clientX
+        this.currentY = e.clientY
+    }
+
+    stopDragging(e) {
+        this.dragging = false
+        document.removeEventListener('mousemove', this.updateMousePosition)
+        document.removeEventListener('mouseup', this.stopDragging)
+        
+        document.removeEventListener('touchmove', this.updateTouchPosition)
+        document.removeEventListener('touchend', this.stopDragging)
+    }
+
+    // prevent the initial mousedown event's associated click
+    preventClick(e) {
+        console.log('preventClick', e.constructor.name, e.type)
+        e.preventDefault();
+        e.stopPropagation();
+        document.removeEventListener('click', this.preventClick);
+    }
+
+    stop() {
+        document.removeEventListener('touchstart', this.beginDrag);
+        document.removeEventListener('mousedown', this.beginDrag);
+    }
+
+
     renderSimple (props) {
         const { creatureName, rollName, result, first, high, low, modifier, advantageState } = props;
         const root = document.createDocumentFragment();
@@ -394,24 +458,25 @@ export default class DisplayBox {
         // encloses all of the above elements
         const renderText = (newHit, newHitModifier, newDamageModifier) => {
             // handle critical hit
+            console.log({newDamageModifier})
             if (parseInt(newHit) === 20) {
                 hitResultValue.innerText = 'Crit';
                 dmgResultValue.innerText = parseInt(criticalDamage) + parseInt(newDamageModifier);
-                dmgHeader.text.innerText = `${criticalDice} ${parseInt(newDamageModifier) < 0 ? '-' : '+'} ${parseInt(newDamageModifier)}`;
+                dmgHeader.text.innerText = `${criticalDice} ${parseInt(newDamageModifier) === 0 ? '' : `${parseInt(newDamageModifier) < 0 ? '' : '+'} ${parseInt(newDamageModifier)}`  }`;
                 dmg.innerText = criticalDamage;
 
             // handle critical miss
             } else if (parseInt(newHit) === 1) {
                 hitResultValue.innerText = 'Miss';
                 dmgResultValue.innerText = parseInt(normalDamage) + parseInt(newDamageModifier);
-                dmgHeader.text.innerText = `${damageDice} ${parseInt(newDamageModifier) < 0 ? '-' : '+'} ${parseInt(newDamageModifier)}`;
+                dmgHeader.text.innerText = `${damageDice} ${parseInt(newDamageModifier) === 0 ? '' : `${parseInt(newDamageModifier) < 0 ? '' : '+'} ${parseInt(newDamageModifier)}`  }`;
                 dmg.innerText = normalDamage;
 
             // handle normal hits
             } else {
                 hitResultValue.innerText = parseInt(newHit) + parseInt(newHitModifier);
                 dmgResultValue.innerText = parseInt(normalDamage) + parseInt(newDamageModifier);
-                dmgHeader.text.innerText = `${damageDice} ${parseInt(newDamageModifier) < 0 ? '-' : '+'} ${parseInt(newDamageModifier)}`;
+                dmgHeader.text.innerText = `${damageDice} ${parseInt(newDamageModifier) === 0 ? '' : `${parseInt(newDamageModifier) < 0 ? '' : '+'} ${parseInt(newDamageModifier)}`  }`;
                 dmg.innerText = normalDamage;
             }
             // hit
@@ -474,7 +539,7 @@ export default class DisplayBox {
         effectRow.append(FlexSpacer());
 
         const renderText = (newModifier) => {
-            header.text.innerText = `${effectDice} ${parseInt(newModifier) <= 0 ? '' : '+ ' + parseInt(newModifier)}`;
+            header.text.innerText = `${effectDice} ${parseInt(newModifier) === 0 ? '' : `${parseInt(newModifier) < 0 ? '' : '+'} ${parseInt(newModifier)}`  }`;
             header.subtext.innerText = effectType.toLowerCase() + ' damage';
             effectModifierColumn.value.innerText = parseInt(newModifier);
             effectMagnitudeColumn.value.innerText = parseInt(effectResult) + parseInt(newModifier);
