@@ -17,7 +17,7 @@ class InitiativeListener {
         if (this.pollHandle) {
             clearInterval(this.pollHandle);
         }
-        this.pollHandle = setInterval(this.poll.bind(this), this.pollFrequency);
+        this.pollHandle = setInterval(this.poll, this.pollFrequency);
     }
     stop() {
         if (this.pollHandle) {
@@ -129,7 +129,7 @@ class AbilityListener {
         if (this.pollHandle) {
             clearInterval(this.pollHandle);
         }
-        this.pollHandle = setInterval(this.poll);
+        this.pollHandle = setInterval(this.poll, this.pollFrequency);
     }
     stop() {
         if (this.pollHandle) {
