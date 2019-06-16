@@ -1,3 +1,6 @@
 node_modules
 .env
 .vscode
+build
+token.sh
+config.js

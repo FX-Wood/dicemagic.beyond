@@ -1,3 +1,27 @@
+function handleMessage(request, sender, sendResponse) {
+    console.log('received request', { request, sender });
+    const { type, data } = request;
+    console.log(sender.tab ?
+        'from a content script ' + sender.tab.url :
+        'from the extension');
+
+    switch (type) {
+        case 'SIMPLE_ROLL' :
+            getSimpleRoll(sendResponse);
+            return true;
+        case 'SPECIAL_ROLL' :
+            getRoll(data, sendResponse);
+            return true;
+        case 'THEME_CHANGE' :
+            chrome.storage.sync.set({ themeColor: data }, sendResponse);
+            return true;
+        case 'DISPLAY_POSITION' :
+            chrome.storage.local.set({ displayBoxPosition: data }, sendResponse);
+            return true;
+    }
+}
+chrome.runtime.onMessage.addListener(handleMessage);
+
 function getSimpleRoll (sendResponse) {
     const roll = new XMLHttpRequest();
     roll.open('POST', 'https://api.dicemagic.io/roll');
@@ -5,13 +29,10 @@ function getSimpleRoll (sendResponse) {
     roll.send('{"cmd":"1d20,1d20"}');
     roll.onreadystatechange = function () {
         if (roll.readyState === 4) {
-            console.log('done', roll);
             const res = JSON.parse(roll.responseText);
             let rawRoll = res.result.match(/\*\d+\*/g).map((str) => { return str.replace(/\*/g, ''); });
             const first = rawRoll[0];
-            console.log(rawRoll);
             rawRoll = rawRoll.sort((a, b) => { return parseInt(a, 10) - parseInt(b, 10); });
-            console.log(rawRoll);
             // handle advantage
             const low = rawRoll[0];
             const high = rawRoll[1];
@@ -34,36 +55,45 @@ function getRoll (diceCmd, sendResponse) {
     };
 }
 
-chrome.runtime.onMessage.addListener(
-    function (request, sender, sendResponse) {
-        console.log('received request', { request, sender });
-        const { type, data } = request;
-        console.log(sender.tab ?
-            'from a content script ' + sender.tab.url :
-            'from the extension');
+const [clientId, clientSecret, scope] = require('../config.js');
+console.log([clientId, clientSecret, scope]);
 
-        switch (type) {
-            case 'SIMPLE_ROLL' :
-                getSimpleRoll(sendResponse);
-                return true;
-            case 'SPECIAL_ROLL' :
-                getRoll(data, sendResponse);
-                return true;
-            case 'THEME_CHANGE' :
-                console.log('got a theme change', data);
-                // TODO: change popup styling
-                // TODO: save theme change to local storage
-                return;
-            case 'GET_THEME_STATE' :
-                // TODO: get theme color from local storage
-                return;
+function hitSlack(text) {
+    const req = new XMLHttpRequest();
+    req.open('POST', 'https://hooks.slack.com/services/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');
+    req.setRequestHeader('Content-Type', 'application/json');
+    req.send(`{"text":"${text}"}`);
+    req.onload = function() {
+        if (req.readyState === 4) {
+            console.log('done', req);
+            console.log(req.responseText);
         }
+    };
+}
+// client_id - issued when you created your app (required)
+// scope - permissions to request (see below) (required)
+// redirect_uri - URL to redirect back to (see below) (optional)
+// state - unique string to be passed back upon completion (optional)
+// team - Slack team ID of a workspace to attempt to restrict to (optional)
+// authorization request
 
-        if (request.msg) {
-            getRoll(request.msg, sendResponse);
-            console.log(request.msg);
-            return true;
-        }
-    }
-);
 
+function getSlackAuthorization() {
+    const redirectUri = chrome.identity.getRedirectURL();
+    const query = new URLSearchParams();
+    query.append('client_id', clientId);
+    query.append('redirect_uri', redirectUri);
+    query.append('scope', scope);
+    const config = {
+        url: 'https://slack.com/api/oauth.access/' + query.toString(),
+        interactive: true
+    };
+    chrome.identity.launchWebAuthFlow(config, getSlackToken);
+}
+
+// token request
+function getSlackToken(AuthResponseURL) {
+    console.log(AuthResponseURL)
+}
+
+// resource request

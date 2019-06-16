@@ -1,12 +1,17 @@
 {
     "name": "dicemagic.beyond",
-    "version": "1.1.5",
-    "description": "Rolls dice using Aaron's API while using dndbeyond",
+    "version": "1.1.9",
+    "description": "Roll cryptographically secure dice right from your character sheet",
+    "options_page": "html/options.html",
     "permissions": [
         "activeTab",
         "storage",
         "https://www.dndbeyond.com/",
         "https://api.dicemagic.io/"
+    ],
+    "optional_permissions": [
+        "identity",
+        "https://hooks.slack.com/services/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"
     ],
     "commands": {
         "_execute_browser_action": {
@@ -16,15 +21,23 @@
     "content_scripts": [
     {
         "matches": [
-            "https://www.dndbeyond.com/profile/*/characters/*", "http://www.dndbeyond.com/*"
+            "https://www.dndbeyond.com/profile/*/characters/*"
         ],
         "run_at": "document_idle",
         "css": ["css/displayboxstyle.css"],
-        "js": ["js/content.js"]
+        "js": ["character.bundle.js"]
+    },
+    {
+        "matches": [
+            "https://www.dndbeyond.com/encounters/*"
+        ],
+        "run_at": "document_idle",
+        "css": ["css/displayboxstyle.css"],
+        "js": ["encounters.bundle.js"]
     }
     ],
     "background": {
-        "scripts": ["js/background.js"]
+        "scripts": ["background.bundle.js"]
     },
     "browser_action": {
         "default_popup": "html/popup.html",
@@ -47,5 +60,6 @@
         "16": "icon/roller_icon16.png"
     },
     "manifest_version": 2,
-    "web_accessible_resources": ["images/*","js/*","css/*","html/*"]
+    "web_accessible_resources": ["*.js","css/*","html/*", "fonts/*", "icon/*"],
+    "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAiEO99nYeW+slXRK+vi9iVQUzxi4pgmg6qUpNi3zAf3KaFri133S6Bqn9enMNmntGfrLymrQvkCK0W4UtB3AR6C2KI7HHM7AA1I6skPel94WfYtGz2SUJLtaJdAS2f5jtU3RoB1NxkHpveMmKFAq1CsQFu/qVxv8FigSZDZCM7OYhepWvvsDzKaOQ/k5Tmsl91MV3IMsHAyT3PocyuXJ2hx0h34x2sxQPzmcM0NiPXdciS0fg/+p0yMTeOL6bB6VNjnLgC+0SYJouRW9Q/YgTuPG19E160TleVDEfgMTDdaXDDzlKlHFa+CCc059sChMdS0f4aulw5PuJuaLhfChQTQIDAQAB"
 }
