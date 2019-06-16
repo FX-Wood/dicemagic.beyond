@@ -15,6 +15,9 @@ function handleMessage(request, sender, sendResponse) {
         case 'THEME_CHANGE' :
             chrome.storage.sync.set({ themeColor: data }, sendResponse);
             return true;
+        case 'DISPLAY_POSITION' :
+            chrome.storage.local.set({ displayBoxPosition: data }, sendResponse);
+            return true;
     }
 }
 chrome.runtime.onMessage.addListener(handleMessage);

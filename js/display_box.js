@@ -1,3 +1,7 @@
+import dispatchToBackground from "./dispatch";
+import ToolbarButton from "./components/toolbar_button";
+import FloatingActionButton from "./components/floating_action_button";
+
 // components for renderers
 function Row(className) {
     const r = document.createElement('div');
@@ -123,7 +127,7 @@ function RollInputColumn(labelText, valueText) {
  * @property {HTMLSpanElement} subtext span containing secondary text
  */
 
-/** ResultsHeader
+/** Full width element with a border-bottom and bold, colored text and smaller, gray subtext
  * @param {String} text main text. Usually the dice that were rolled, e.g, "2d6 + 4"
  * @param {String} subtext secondary text. Usually the type of damage or effect, e.g., "poison damage"
  * @return {ResultsHeader} 
@@ -144,23 +148,38 @@ function ResultsHeader(text, subtext) {
     return { root, text: span1, subtext: span2 };
 }
 
-export default class DisplayBox {
-    constructor () {
-        this.root = document.createElement('div');
-        this.root.id = 'display-box';
+function FancyBox() {
+    const root = document.createElement('div');
+    root.id = 'display-box';
+    const contentBox = document.createElement('div');
+    contentBox.id = 'display-box-content';
+    contentBox.append(
+        Title('Dicemagic.Beyond'),
+        Subtitle('Roll: shift-click'),
+        Subtitle('Advantage: shift-space-click'),
+        Subtitle('Disadvantage: alt-space-click'),
+    );
+    root.append(contentBox);
+    return { root, contentBox }
+}
 
-        this.contentBox = document.createElement('div');
-        this.contentBox.id = 'display-box-content';
-        this.contentBox.append(
-            Title('Dicemagic.Beyond'),
-            Subtitle('Roll: shift-click'),
-            Subtitle('Advantage: shift-space-click'),
-            Subtitle('Disadvantage: alt-space-click'),
-        );
-        this.root.append(this.contentBox);
-        document.body.append(this.root);
+export default class DisplayBox {
+    constructor (pollFrequency) {
+        this.pollFrequency
+        this.pollHandle = 0;
+        this.left = 100
+        this.top = 100
+
+        const box = FancyBox()
+        this.root = box.root
+        this.contentBox = box.contentBox
+        this.desktopMini = ToolbarButton('dicemagic')
+        this.mobileMini = FloatingActionButton()
 
         this.start = this.start.bind(this);
+        this.poll = this.poll.bind(this);
+        this.stop = this.stop.bind(this);
+        // ui rendering 
         this.renderSimple = this.renderSimple.bind(this);
         this.renderAttack = this.renderAttack.bind(this);
         this.renderCustomRoll = this.renderCustomRoll.bind(this);
@@ -175,35 +194,72 @@ export default class DisplayBox {
         this.preventClick = this.preventClick.bind(this);
 
         // handle minimizing the display
-        this.hideKey = 'Escape'
+        this.displayOn = this.displayOn.bind(this)
+        this.toggleDisplay = this.toggleDisplay.bind(this)
     }
+
     start() {
-        this.root.style.top = '100px';
-        this.root.style.left = '100px';
-        // initialize dragging variables
-        this.initialX = 0;
-        this.initialY = 0;
-        this.currentX = 0
-        this.currentY = 0
+        // listen for key hiding
+        document.addEventListener('keydown', (e) => e.key === 'Escape' ? this.toggleDisplay(e) : '')
+        // listen for dragging
         this.root.addEventListener('touchstart', this.beginDrag)
         this.root.addEventListener('mousedown', this.beginDrag)
-
-        // const log = (e) => console.log('log', e.constructor.name, e.type, e)
-
-        // this.root.addEventListener('mousedown', log)
-        // this.root.addEventListener('mouseup', log)
-        // this.root.addEventListener('mousemove', log)
-
-        // this.root.addEventListener('click', log)
-
-        // this.root.addEventListener('touchstart', log)
-        // this.root.addEventListener('touchend', log)
-        // this.root.addEventListener('touchmove', log)
+        this.root.style.display = 'none'
+        document.body.append(this.root)
+        // listen for button clicks
+        this.desktopMini.root.addEventListener('click', this.toggleDisplay)
+        this.mobileMini.root.addEventListener('click', this.toggleDisplay)
         
+        // get the position of their window
+        chrome.storage.local.get(['displayBoxPosition', 'hideDisplayKey'], (result) => {
+            if (result.displayBoxPosition) {
+                ([this.left, this.top] = result.displayBoxPosition)
+                console.log('got position from storage', this.left, this.top)
+                this.root.style.left = this.left + 'px'
+                this.root.style.top = this.top + 'px'
+            }
+        })
+        this.pollHandle = setInterval(this.poll, 1000)
+    }
+
+    poll() {
+        // hook up minimized version to the dom
+        const screenWidth = window.innerWidth
+        let target;
+        if ( screenWidth >= 1024 ) {
+            target = document.querySelector('.ct-character-header-desktop__group.ct-character-header-desktop__group--gap')
+        } else if ( 768 <= screenWidth && screenWidth <= 1023) {
+            target = document.querySelector('.ct-character-header-tablet__group.ct-character-header-tablet__group--gap')
+        } else if ( screenWidth < 767 ) {
+            target = document.body
+        }
+        if (target && !target.dataset.iAmListening) {
+            target.dataset.iAmListening = true
+            target.insertAdjacentElement('afterend', this.desktopMini.root)
+        }
+    }
+
+    toggleDisplay(e) {
+        console.log('toggle display, style.display', this.root.style.display)
+        console.log('root', this.root)
+        if (this.root.style.display !== 'none') {
+            this.root.style.display = 'none'
+        } else {
+            this.displayOn(e)
+        }
+    }
+    displayOn() {
+        this.root.style.display = 'block'
+        this.root.style.left = this.left + 'px'
+        this.root.style.top = this.top + 'px'
     }
 
     beginDrag(e) {
         if (e.button === 0 || e.constructor.name === 'TouchEvent') {
+            this.initialX = 0;
+            this.initialY = 0;
+            this.currentX = 0
+            this.currentY = 0
             // handle mouse or touch events
             const clientX = (e.clientX || e.touches[0].clientX)
             const clientY = (e.clientY || e.touches[0].clientY)
@@ -217,13 +273,13 @@ export default class DisplayBox {
             const top = [this.root.offsetTop, this.root.offsetTop + edgeWidth]
             const bottom = [this.root.offsetTop + this.root.offsetHeight - edgeWidth, this.root.offsetTop + this.root.offsetHeight]
             
-            if (    
+            if (
                 left[0]   <= clientX && clientX <= left[1]  ||
                 right[0]  <= clientX && clientX <= right[1] ||
                 top[0]    <= clientY && clientY <= top[1]   ||
                 bottom[0] <= clientY && clientY <= bottom[1]
             ) {
-                
+                this.root.style.userSelect = 'none' // prevent text highlighting while dragging
                 // only set 
                 if (e.constructor.name === 'TouchEvent') {
                     document.addEventListener('touchmove', this.updateTouchPosition)
@@ -242,8 +298,17 @@ export default class DisplayBox {
     renderDragFrame(timestamp) {
         const leftDifference = this.initialX - this.currentX
         const topDifference = this.initialY - this.currentY
-        this.root.style.left = parseInt(this.root.offsetLeft - leftDifference) + 'px'
-        this.root.style.top = parseInt(this.root.offsetTop - topDifference) + 'px'
+        let newLeft = parseInt(this.root.offsetLeft - leftDifference)
+        let newTop = parseInt(this.root.offsetTop - topDifference)
+        // constrain movement to client window
+        if (newLeft < 0) { newLeft = 0 }
+        if (newLeft + this.root.offsetWidth > window.innerWidth) { newLeft = window.innerWidth - this.root.offsetWidth }
+        if (newTop < 0) { newTop = 0 }
+        if (newTop + this.root.offsetHeight > window.innerHeight) { newTop = window.innerHeight - this.root.offsetHeight }
+        const xMax = window.innerWidth - this.root.offsetWidth
+        const yMax = window.innerHeight - this.root.offsetHeight
+        this.root.style.left = parseInt(newLeft)  + 'px'
+        this.root.style.top = parseInt(newTop) + 'px'
         this.initialX = this.currentX
         this.initialY = this.currentY
         if (this.dragging) {
@@ -267,6 +332,15 @@ export default class DisplayBox {
         
         document.removeEventListener('touchmove', this.updateTouchPosition)
         document.removeEventListener('touchend', this.stopDragging)
+        // save previous position in storage
+        dispatchToBackground({ type: 'DISPLAY_POSITION', data: [this.root.offsetLeft, this.root.offsetTop] })
+        this.left = this.root.offsetLeft
+        this.top = this.root.offsetTop
+        this.root.style.userSelect = ''
+        delete this.currentX
+        delete this.currentY
+        delete this.initialX
+        delete this.initialY
     }
 
     // prevent the initial mousedown event's associated click
@@ -275,6 +349,7 @@ export default class DisplayBox {
         e.preventDefault();
         e.stopPropagation();
         document.removeEventListener('click', this.preventClick);
+        document.getSelection().empty() // unselect text
     }
 
     stop() {
@@ -282,6 +357,9 @@ export default class DisplayBox {
         document.removeEventListener('mousedown', this.beginDrag);
     }
 
+    minimize() {
+        this.root
+    }
 
     renderSimple (props) {
         const { creatureName, rollName, result, first, high, low, modifier, advantageState } = props;
@@ -350,7 +428,7 @@ export default class DisplayBox {
         root.append(title, subtitle);
         root.appendChild(buttonBox);
         root.appendChild(rollInfoRow);
-
+        this.displayOn()
         this.contentBox.innerHTML = '';
         this.contentBox.appendChild(root);
     }
@@ -491,9 +569,11 @@ export default class DisplayBox {
         root.append(title, subtitle, meta);
         root.append(buttonBox, hitRow);
         root.append(dmgHeader.root, dmgRow);
+        
         // browser rerenders once
         this.contentBox.innerHTML = '';
         this.contentBox.appendChild(root);
+        this.displayOn()
     }
     
     renderSpell(props) {
@@ -553,6 +633,7 @@ export default class DisplayBox {
         // order of elements in box
         root.append(title, subtitle, meta);
         root.append(header.root, effectRow);
+        this.displayOn()
         this.contentBox.innerHTML = '';
         this.contentBox.append(root);
     }
@@ -609,6 +690,7 @@ export default class DisplayBox {
             }
             root.appendChild(row);
         });
+        this.displayOn()
         this.contentBox.innerHTML = '';
         this.contentBox.appendChild(root);
     }
