@@ -1,7 +1,9 @@
+import dispatchToBackground from './dispatch';
 import AdvantageListener from './advantage_listener';
 import DisplayBox from './display_box';
-import dispatchToBackground from './dispatch';
-import ThemeWatcher from './theme_watcher'
+import ThemeWatcher from './theme_watcher';
+
+import DeathSavesListener from './death_saves_listener';
 
 class InitiativeListener {
     constructor (pollFrequency = 1000) {
@@ -632,6 +634,7 @@ function __init__(pollFrequency) {
     window.ABILITY_LISTENER = new AbilityListener(pollFrequency);
     window.SAVES_LISTENER = new SavesListener(pollFrequency);;
     window.DISPLAY_BOX = new DisplayBox(pollFrequency);
+    window.DEATH_SAVES_LISTENER = new DeathSavesListener(pollFrequency)
 
     window.CHARACTER_SHEET_WATCHER.start();
     window.ADVANTAGE_LISTENER.start();
@@ -640,6 +643,7 @@ function __init__(pollFrequency) {
     window.INITIATIVE_LISTENER.start();
     window.ABILITY_LISTENER.start();
     window.SAVES_LISTENER.start();
+    window.DEATH_SAVES_LISTENER.start();
     setInterval(refreshClicks, pollFrequency);
 }
 
