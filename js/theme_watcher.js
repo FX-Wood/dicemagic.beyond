@@ -104,6 +104,9 @@ class ThemeWatcher {
         this.styleSheet.insertRule(`.death-save-mouseover__sidebar:hover > div:first-child { color: ${color}; font-size: large; }`)
         this.styleSheet.insertRule(`.death-save-mouseover__sidebar:hover .ct-health-manager__deathsaves-group--fails .ct-health-manager__deathsaves-mark.ct-health-manager__deathsaves-mark--inactive { box-shadow: inset 0 0 4px 4px #d24040 }`)  // fails
         this.styleSheet.insertRule(`.death-save-mouseover__sidebar:hover .ct-health-manager__deathsaves-group--successes .ct-health-manager__deathsaves-mark.ct-health-manager__deathsaves-mark--inactive { box-shadow: inset 0 0 4px 4px #40d250 }`) // successes 
+        // hit dice
+        this.styleSheet.insertRule(`.hitdie-mouseover:hover { color: ${color}; font-weight: bolder; }`)
+        this.styleSheet.insertRule(`.hitdie-mouseover:hover .ct-slot-manager__slot:not(.ct-slot-manager__slot--used) { box-shadow: inset 0 0 4px 4px #40d250 }`)
 
         // DISPLAY BOX STYLES
         // background

@@ -4,6 +4,7 @@ import DisplayBox from './display_box';
 import ThemeWatcher from './theme_watcher';
 
 import DeathSavesListener from './death_saves_listener';
+import SidebarListener from './sidebar_listener';
 
 class InitiativeListener {
     constructor (pollFrequency = 1000) {
@@ -632,9 +633,10 @@ function __init__(pollFrequency) {
     window.ADVANTAGE_LISTENER = new AdvantageListener(pollFrequency);
     window.INITIATIVE_LISTENER = new InitiativeListener(pollFrequency);
     window.ABILITY_LISTENER = new AbilityListener(pollFrequency);
-    window.SAVES_LISTENER = new SavesListener(pollFrequency);;
+    window.SAVES_LISTENER = new SavesListener(pollFrequency);
     window.DISPLAY_BOX = new DisplayBox(pollFrequency);
-    window.DEATH_SAVES_LISTENER = new DeathSavesListener(pollFrequency)
+    window.DEATH_SAVES_LISTENER = new DeathSavesListener(pollFrequency);
+    window.SIDEBAR_LISTENER = new SidebarListener(pollFrequency);
 
     window.CHARACTER_SHEET_WATCHER.start();
     window.ADVANTAGE_LISTENER.start();
@@ -644,6 +646,7 @@ function __init__(pollFrequency) {
     window.ABILITY_LISTENER.start();
     window.SAVES_LISTENER.start();
     window.DEATH_SAVES_LISTENER.start();
+    window.SIDEBAR_LISTENER.start();
     setInterval(refreshClicks, pollFrequency);
 }
 
