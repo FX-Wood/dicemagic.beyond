@@ -38,7 +38,8 @@
     height: 200px;
     width : 281px;
     
-    padding: 10px 20px 0 20px;
+    padding: 10px 0 0 20px;
+    padding-right: 12px; /* put scrollbar inside border decoration  */
     box-sizing: border-box;
 
     cursor: grab;
@@ -49,7 +50,7 @@
     all:initial;
 
     max-height: 95%;
-    overflow: scroll;
+    overflow: auto;
 
     position: relative;
     display: block;
