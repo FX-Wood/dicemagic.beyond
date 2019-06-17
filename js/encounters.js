@@ -370,5 +370,6 @@ function __init__(pollFrequency) {
 }
 
 if (window) {
+    const pollFrequency = 1000 // ms
     __init__(pollFrequency)
 }
