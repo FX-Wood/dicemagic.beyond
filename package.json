@@ -1,6 +1,6 @@
 {
   "name": "dicemagic.beyond",
-  "version": "1.1.9",
+  "version": "1.2.0",
   "description": "dice rolling web extension for d&d beyond",
   "main": "manifest.json",
   "directories": {
@@ -9,7 +9,8 @@
   "scripts": {
     "test": "npm run lint & mocha --file ./test/setup.js",
     "lint": "eslint js/*.js test/*.js",
-    "build": "sh build.sh && webpack --watch"
+    "build": "sh build.sh && webpack",
+    "watch": "sh build.sh && webpack --watch"
   },
   "eslintConfig": {
     "env": {
