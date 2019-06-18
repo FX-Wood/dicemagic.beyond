@@ -214,7 +214,6 @@ export default class DisplayBox {
         chrome.storage.local.get(['displayBoxPosition', 'hideDisplayKey'], (result) => {
             if (result.displayBoxPosition) {
                 ([this.left, this.top] = result.displayBoxPosition)
-                console.log('got position from storage', this.left, this.top)
                 this.root.style.left = this.left + 'px'
                 this.root.style.top = this.top + 'px'
             }
@@ -227,7 +226,6 @@ export default class DisplayBox {
         const screenWidth = window.innerWidth
         let target;
         if ( screenWidth >= 1024 ) {
-            console.log('screenwidth greater than 1023')
             target = document.querySelector('.ct-character-header-desktop__group.ct-character-header-desktop__group--gap')
             if (target && !target.dataset.iAmListening) {
                 target.dataset.iAmListening = true
@@ -237,7 +235,6 @@ export default class DisplayBox {
                 }
             }
         } else if ( 768 <= screenWidth && screenWidth <= 1023) {
-            console.log('screenwidth between 768 and 1023')
             target = document.querySelector('.ct-quick-nav__footer')
             if (target && !target.dataset.iAmListening) {
                 target.dataset.iAmListening = true
@@ -247,7 +244,6 @@ export default class DisplayBox {
                 }
             }
         } else if ( screenWidth < 767 ) {
-            console.log('screenwidth less than 767')
             target = document.querySelector('.ct-quick-nav__footer')
             if (target && !target.dataset.iAmListening) {
                 target.dataset.iAmListening = true
@@ -260,8 +256,6 @@ export default class DisplayBox {
     }
 
     toggleDisplay(e) {
-        console.log('toggle display, style.display', this.root.style.display)
-        console.log('root', this.root)
         if (this.root.style.display !== 'none') {
             this.root.style.display = 'none'
         } else {
@@ -369,7 +363,6 @@ export default class DisplayBox {
 
     // prevent the initial mousedown event's associated click
     preventClick(e) {
-        console.log('preventClick', e.constructor.name, e.type)
         e.preventDefault();
         e.stopPropagation();
         document.removeEventListener('click', this.preventClick);
@@ -385,7 +378,7 @@ export default class DisplayBox {
         this.root
     }
 
-    renderSimple (props) {
+    renderSimple(props) {
         const { creatureName, rollName, result, first, high, low, modifier, advantageState } = props;
         const root = document.createDocumentFragment();
 
@@ -541,26 +534,18 @@ export default class DisplayBox {
                 const i = e.currentTarget.dataset.value;
                 const rawOptions = [hitNormalVantage, hitAdvantage, hitDisadvantage];
                 // hit, mod, damage, criticalDamage
-                console.log('advantageToggle', { newHit: rawOptions[i], newHitMod: hitMod.value, newDmg: dmgMod.value });
                 renderText(rawOptions[i], hitMod.value, dmgMod.value);
             }
         }
         // handle new modifier input
-        hitMod.addEventListener('change', (e) => {
-            console.log({ newHit: rawHit.innerText, newHitMod: e.target.value, newDmg: dmgMod.value });
-            renderText(parseInt(rawHit.innerText, 10), e.target.value, dmgMod.value);
-        });
-        dmgMod.addEventListener('change', (e) => {
-            console.log({ newHit: rawHit.innerText, newHitMod: hitMod.value, newDmg: e.target.value });
-            renderText(parseInt(rawHit.innerText, 10), hitMod.value, e.target.value);
-        });
+        hitMod.addEventListener('change', (e) => renderText(parseInt(rawHit.innerText, 10), e.target.value, dmgMod.value));
+        dmgMod.addEventListener('change', (e) => renderText(parseInt(rawHit.innerText, 10), hitMod.value, e.target.value));
         // handle changes in advantage
         btns.forEach((btn) => btn.addEventListener('mousedown', advantageToggle));
         // function to update roll
         // encloses all of the above elements
         const renderText = (newHit, newHitModifier, newDamageModifier) => {
             // handle critical hit
-            console.log({newDamageModifier})
             if (parseInt(newHit) === 20) {
                 hitResultValue.innerText = 'Crit';
                 dmgResultValue.innerText = parseInt(criticalDamage) + parseInt(newDamageModifier);
@@ -661,8 +646,48 @@ export default class DisplayBox {
         this.contentBox.append(root);
         this.displayOn() // put this last so content is rendered before reflow/repaint
     }
+    renderHitDie(props) {
+        console.log('rolling hitDie', props)
+        const {
+            creatureName,
+            rollName,
+            hitDieClass,
+            hitDie,
+            hitDieRoll,
+            hitDieModifier
+        } = props
+        const title = Title(creatureName);
+        const subtitle = AttackTitle(rollName);
+        const header = ResultsHeader('', '');
+        const resultRow = Row('roll-box');
+        // result
+        const resultColumn = RollResultColumn('result', 0);
+        resultRow.append(resultColumn.root);
+        // raw roll
+        const rawColumn = RollInfoColumn('raw', 0);
+        resultRow.append(rawColumn.root);
+        // modifier
+        const modifierColumn = RollInputColumn('modifier', 0);
+        resultRow.append(modifierColumn.root, FlexSpacer());
 
-    renderCustomRoll (roll, optionsObject = {}) {
+        const renderText = (newModifier) => {
+            header.text.innerText = hitDieClass;
+            header.subtext.innerText = `${hitDie} ${parseInt(newModifier) === 0 ? '' : `${parseInt(newModifier) < 0 ? '' : '+'} ${parseInt(newModifier)}`  }`;
+            modifierColumn.value.innerText = parseInt(newModifier);
+            resultColumn.value.innerText = parseInt(hitDieRoll) + parseInt(newModifier);
+        };
+        renderText(hitDieModifier)
+
+        modifierColumn.value.addEventListener('change', (e) => renderText(e.target.value));
+        const root = document.createDocumentFragment()
+        root.append(title, subtitle, header.root, resultRow)
+        this.contentBox.innerHTML = ''
+        this.contentBox.append(root)
+        this.displayOn()
+    }
+
+
+    renderCustomRoll(roll, optionsObject = {}) {
         const { cmd, result } = roll;
 
         const defaultOptions = {

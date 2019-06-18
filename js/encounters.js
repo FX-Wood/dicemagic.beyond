@@ -358,16 +358,18 @@ class EncounterListener {
     }
 }
 
-function __init__() {
-    window.DISPLAY_BOX = new DisplayBox();
-    window.ENCOUNTER_LISTENER = new EncounterListener();
-    window.ADVANTAGE_LISTENER = new AdvantageListener();
-    window.THEME_WATCHER = new ThemeWatcher();
+function __init__(pollFrequency) {
+    window.DISPLAY_BOX = new DisplayBox(pollFrequency);
     DISPLAY_BOX.start()
+
+    window.ENCOUNTER_LISTENER = new EncounterListener(pollFrequency);
+    window.ADVANTAGE_LISTENER = new AdvantageListener(pollFrequency);
+    window.THEME_WATCHER = new ThemeWatcher(pollFrequency);
     ENCOUNTER_LISTENER.start();
     ADVANTAGE_LISTENER.start();
 }
 
 if (window) {
-    __init__()
+    const pollFrequency = 1000 // ms
+    __init__(pollFrequency)
 }
