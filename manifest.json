@@ -1,8 +1,10 @@
 {
     "name": "dicemagic.beyond",
-    "version": "1.2.1",
+    "version": "1.2.2",
     "description": "Roll cryptographically secure dice right from your character sheet",
-    "options_page": "html/options.html",
+    "options_ui": {
+        "page":"html/options.html"
+    },
     "permissions": [
         "activeTab",
         "storage",
@@ -62,5 +64,10 @@
         "16": "icon/roller_icon16.png"
     },
     "manifest_version": 2,
-    "web_accessible_resources": ["*.js","css/*","html/*", "fonts/*", "icon/*"]
+    "web_accessible_resources": ["*.js","css/*","html/*", "fonts/*", "icon/*"],
+    "applications": {
+        "gecko": {
+            "id":"{70be19ad-ca69-40d4-b3da-5592b653f59e}"
+        }
+    }
 }
