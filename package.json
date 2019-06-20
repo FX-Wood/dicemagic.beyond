@@ -9,8 +9,10 @@
   "scripts": {
     "test": "npm run lint & mocha --file ./test/setup.js",
     "lint": "eslint js/*.js test/*.js",
-    "build": "sh build.sh && webpack",
-    "watch": "sh build.sh && webpack --watch"
+    "build": "webpack",
+    "build-firefox": "webpack --env.firefox",
+    "watch": "webpack --watch",
+    "watch-firefox": "webpack --env.firefox"
   },
   "eslintConfig": {
     "env": {
@@ -21,7 +23,9 @@
       "ecmaVersion": 8
     }
   },
-  "eslintIgnore": ["build/*"],
+  "eslintIgnore": [
+    "build/*"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/FX-Wood/dicemagic.beyond.git"
@@ -35,6 +39,8 @@
   "devDependencies": {
     "babel-minify-webpack-plugin": "^0.3.1",
     "chai": "^4.2.0",
+    "clean-webpack-plugin": "^3.0.0",
+    "copy-webpack-plugin": "^5.0.3",
     "css-loader": "^3.0.0",
     "file-loader": "^4.0.0",
     "jsdom": "^15.1.1",
