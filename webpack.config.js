@@ -6,7 +6,7 @@ const CopyWebpackPlugin = require('copy-webpack-plugin');
 module.exports = function(env, args) {
     // please see reference: https://stackoverflow.com/questions/44232366/how-do-i-build-a-json-file-with-webpack
     function transformManifest(buffer) {
-        if (args.firefox) {
+        if (env.firefox) {
             const manifest = JSON.parse(buffer.toString());
 
             const newManifest = Object.assign({}, manifest, {

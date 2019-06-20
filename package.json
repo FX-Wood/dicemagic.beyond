@@ -12,7 +12,8 @@
     "build": "webpack",
     "build-firefox": "webpack --env.firefox",
     "watch": "webpack --watch",
-    "watch-firefox": "webpack --env.firefox"
+    "watch-firefox": "webpack --env.firefox",
+    "publish": "sh publish.sh"
   },
   "eslintConfig": {
     "env": {
