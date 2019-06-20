@@ -4,3 +4,8 @@ node_modules
 build
 token.sh
 config.js
+# FIREFOX
+# publish script with api keys
+publish-firefox.sh
+# web extension UUID file
+.web-extension-id 

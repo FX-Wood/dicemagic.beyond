@@ -297,6 +297,7 @@ export default class DisplayBox {
                 top[0]    <= clientY && clientY <= top[1]   ||
                 bottom[0] <= clientY && clientY <= bottom[1]
             ) {
+                e.preventDefault() // prevent 'double event' touch/mousedown
                 this.root.style.userSelect = 'none' // prevent text highlighting while dragging
                 // only set 
                 if (e.constructor.name === 'TouchEvent') {

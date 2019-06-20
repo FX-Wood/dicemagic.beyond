@@ -1,9 +1,9 @@
-let title; // eslint-disable-line
-let customRollButton;
-let rollTextInput;
-let resultsBox;
+window.title; // eslint-disable-line
+window.customRollButton;
+window.rollTextInput;
+window.resultsBox;
 // default color
-let popupThemeColor = '#c53131';
+window.popupThemeColor = 'rgb(197,49,49)';
 
 // get stored theme color, if any
 async function getThemeAndLastRollFromStorage () {

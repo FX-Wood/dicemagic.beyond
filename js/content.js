@@ -483,10 +483,10 @@ async function rollSpellPrimaryBox(e) {
         const rollName = spellName;
         const rollMeta = `${spellLevel === 'cantrip' ? 'Cantrip' : spellLevel + ' spell'} \u2022 ${spellClass}`;
         let saveDC = target.querySelector('.ct-spells-spell__save-value');
-        let saveLabel;
+        let saveType;
         if (saveDC) {
             saveDC = saveDC.textContent;
-            saveLabel = target.querySelector('.ct-spells-spell__save-label').textContent;
+            saveType = target.querySelector('.ct-spells-spell__save-label').textContent;
         }
         // get damage or healing
         let effect = target.querySelector('.ct-damage__value');
@@ -520,7 +520,7 @@ async function rollSpellPrimaryBox(e) {
             rollName,
             rollMeta,
             saveDC,
-            saveLabel,
+            saveType,
             effect,
             effectType,
             effectResult,
