@@ -1,6 +1,6 @@
 {
     "name": "dicemagic.beyond",
-    "version": "1.2.2",
+    "version": "1.2.3",
     "description": "Roll cryptographically secure dice right from your character sheet",
     "options_ui": {
         "page":"html/options.html"
