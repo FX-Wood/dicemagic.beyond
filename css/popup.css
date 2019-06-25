@@ -1,14 +1,17 @@
 * {
     box-sizing: border-box;
 }
-:root {
-    --theme-color: #c15131
-}
-html, body {
-    overflow: scroll;
+body {
     font-family: "Roboto Condensed",Helvetica,sans-serif;
     margin: 0;
     padding: 0;
+    overflow-y: auto;
+    scrollbar-width: none; /* remove scrollbar Firefox */
+    -ms-overflow-style: none; /* remove scrollbar internet explorer */
+}
+/* remove scrollbars in chrome */
+body::-webkit-scrollbar { 
+    width: 0 !important;
 }
 .title {
     font-size: 20px;
@@ -27,12 +30,11 @@ html, body {
 }
 .issue-link:visited {
     color: black;
-
 }
 body {
     padding: 0 1.5em 0 1.5em;
     width: 300px;
-    height: 214px;
+    height: 197px;
     background-repeat: no-repeat;
     background-attachment: fixed;
     background-size: contain;
@@ -66,11 +68,9 @@ input:focus {
     margin-left: 2px;
     float:right;
     border-radius: 3px;
-
     font-family: "Roboto Condensed",Helvetica,sans-serif;
     font-size: 10px;
     color: #fff;
-
     cursor: pointer;
 }
 .results-command-header {
@@ -82,14 +82,12 @@ input:focus {
     border-bottom: 1px solid #efefef;
     text-transform: uppercase;
 }
-
 .results-command {
     font-weight: 400;
     color: black;
     font-size: 12px;
     text-transform: none;
 }
-
 .roll-result-text {
     display: inline-block;
     text-align: right;
@@ -105,7 +103,6 @@ input:focus {
 .roll-result-text + .roll-raw-text {
     margin-left: 10px;
 }
-
 .roll-total-text {
     margin-left: 10px;
     font-size: 14px;
